@@ -330,6 +330,38 @@ If USB serial does not appear, check that:
 - The USB cable supports data transfer
 - `ARDUINO_USB_CDC_ON_BOOT=1` is enabled in `platformio.ini`
 
+## Firmware CI
+
+GitHub Actions builds firmware packages on `main` pushes, pull requests, `v*`
+tags, and manual workflow runs.
+
+Firmware version rules:
+
+| Scenario | Version source |
+| --- | --- |
+| Push a `v*` tag | Uses the tag name |
+| Manual run with `version` | Uses the provided version |
+| Normal push / PR | Generates `vYYYY.MM.DD.<run_number>` |
+
+CI generates:
+
+- `agentlight-firmware-<version>.zip`
+- `firmware-release-notes.md`
+
+The firmware package contains:
+
+- `firmware.bin`
+- `bootloader.bin`
+- `partitions.bin`
+- `manifest.json` with version, Git commit, SHA256, and flash offsets
+- `RELEASE_NOTES.md`
+
+The release note template is
+[docs/releases/firmware-release-notes.md](./docs/releases/firmware-release-notes.md).
+CI fills in the version, environment, Git commit, build time, and artifact name.
+When a `v*` tag is pushed, or when manual release publishing is enabled, CI
+creates a GitHub Release and uses the rendered notes as the release body.
+
 ## Bridge Verification
 
 Verify the multi-agent bridge with:

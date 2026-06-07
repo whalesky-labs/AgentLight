@@ -1,0 +1,85 @@
+name: Firmware CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional firmware version, for example v1.0.0"
+        required: false
+        type: string
+      publish_release:
+        description: "Create a GitHub Release"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  firmware:
+    name: Build ESP32-C3 firmware
+    runs-on: ubuntu-latest
+
+    env:
+      PLATFORMIO_ENV: esp32-c3-supermini
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PlatformIO
+        run: python -m pip install --upgrade platformio
+
+      - name: Resolve firmware version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version="$(scripts/ci/resolve-firmware-version --version "$INPUT_VERSION")"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "FIRMWARE_VERSION=${version}" >> "$GITHUB_ENV"
+
+      - name: Build firmware
+        run: pio run -e "$PLATFORMIO_ENV"
+
+      - name: Verify bridge scripts
+        run: scripts/verify-agent-bridge
+
+      - name: Package firmware
+        run: |
+          scripts/ci/package-firmware \
+            --version "$FIRMWARE_VERSION" \
+            --environment "$PLATFORMIO_ENV"
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentlight-firmware-${{ steps.version.outputs.version }}
+          path: |
+            dist/agentlight-firmware-${{ steps.version.outputs.version }}.zip
+            dist/firmware-release-notes.md
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: AgentLight Firmware ${{ steps.version.outputs.version }}
+          body_path: dist/firmware-release-notes.md
+          files: dist/agentlight-firmware-${{ steps.version.outputs.version }}.zip
+          fail_on_unmatched_files: true

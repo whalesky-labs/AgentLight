@@ -4,6 +4,7 @@
 .piolibdeps/
 libdeps/
 compile_commands.json
+dist/
 
 # Local editor and tooling state
 .vscode/

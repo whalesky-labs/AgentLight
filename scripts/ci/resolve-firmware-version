@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Resolve the firmware version used by CI.
+
+Priority:
+1. Explicit --version argument.
+2. Git tag refs like refs/tags/v1.2.3.
+3. CI-friendly calendar version vYYYY.MM.DD.<run_number>.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import os
+import re
+
+
+VERSION_PATTERN = re.compile(r"^v[0-9][0-9A-Za-z.-]*$")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Resolve AgentLight firmware version.")
+    parser.add_argument("--version", default=os.environ.get("FIRMWARE_VERSION", ""))
+    parser.add_argument("--ref", default=os.environ.get("GITHUB_REF", ""))
+    parser.add_argument("--run-number", default=os.environ.get("GITHUB_RUN_NUMBER", "0"))
+    return parser.parse_args()
+
+
+def clean_version(value: str) -> str:
+    value = value.strip()
+    if not value:
+        return ""
+    if not value.startswith("v"):
+        value = f"v{value}"
+    if not VERSION_PATTERN.match(value):
+        raise SystemExit(f"Invalid firmware version: {value}")
+    return value
+
+
+def main() -> int:
+    args = parse_args()
+
+    explicit = clean_version(args.version)
+    if explicit:
+        print(explicit)
+        return 0
+
+    if args.ref.startswith("refs/tags/"):
+        print(clean_version(args.ref.removeprefix("refs/tags/")))
+        return 0
+
+    today = dt.datetime.now(dt.timezone.utc).strftime("%Y.%m.%d")
+    run_number = re.sub(r"[^0-9]", "", args.run_number) or "0"
+    print(f"v{today}.{run_number}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

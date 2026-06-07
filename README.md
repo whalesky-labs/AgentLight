@@ -312,6 +312,33 @@ pio device monitor
 - USB 线支持数据传输，不只是充电线
 - `platformio.ini` 中已开启 `ARDUINO_USB_CDC_ON_BOOT=1`
 
+## CI 固件构建
+
+GitHub Actions 会在 `main` 分支推送、Pull Request、`v*` 标签和手动触发时构建固件包。
+
+固件版本号规则：
+
+| 场景 | 版本号来源 |
+| --- | --- |
+| 推送 `v*` tag | 使用 tag 名称 |
+| 手动触发并填写 `version` | 使用填写的版本号 |
+| 普通 push / PR | 自动生成 `vYYYY.MM.DD.<run_number>` |
+
+CI 会生成：
+
+- `agentlight-firmware-<version>.zip`
+- `firmware-release-notes.md`
+
+固件包内包含：
+
+- `firmware.bin`
+- `bootloader.bin`
+- `partitions.bin`
+- `manifest.json`，包含版本、Git 提交、SHA256 和烧录 offset
+- `RELEASE_NOTES.md`
+
+发布说明模板位于 [docs/releases/firmware-release-notes.md](./docs/releases/firmware-release-notes.md)，CI 会自动填充版本号、构建环境、Git 提交、构建时间和固件包名称。推送 `v*` tag 或手动触发时勾选发布，会自动创建 GitHub Release 并把填充后的发布说明写入 Release body。
+
 ## 桥接层验证
 
 多 Agent 桥接层可以用内置脚本验证：
