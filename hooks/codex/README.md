@@ -4,6 +4,40 @@ AgentLight does not require a desktop GUI client. For Codex, use the same
 script bridge whenever a stable lifecycle hook, wrapper script, or automation
 entrypoint is available.
 
+You can also monitor Codex activity without controlling the hardware by tailing
+Codex's local session JSONL files.
+
+## Session Monitor
+
+```bash
+scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --from-start
+scripts/codex-session-monitor --once --limit 20
+```
+
+The monitor reads `~/.codex/sessions/**/*.jsonl` and prints normalized status
+lines:
+
+```text
+status=prompt
+status=thinking
+status=working
+status=typing
+status=success
+status=error
+```
+
+Observed mappings:
+
+| Codex session record | Printed status |
+| --- | --- |
+| `event_msg.task_started` | `thinking` |
+| `response_item.reasoning` | `thinking` |
+| `response_item.function_call` | `working` |
+| `response_item.web_search_call` | `working` |
+| `event_msg.agent_message` | `typing` |
+| `event_msg.task_complete` | `success` |
+| `event_msg.turn_aborted` | `error` |
+
 ## Direct Commands
 
 ```bash

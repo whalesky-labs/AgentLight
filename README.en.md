@@ -197,6 +197,26 @@ All hooks eventually call the same entrypoint:
 scripts/agentlight-gate <event>
 ```
 
+Codex can also be monitored by reading local session files. This is useful for
+verifying whether Codex activity is observable before sending anything to the
+hardware:
+
+```bash
+scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --from-start
+scripts/codex-session-monitor --once --limit 20
+```
+
+The monitor normalizes Codex session JSONL records into:
+
+| Output status | Source examples |
+| --- | --- |
+| `prompt` | `user_message` |
+| `thinking` | `task_started` / `reasoning` |
+| `working` | `function_call` / `web_search_call` |
+| `typing` | `agent_message` / `message` |
+| `success` | `task_complete` |
+| `error` | `turn_aborted` |
+
 ## State Mapping
 
 | State | Effect | Meaning |
@@ -233,6 +253,7 @@ src/infrastructure    GPIO / USB serial / BLE / Wi-Fi HTTP channel implementatio
 src/main.cpp          Firmware composition root and main loop scheduling
 scripts/              No-GUI command bridge and event gate
 hooks/                AI tool hook templates and integration notes
+scripts/codex-session-monitor  Codex session file status monitor
 ```
 
 Layering rules:

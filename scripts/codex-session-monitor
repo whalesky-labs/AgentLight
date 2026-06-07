@@ -1,0 +1,272 @@
+#!/usr/bin/env python3
+"""Print Codex session status by tailing local session JSONL files.
+
+This monitor follows Codex's local session files and emits normalized status
+lines. It does not control AgentLight hardware by itself; it is a probe for
+verifying whether Codex Desktop/CLI activity can be observed.
+"""
+
+from __future__ import annotations
+
+import argparse
+import glob
+import json
+import os
+import re
+import sys
+import time
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Iterable
+
+
+DEFAULT_SESSION_GLOB = "~/.codex/sessions/**/*.jsonl"
+THREAD_ID_PATTERN = re.compile(r"(019[a-z0-9-]{32,})")
+
+
+@dataclass
+class MonitorEvent:
+    status: str
+    source_type: str
+    detail: str
+    timestamp: str
+    thread_id: str
+    path: Path
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Monitor Codex session JSONL files and print normalized status changes."
+    )
+    parser.add_argument(
+        "--thread-id",
+        default=os.environ.get("CODEX_THREAD_ID", ""),
+        help="Only monitor a specific Codex thread id. Defaults to CODEX_THREAD_ID when set.",
+    )
+    parser.add_argument(
+        "--path",
+        default="",
+        help="Monitor one session JSONL file directly.",
+    )
+    parser.add_argument(
+        "--glob",
+        default=os.environ.get("CODEX_SESSION_GLOB", DEFAULT_SESSION_GLOB),
+        help=f"Session file glob. Defaults to {DEFAULT_SESSION_GLOB}.",
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Read existing events and exit instead of tailing.",
+    )
+    parser.add_argument(
+        "--from-start",
+        action="store_true",
+        help="When tailing, read existing file content first instead of only new appended lines.",
+    )
+    parser.add_argument(
+        "--poll-interval",
+        type=float,
+        default=0.5,
+        help="Polling interval in seconds for file discovery and tailing.",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Maximum number of normalized events to print before exiting. 0 means unlimited.",
+    )
+    return parser.parse_args()
+
+
+def now_text() -> str:
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def expand_paths(pattern: str) -> list[Path]:
+    return [Path(path) for path in glob.glob(os.path.expanduser(pattern), recursive=True)]
+
+
+def find_session_paths(args: argparse.Namespace) -> list[Path]:
+    if args.path:
+      return [Path(os.path.expanduser(args.path))]
+
+    paths = expand_paths(args.glob)
+    if args.thread_id:
+        paths = [path for path in paths if args.thread_id in path.name]
+
+    paths.sort(key=lambda path: path.stat().st_mtime if path.exists() else 0)
+    return paths
+
+
+def extract_thread_id(obj: dict, path: Path) -> str:
+    payload = obj.get("payload") or {}
+    thread_id = (
+        payload.get("thread_id")
+        or payload.get("id")
+        or obj.get("thread_id")
+        or ""
+    )
+
+    if thread_id:
+        return str(thread_id)
+
+    name = path.name
+    match = THREAD_ID_PATTERN.search(name)
+    if match:
+        return match.group(1).removesuffix(".jsonl")
+
+    return ""
+
+
+def compact_text(value: object, max_len: int = 120) -> str:
+    if value is None:
+        return ""
+    text = str(value).replace("\n", " ").strip()
+    if len(text) <= max_len:
+        return text
+    return text[: max_len - 1] + "…"
+
+
+def normalize_event(obj: dict, path: Path) -> MonitorEvent | None:
+    record_type = obj.get("type") or ""
+    payload = obj.get("payload") or {}
+    payload_type = payload.get("type") or ""
+    item_type = (payload.get("item") or {}).get("type") or ""
+    timestamp = obj.get("timestamp") or now_text()
+    thread_id = extract_thread_id(obj, path)
+
+    if record_type == "event_msg":
+        if payload_type == "task_started":
+            return MonitorEvent("thinking", payload_type, "turn started", timestamp, thread_id, path)
+        if payload_type == "task_complete":
+            return MonitorEvent("success", payload_type, "turn completed", timestamp, thread_id, path)
+        if payload_type == "turn_aborted":
+            return MonitorEvent("error", payload_type, "turn aborted", timestamp, thread_id, path)
+        if payload_type == "agent_message":
+            detail = compact_text(payload.get("message") or payload.get("text"))
+            return MonitorEvent("typing", payload_type, detail, timestamp, thread_id, path)
+        if payload_type == "user_message":
+            detail = compact_text(payload.get("message") or payload.get("text"))
+            return MonitorEvent("prompt", payload_type, detail, timestamp, thread_id, path)
+        if payload_type == "web_search_end":
+            return MonitorEvent("working", payload_type, "web search completed", timestamp, thread_id, path)
+        return None
+
+    if record_type == "response_item":
+        normalized_type = payload_type or item_type
+        if normalized_type in {"function_call", "custom_tool_call"}:
+            name = payload.get("name") or (payload.get("item") or {}).get("name") or normalized_type
+            return MonitorEvent("working", normalized_type, compact_text(name), timestamp, thread_id, path)
+        if normalized_type in {"function_call_output", "custom_tool_call_output"}:
+            return MonitorEvent("working", normalized_type, "tool output received", timestamp, thread_id, path)
+        if normalized_type == "web_search_call":
+            return MonitorEvent("working", normalized_type, "web search started", timestamp, thread_id, path)
+        if normalized_type == "reasoning":
+            return MonitorEvent("thinking", normalized_type, "reasoning", timestamp, thread_id, path)
+        if normalized_type == "message":
+            return MonitorEvent("typing", normalized_type, "message item", timestamp, thread_id, path)
+        return None
+
+    return None
+
+
+def iter_existing_lines(path: Path) -> Iterable[str]:
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as file:
+            yield from file
+    except FileNotFoundError:
+        return
+
+
+def print_event(event: MonitorEvent) -> None:
+    thread = event.thread_id or "-"
+    print(
+        f"{event.timestamp} status={event.status:<8} source={event.source_type:<24} "
+        f"thread={thread} detail={event.detail}",
+        flush=True,
+    )
+
+
+def consume_line(line: str, path: Path) -> MonitorEvent | None:
+    line = line.strip()
+    if not line:
+        return None
+    try:
+        obj = json.loads(line)
+    except json.JSONDecodeError:
+        return None
+    return normalize_event(obj, path)
+
+
+def run_once(paths: list[Path], limit: int) -> int:
+    count = 0
+    for path in paths:
+        for line in iter_existing_lines(path):
+            event = consume_line(line, path)
+            if event is None:
+                continue
+            print_event(event)
+            count += 1
+            if limit and count >= limit:
+                return count
+    return count
+
+
+def run_tail(args: argparse.Namespace) -> int:
+    offsets: dict[Path, int] = {}
+    count = 0
+
+    print("Codex session monitor started", flush=True)
+    if args.thread_id:
+        print(f"Filtering thread_id={args.thread_id}", flush=True)
+
+    try:
+        while True:
+            paths = find_session_paths(args)
+            for path in paths:
+                if not path.exists():
+                    continue
+
+                if path not in offsets:
+                    offsets[path] = 0 if args.from_start else path.stat().st_size
+                    print(f"Watching {path}", flush=True)
+
+                with path.open("r", encoding="utf-8", errors="replace") as file:
+                    file.seek(offsets[path])
+                    for line in file:
+                        event = consume_line(line, path)
+                        if event is not None:
+                            print_event(event)
+                            count += 1
+                            if args.limit and count >= args.limit:
+                                return count
+                    offsets[path] = file.tell()
+
+            time.sleep(args.poll_interval)
+    except KeyboardInterrupt:
+        print("Codex session monitor stopped", flush=True)
+        return count
+
+
+def main() -> int:
+    args = parse_args()
+    paths = find_session_paths(args)
+
+    if not paths:
+        print("No Codex session files found.", file=sys.stderr)
+        return 1
+
+    if args.once:
+        count = run_once(paths, args.limit)
+        if count == 0:
+            print("No normalized Codex status events found.", file=sys.stderr)
+            return 1
+        return 0
+
+    run_tail(args)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

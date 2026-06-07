@@ -190,6 +190,24 @@ scripts/agentlight-gate error
 scripts/agentlight-gate <event>
 ```
 
+Codex 也支持通过本地 session 文件进行只读监听。这个方式适合先验证“Codex 工作状态能不能被观察到”，不直接控制硬件：
+
+```bash
+scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --from-start
+scripts/codex-session-monitor --once --limit 20
+```
+
+监听器会把 Codex session JSONL 记录归一化为：
+
+| 输出状态 | 来源示例 |
+| --- | --- |
+| `prompt` | `user_message` |
+| `thinking` | `task_started` / `reasoning` |
+| `working` | `function_call` / `web_search_call` |
+| `typing` | `agent_message` / `message` |
+| `success` | `task_complete` |
+| `error` | `turn_aborted` |
+
 ## 状态约定
 
 | 状态 | 灯效 | 含义 |
@@ -224,6 +242,7 @@ src/infrastructure    GPIO / USB 串口 / BLE / Wi-Fi HTTP 通道实现
 src/main.cpp          固件装配入口，连接业务层与硬件通道
 scripts/              无客户端命令桥接与事件 Gate
 hooks/                AI 工具 Hook 模板与接入说明
+scripts/codex-session-monitor  Codex session 文件状态监听器
 ```
 
 分层原则：
