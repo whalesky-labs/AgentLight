@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  USB Serial Control · Bluetooth LE Control · Red Yellow Green Mapping · PlatformIO Firmware
+  USB Serial Control · Bluetooth LE Control · Wi-Fi HTTP Control · Red Yellow Green Mapping
 </p>
 
 <p align="center">
@@ -18,6 +18,7 @@
   <a href="platformio.ini"><img src="https://img.shields.io/badge/Framework-Arduino-00979D?logo=arduino&logoColor=white" alt="Arduino framework"></a>
   <a href="src/infrastructure/UsbCommandChannel.cpp"><img src="https://img.shields.io/badge/Control-USB%20Serial-4A90E2" alt="USB Serial"></a>
   <a href="src/infrastructure/BleCommandChannel.cpp"><img src="https://img.shields.io/badge/Control-Bluetooth%20LE-0082FC?logo=bluetooth&logoColor=white" alt="Bluetooth LE"></a>
+  <a href="src/infrastructure/WifiCommandChannel.cpp"><img src="https://img.shields.io/badge/Control-Wi--Fi%20HTTP-34A853?logo=wifi&logoColor=white" alt="Wi-Fi HTTP"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
 </p>
 
@@ -26,8 +27,8 @@
 # AgentLight Firmware
 
 AgentLight is an ESP32-C3 firmware project for a small desktop AI status light.
-It supports USB serial and Bluetooth LE commands so a desktop bridge can show
-AI task state on a toy traffic light.
+It supports USB serial, Bluetooth LE, and Wi-Fi HTTP commands so a desktop
+bridge can show AI task state on a toy traffic light.
 
 This repository currently contains only the **ESP32-C3 firmware**. The desktop
 state bridge will be implemented separately later.
@@ -52,13 +53,14 @@ If the toy light is common-anode, set `AGENTLIGHT_ACTIVE_LOW=1` in
 
 ## Commands
 
-Send one command per line over USB serial, or write the same text to the BLE RX
-characteristic.
+Send one command per line over USB serial, write the same text to the BLE RX
+characteristic, or send commands through the Wi-Fi HTTP API.
 
 The protocol is plain text, one command at a time:
 
 - USB serial: terminate each command with `\n` or `\r\n`
 - BLE: write the command text to the RX characteristic
+- Wi-Fi: call the HTTP API
 - Commands are case-insensitive and normalized to uppercase by the firmware
 - Successful state changes return `OK <STATE>`
 
@@ -97,6 +99,36 @@ BLE service and characteristics:
 | RX write | `8f16d7a1-6c6d-4d68-8d64-6b4d2a86b601` |
 | TX notify/read | `8f16d7a2-6c6d-4d68-8d64-6b4d2a86b601` |
 
+## Wi-Fi HTTP
+
+The firmware starts a Wi-Fi AP by default:
+
+| Setting | Default |
+| --- | --- |
+| SSID | `WHALESKY-LABS-AGENTLIGHT` |
+| Password | `agentlight` |
+| Gateway | `192.168.4.1` |
+
+HTTP API:
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/` | Show available endpoints |
+| `GET` | `/status` | Read the current state |
+| `GET` | `/command?cmd=GREEN` | Send a command |
+| `POST` | `/command` | Send a plain text command body |
+
+Examples:
+
+```bash
+curl "http://192.168.4.1/status"
+curl "http://192.168.4.1/command?cmd=YELLOW_BLINK"
+curl -X POST "http://192.168.4.1/command" --data "GREEN_BREATHE"
+```
+
+The SSID and password can be changed in [platformio.ini](./platformio.ini) via
+`AGENTLIGHT_WIFI_AP_SSID` and `AGENTLIGHT_WIFI_AP_PASSWORD`.
+
 ## State Mapping
 
 | State | Effect | Meaning |
@@ -129,15 +161,15 @@ between the GPIO pin and the LED.
 ```text
 src/domain            Command, color, effect, and light pattern models
 src/application       Status light use case and current state management
-src/infrastructure    GPIO / USB serial / BLE channel implementations
+src/infrastructure    GPIO / USB serial / BLE / Wi-Fi HTTP channel implementations
 src/main.cpp          Firmware composition root and main loop scheduling
 ```
 
 Layering rules:
 
 - `domain` does not access hardware directly
-- `application` handles business semantics without knowing USB, BLE, or GPIO details
-- `infrastructure` owns hardware IO, serial transport, and BLE adaptation
+- `application` handles business semantics without knowing USB, BLE, Wi-Fi, or GPIO details
+- `infrastructure` owns hardware IO, serial transport, BLE, and Wi-Fi HTTP adaptation
 - `main.cpp` only wires dependencies and schedules the main loop
 
 ## Build
