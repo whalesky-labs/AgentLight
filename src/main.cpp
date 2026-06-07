@@ -47,7 +47,7 @@ void setup() {
   delay(300);
   Serial.println("AgentLight ready. Commands: GREEN YELLOW RED OFF PING STATUS HELP");
 
-  bleChannel.begin("AgentLight", handleCommand);
+  bleChannel.begin("WHALESKY-LABS-AGENTLIGHT", handleCommand);
 }
 
 void loop() {

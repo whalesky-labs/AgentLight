@@ -82,7 +82,7 @@ STATUS        -> STATUS YELLOW_BLINK
 PING          -> PONG
 ```
 
-BLE 设备名：`AgentLight`
+BLE 设备名：`WHALESKY-LABS-AGENTLIGHT`
 
 BLE 服务与特征：
 
