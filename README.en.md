@@ -24,14 +24,16 @@
 
 [简体中文](./README.md) | [English](./README.en.md)
 
-# AgentLight Firmware
+# AgentLight
 
-AgentLight is an ESP32-C3 firmware project for a small desktop AI status light.
-It supports USB serial, Bluetooth LE, and Wi-Fi HTTP commands so a desktop
-bridge can show AI task state on a toy traffic light.
+AgentLight is an ESP32-C3 desktop AI status light project. It supports USB
+serial, Bluetooth LE, and Wi-Fi HTTP commands so Codex, ChatGPT, Claude,
+Cursor, and other AI workflows can show task state on a toy traffic light.
 
-This repository currently contains only the **ESP32-C3 firmware**. The desktop
-state bridge will be implemented separately later.
+This repository contains two parts:
+
+- **ESP32-C3 firmware**: receives commands and controls the red/yellow/green lights
+- **No-GUI bridge layer**: sends state commands through shell scripts and AI tool hooks
 
 ## Hardware
 
@@ -129,6 +131,72 @@ curl -X POST "http://192.168.4.1/command" --data "GREEN_BREATHE"
 The SSID and password can be changed in [platformio.ini](./platformio.ini) via
 `AGENTLIGHT_WIFI_AP_SSID` and `AGENTLIGHT_WIFI_AP_PASSWORD`.
 
+## Script Bridge
+
+Stage 2 does not require a desktop GUI app. Use `scripts/agentlight` to send
+commands directly to the device. Wi-Fi HTTP is the default transport.
+
+```bash
+scripts/agentlight status
+scripts/agentlight yellow-blink
+scripts/agentlight green
+scripts/agentlight red-blink
+```
+
+Supported aliases:
+
+| Input | Command |
+| --- | --- |
+| `busy` / `running` / `tool` | `YELLOW_BLINK` |
+| `thinking` / `generating` | `YELLOW_BREATHE` |
+| `idle` / `ready` / `done` / `success` | `GREEN` |
+| `waiting` / `confirm` / `blocked` | `RED_BLINK` |
+| `error` / `failed` | `RED` |
+
+Environment variables:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AGENTLIGHT_HOST` | `192.168.4.1` | Device HTTP host |
+| `AGENTLIGHT_BASE_URL` | empty | Full base URL, higher priority than host |
+| `AGENTLIGHT_TIMEOUT` | `2` | curl timeout in seconds |
+
+## Event Gate
+
+`scripts/agentlight-gate` receives AI lifecycle events and applies lightweight
+deduplication.
+
+```bash
+scripts/agentlight-gate start
+scripts/agentlight-gate tool
+scripts/agentlight-gate thinking
+scripts/agentlight-gate done
+scripts/agentlight-gate waiting
+scripts/agentlight-gate error
+```
+
+| Event | Light state |
+| --- | --- |
+| `start` | `YELLOW_BLINK` |
+| `tool` | `YELLOW_BLINK` |
+| `thinking` | `YELLOW_BREATHE` |
+| `done` | `GREEN_BLINK` |
+| `waiting` | `RED_BLINK` |
+| `error` | `RED` |
+
+## AI Hook Integration
+
+Stage 3 uses hooks instead of a GUI client:
+
+- Cursor: see [hooks/cursor/README.md](./hooks/cursor/README.md)
+- Codex: see [hooks/codex/README.md](./hooks/codex/README.md)
+
+All hooks eventually call the same entrypoint:
+
+```bash
+scripts/agentlight-gate <event>
+```
+
 ## State Mapping
 
 | State | Effect | Meaning |
@@ -163,6 +231,8 @@ src/domain            Command, color, effect, and light pattern models
 src/application       Status light use case and current state management
 src/infrastructure    GPIO / USB serial / BLE / Wi-Fi HTTP channel implementations
 src/main.cpp          Firmware composition root and main loop scheduling
+scripts/              No-GUI command bridge and event gate
+hooks/                AI tool hook templates and integration notes
 ```
 
 Layering rules:

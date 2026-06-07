@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STATE_DIR="${AGENTLIGHT_STATE_DIR:-${TMPDIR:-/tmp}/agentlight}"
+STATE_FILE="${STATE_DIR}/last-event"
+DEFAULT_COOLDOWN_MS="300"
+
+usage() {
+  cat <<'EOF'
+AgentLight event gate
+
+Usage:
+  scripts/agentlight-gate <event>
+
+Events:
+  idle
+  start
+  tool
+  thinking
+  done
+  waiting
+  error
+
+Environment:
+  AGENTLIGHT_COOLDOWN_MS  Duplicate event cooldown, defaults to 300
+  AGENTLIGHT_STATE_DIR    State cache directory
+  AGENTLIGHT_HOST         Passed through to scripts/agentlight
+  AGENTLIGHT_BASE_URL     Passed through to scripts/agentlight
+EOF
+}
+
+now_ms() {
+  local now
+  now="$(date +%s)"
+  printf '%s000\n' "$now"
+}
+
+map_event_to_state() {
+  local event="$1"
+  event="$(printf '%s' "$event" | tr '[:upper:]' '[:lower:]')"
+
+  case "$event" in
+    idle|ready)
+      printf 'green\n'
+      ;;
+    start|busy|running)
+      printf 'yellow-blink\n'
+      ;;
+    tool|exec|command)
+      printf 'yellow-blink\n'
+      ;;
+    thinking|generate|generating)
+      printf 'yellow-breathe\n'
+      ;;
+    done|success|complete|completed)
+      printf 'green-blink\n'
+      ;;
+    waiting|confirm|confirmation|blocked)
+      printf 'red-blink\n'
+      ;;
+    error|failed|failure)
+      printf 'red\n'
+      ;;
+    *)
+      printf 'Unknown AgentLight event: %s\n' "$1" >&2
+      return 2
+      ;;
+  esac
+}
+
+if [[ $# -ne 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+  usage
+  exit 2
+fi
+
+event="$1"
+state="$(map_event_to_state "$event")"
+cooldown_ms="${AGENTLIGHT_COOLDOWN_MS:-$DEFAULT_COOLDOWN_MS}"
+current_ms="$(now_ms)"
+
+mkdir -p "$STATE_DIR"
+
+last_event=""
+last_state=""
+last_ms="0"
+if [[ -f "$STATE_FILE" ]]; then
+  IFS='|' read -r last_event last_state last_ms < "$STATE_FILE" || true
+fi
+
+elapsed_ms=$((current_ms - ${last_ms:-0}))
+if [[ "$event" == "$last_event" && "$state" == "$last_state" && "$elapsed_ms" -lt "$cooldown_ms" ]]; then
+  printf 'SKIP duplicate event=%s state=%s elapsed_ms=%s\n' "$event" "$state" "$elapsed_ms"
+  exit 0
+fi
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"${script_dir}/agentlight" "$state"
+
+printf '%s|%s|%s\n' "$event" "$state" "$current_ms" > "$STATE_FILE"

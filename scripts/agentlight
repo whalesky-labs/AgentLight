@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DEFAULT_HOST="192.168.4.1"
+DEFAULT_TIMEOUT_SECONDS="2"
+
+usage() {
+  cat <<'EOF'
+AgentLight command bridge
+
+Usage:
+  scripts/agentlight <state>
+  scripts/agentlight --host <host> <state>
+  scripts/agentlight --url <base-url> <state>
+  scripts/agentlight status
+
+States:
+  off
+  green
+  green-breathe
+  green-blink
+  yellow
+  yellow-breathe
+  yellow-blink
+  red
+  red-blink
+  red-breathe
+
+Environment:
+  AGENTLIGHT_HOST       Defaults to 192.168.4.1
+  AGENTLIGHT_BASE_URL   Overrides host, for example http://192.168.4.1
+  AGENTLIGHT_TIMEOUT    Curl timeout in seconds, defaults to 2
+EOF
+}
+
+normalize_state() {
+  local value="$1"
+  value="${value//-/_}"
+  value="${value// /_}"
+  value="$(printf '%s' "$value" | tr '[:lower:]' '[:upper:]')"
+
+  case "$value" in
+    OFF|GREEN|GREEN_BREATHE|GREEN_BLINK|YELLOW|YELLOW_BREATHE|YELLOW_BLINK|RED|RED_BLINK|RED_BREATHE|PING|STATUS|HELP)
+      printf '%s\n' "$value"
+      ;;
+    BUSY|RUNNING|TOOL)
+      printf 'YELLOW_BLINK\n'
+      ;;
+    THINKING|GENERATING)
+      printf 'YELLOW_BREATHE\n'
+      ;;
+    IDLE|READY|DONE|SUCCESS)
+      printf 'GREEN\n'
+      ;;
+    WAITING|CONFIRM|CONFIRMATION|BLOCKED)
+      printf 'RED_BLINK\n'
+      ;;
+    ERROR|FAILED|FAILURE)
+      printf 'RED\n'
+      ;;
+    *)
+      printf 'Unknown AgentLight state: %s\n' "$1" >&2
+      return 2
+      ;;
+  esac
+}
+
+urlencode() {
+  local value="$1"
+  local length="${#value}"
+  local index char
+
+  for ((index = 0; index < length; index++)); do
+    char="${value:index:1}"
+    case "$char" in
+      [a-zA-Z0-9.~_-]) printf '%s' "$char" ;;
+      *) printf '%%%02X' "'$char" ;;
+    esac
+  done
+}
+
+host="${AGENTLIGHT_HOST:-$DEFAULT_HOST}"
+base_url="${AGENTLIGHT_BASE_URL:-}"
+timeout="${AGENTLIGHT_TIMEOUT:-$DEFAULT_TIMEOUT_SECONDS}"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --host)
+      host="${2:-}"
+      shift 2
+      ;;
+    --url)
+      base_url="${2:-}"
+      shift 2
+      ;;
+    --timeout)
+      timeout="${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf 'Unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [[ $# -ne 1 ]]; then
+  usage >&2
+  exit 2
+fi
+
+if [[ -z "$base_url" ]]; then
+  base_url="http://${host}"
+fi
+base_url="${base_url%/}"
+
+command="$(normalize_state "$1")"
+
+if [[ "$command" == "STATUS" ]]; then
+  curl --fail --silent --show-error --max-time "$timeout" "${base_url}/status"
+  printf '\n'
+  exit 0
+fi
+
+encoded_command="$(urlencode "$command")"
+curl --fail --silent --show-error --max-time "$timeout" "${base_url}/command?cmd=${encoded_command}"
+printf '\n'

@@ -24,11 +24,14 @@
 
 [简体中文](./README.md) | [English](./README.en.md)
 
-# AgentLight 固件
+# AgentLight
 
-AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯固件项目。它通过 USB 串口、Bluetooth LE 和 Wi-Fi HTTP 接收状态命令，把 Codex、ChatGPT、Claude、Cursor 等 AI 桌面工作流的执行状态显示到玩具红绿灯上。
+AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB 串口、Bluetooth LE 和 Wi-Fi HTTP 接收状态命令，把 Codex、ChatGPT、Claude、Cursor 等 AI 桌面工作流的执行状态显示到玩具红绿灯上。
 
-当前仓库只负责 **ESP32-C3 固件**。电脑端状态桥接程序会在后续独立实现。
+当前仓库包含两部分：
+
+- **ESP32-C3 固件**：负责接收命令并控制红 / 黄 / 绿灯
+- **无客户端桥接层**：通过 shell 脚本和 AI 工具 Hook 发送状态命令，不需要桌面 GUI App
 
 ## 硬件
 
@@ -123,6 +126,70 @@ curl -X POST "http://192.168.4.1/command" --data "GREEN_BREATHE"
 
 SSID 和密码可以在 [platformio.ini](./platformio.ini) 中通过 `AGENTLIGHT_WIFI_AP_SSID` 和 `AGENTLIGHT_WIFI_AP_PASSWORD` 修改。
 
+## 脚本桥接
+
+第二阶段不做桌面客户端 App，而是通过 `scripts/agentlight` 直接向设备发送命令。默认使用 Wi-Fi HTTP。
+
+```bash
+scripts/agentlight status
+scripts/agentlight yellow-blink
+scripts/agentlight green
+scripts/agentlight red-blink
+```
+
+脚本支持别名：
+
+| 输入 | 实际命令 |
+| --- | --- |
+| `busy` / `running` / `tool` | `YELLOW_BLINK` |
+| `thinking` / `generating` | `YELLOW_BREATHE` |
+| `idle` / `ready` / `done` / `success` | `GREEN` |
+| `waiting` / `confirm` / `blocked` | `RED_BLINK` |
+| `error` / `failed` | `RED` |
+
+可配置环境变量：
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `AGENTLIGHT_HOST` | `192.168.4.1` | 设备 HTTP 地址 |
+| `AGENTLIGHT_BASE_URL` | 空 | 完整基础 URL，优先级高于 host |
+| `AGENTLIGHT_TIMEOUT` | `2` | curl 超时时间，单位秒 |
+
+## 事件 Gate
+
+`scripts/agentlight-gate` 用来承接 AI 工具生命周期事件，并做简单防抖和去重。
+
+```bash
+scripts/agentlight-gate start
+scripts/agentlight-gate tool
+scripts/agentlight-gate thinking
+scripts/agentlight-gate done
+scripts/agentlight-gate waiting
+scripts/agentlight-gate error
+```
+
+| 事件 | 灯效 |
+| --- | --- |
+| `start` | `YELLOW_BLINK` |
+| `tool` | `YELLOW_BLINK` |
+| `thinking` | `YELLOW_BREATHE` |
+| `done` | `GREEN_BLINK` |
+| `waiting` | `RED_BLINK` |
+| `error` | `RED` |
+
+## AI Hook 集成
+
+第三阶段不做 GUI 客户端，优先通过 Hook 接入：
+
+- Cursor：见 [hooks/cursor/README.md](./hooks/cursor/README.md)
+- Codex：见 [hooks/codex/README.md](./hooks/codex/README.md)
+
+所有 Hook 最终都调用同一个入口：
+
+```bash
+scripts/agentlight-gate <event>
+```
+
 ## 状态约定
 
 | 状态 | 灯效 | 含义 |
@@ -155,6 +222,8 @@ src/domain            命令、颜色、灯效与状态模式模型
 src/application       状态灯业务用例，负责命令处理与当前状态维护
 src/infrastructure    GPIO / USB 串口 / BLE / Wi-Fi HTTP 通道实现
 src/main.cpp          固件装配入口，连接业务层与硬件通道
+scripts/              无客户端命令桥接与事件 Gate
+hooks/                AI 工具 Hook 模板与接入说明
 ```
 
 分层原则：
