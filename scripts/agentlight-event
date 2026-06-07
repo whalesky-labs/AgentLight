@@ -55,7 +55,7 @@ normalize_agent() {
     codex|codex-cli|codex-desktop)
       printf 'codex\n'
       ;;
-    claude|claude-code|clawd|clawd-on-desk)
+    claude|claude-code)
       printf 'claude\n'
       ;;
     cursor|cursor-agent)

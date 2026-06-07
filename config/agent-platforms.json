@@ -1,5 +1,4 @@
 {
-  "source": "https://github.com/rullerzhou-afk/clawd-on-desk/blob/main/README.zh-CN.md",
   "scope": "AgentLight supports observable AI agent status synchronization to ESP32-C3 hardware lights. Desktop pet UI, permission bubbles, dashboards, terminal focus, and automatic third-party config mutation are out of scope.",
   "normalizedEvents": [
     "prompt",
@@ -16,7 +15,7 @@
     {
       "name": "Claude Code",
       "canonicalAgent": "claude",
-      "aliases": ["claude", "claude-code", "clawd", "clawd-on-desk"],
+      "aliases": ["claude", "claude-code"],
       "supportMode": "event-entrypoint-or-wrapper",
       "evidence": ["hooks/claude/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "No automatic Claude configuration writes; permission handling remains in Claude Code."

@@ -15,7 +15,7 @@ then to the light.
 | Agent | Accepted names |
 | --- | --- |
 | Codex | `codex`, `codex-cli`, `codex-desktop` |
-| Claude Code | `claude`, `claude-code`, `clawd` |
+| Claude Code | `claude`, `claude-code` |
 | Cursor Agent | `cursor`, `cursor-agent` |
 | Gemini CLI | `gemini`, `gemini-cli` |
 | Qwen Code | `qwen`, `qwen-code`, `qwen-cli` |

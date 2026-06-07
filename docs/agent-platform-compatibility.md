@@ -1,6 +1,6 @@
 # Agent 平台兼容矩阵
 
-本文档用于说明 AgentLight 对主流 AI Agent 的真实接入方式。它参考了 Clawd on Desk 的多 Agent 清单，但 AgentLight 的定位是 ESP32-C3 硬件状态灯，不包含桌面宠物、权限气泡、托盘菜单或终端聚焦能力。
+本文档用于说明 AgentLight 对主流 AI Agent 的真实接入方式。AgentLight 的定位是 ESP32-C3 硬件状态灯，不包含桌面宠物、权限气泡、托盘菜单或终端聚焦能力。
 
 ## 总体原则
 
@@ -59,16 +59,16 @@ scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --event-command scr
 
 再需要控制硬件时，才让事件入口加 `--send` 或设置 `AGENTLIGHT_EVENT_SEND=1`。
 
-## 与 Clawd on Desk 的差异
+## 项目边界
 
-| 能力 | Clawd on Desk | AgentLight |
-| --- | --- | --- |
-| 桌面宠物动画 | 支持 | 不做 |
-| 托盘 / Dashboard / HUD | 支持 | 不做 |
-| 权限气泡 | 部分 Agent 支持 | 不做，仍交给原 AI 工具 |
-| Hook / plugin 自动注册 | 多平台支持 | 暂不自动改写用户配置 |
-| AI 状态同步 | 支持 | 支持，输出到硬件红黄绿灯 |
-| 硬件灯效 | 不涉及 | 支持 USB、BLE、Wi-Fi HTTP |
+| 能力 | AgentLight 处理方式 |
+| --- | --- |
+| 桌面宠物动画 | 不做 |
+| 托盘 / Dashboard / HUD | 不做 |
+| 权限气泡 | 不做，仍交给原 AI 工具 |
+| Hook / plugin 自动注册 | 暂不自动改写用户配置 |
+| AI 状态同步 | 支持，输出到硬件红黄绿灯 |
+| 硬件灯效 | 支持 USB、BLE、Wi-Fi HTTP |
 
 ## 验收标准
 
@@ -84,5 +84,5 @@ scripts/verify-agent-bridge
 - 所有支持平台都能被 `scripts/agentlight-event` 归一化。
 - 所有标准事件都能被归一化。
 - 每个平台都有 hook 文档目录或通用接入文档。
-- 兼容矩阵包含 Clawd on Desk 清单中的全部平台、接入方式、证据文件和限制说明。
+- 兼容矩阵包含当前登记的全部平台、接入方式、证据文件和限制说明。
 - Codex session monitor 和 `scripts/multi-agent-monitor` 语法可通过检查。
