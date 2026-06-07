@@ -1,0 +1,7 @@
+.pio/
+.vscode/
+.superpowers/
+compile_commands.json
+*.log
+*.tmp
+.DS_Store
