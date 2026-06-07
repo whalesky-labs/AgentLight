@@ -196,6 +196,14 @@ Stage 3 uses hooks instead of a GUI client:
 - Gemini CLI: see [hooks/gemini/README.md](./hooks/gemini/README.md)
 - Qwen Code: see [hooks/qwen/README.md](./hooks/qwen/README.md)
 - opencode: see [hooks/opencode/README.md](./hooks/opencode/README.md)
+- Copilot CLI: see [hooks/copilot/README.md](./hooks/copilot/README.md)
+- Kimi: see [hooks/kimi/README.md](./hooks/kimi/README.md)
+- CodeBuddy: see [hooks/codebuddy/README.md](./hooks/codebuddy/README.md)
+- Kiro: see [hooks/kiro/README.md](./hooks/kiro/README.md)
+- Antigravity: see [hooks/antigravity/README.md](./hooks/antigravity/README.md)
+- OpenClaw: see [hooks/openclaw/README.md](./hooks/openclaw/README.md)
+- Hermes: see [hooks/hermes/README.md](./hooks/hermes/README.md)
+- Pi: see [hooks/pi/README.md](./hooks/pi/README.md)
 
 All platforms eventually call the same normalized entrypoint:
 
@@ -214,7 +222,7 @@ The shared entrypoint currently supports these agent names:
 | Qwen Code | wrapper entrypoint |
 | GitHub Copilot CLI | generic wrapper entrypoint |
 | opencode | wrapper entrypoint |
-| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | generic event entrypoint, waiting for tool-specific hook wiring |
+| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | generic event entrypoint plus wrapper docs, waiting for tool-specific hook wiring |
 | ChatGPT Desktop / Claude Desktop | no stable public hook yet; can be wired through external automation later |
 
 Codex can also be monitored by reading local session files. This is useful for

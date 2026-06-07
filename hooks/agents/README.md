@@ -59,3 +59,19 @@ Different tools expose different integration points:
 - Tools with JSONL session logs can be tailed by a monitor script, like `scripts/codex-session-monitor`.
 - Tools without stable hooks can use a wrapper script around the CLI process to at least emit `start`, `done`, and `error`.
 
+## Platform Notes
+
+| Platform | Integration note |
+| --- | --- |
+| Codex | `scripts/codex-session-monitor` supports local session JSONL monitoring. |
+| Cursor | `hooks/cursor/agent-light.sh` wraps Cursor hook events. |
+| Claude Code | Use native hooks when available, otherwise `generic-wrapper.sh`. |
+| Gemini CLI | Use `generic-wrapper.sh` unless a local hook/event stream is configured. |
+| Qwen Code | Use `generic-wrapper.sh` unless a local hook/event stream is configured. |
+| Copilot CLI | Use `generic-wrapper.sh` around the Copilot command. |
+| opencode | Use `generic-wrapper.sh` around the opencode command. |
+| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | Use the shared event entrypoint or wrapper until tool-specific hooks are connected. |
+
+The project intentionally keeps platform adapters thin. AgentLight does not
+own or reimplement each AI tool; it normalizes their lifecycle events into a
+small status vocabulary that the firmware already understands.

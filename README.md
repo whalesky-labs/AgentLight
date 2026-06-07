@@ -188,6 +188,14 @@ scripts/agentlight-gate error
 - Gemini CLI：见 [hooks/gemini/README.md](./hooks/gemini/README.md)
 - Qwen Code：见 [hooks/qwen/README.md](./hooks/qwen/README.md)
 - opencode：见 [hooks/opencode/README.md](./hooks/opencode/README.md)
+- Copilot CLI：见 [hooks/copilot/README.md](./hooks/copilot/README.md)
+- Kimi：见 [hooks/kimi/README.md](./hooks/kimi/README.md)
+- CodeBuddy：见 [hooks/codebuddy/README.md](./hooks/codebuddy/README.md)
+- Kiro：见 [hooks/kiro/README.md](./hooks/kiro/README.md)
+- Antigravity：见 [hooks/antigravity/README.md](./hooks/antigravity/README.md)
+- OpenClaw：见 [hooks/openclaw/README.md](./hooks/openclaw/README.md)
+- Hermes：见 [hooks/hermes/README.md](./hooks/hermes/README.md)
+- Pi：见 [hooks/pi/README.md](./hooks/pi/README.md)
 
 所有平台最终都调用同一个归一化入口：
 
@@ -206,7 +214,7 @@ scripts/agentlight-event --agent <agent> --event <event> --send
 | Qwen Code | wrapper 入口 |
 | GitHub Copilot CLI | 通用 wrapper 入口 |
 | opencode | wrapper 入口 |
-| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | 通用事件入口，等待具体工具 hook 接入 |
+| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | 通用事件入口 + wrapper 文档，等待具体工具 hook 接入 |
 | ChatGPT Desktop / Claude Desktop | 暂无稳定公开 hook；可通过外部自动化或未来适配接入统一事件入口 |
 
 Codex 也支持通过本地 session 文件进行只读监听。这个方式适合先验证“Codex 工作状态能不能被观察到”，不直接控制硬件：
