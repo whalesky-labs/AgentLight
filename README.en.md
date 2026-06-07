@@ -307,3 +307,19 @@ If USB serial does not appear, check that:
 - PlatformIO's ESP32 platform is installed
 - The USB cable supports data transfer
 - `ARDUINO_USB_CDC_ON_BOOT=1` is enabled in `platformio.ini`
+
+## Bridge Verification
+
+Verify the multi-agent bridge with:
+
+```bash
+scripts/verify-agent-bridge
+```
+
+It checks:
+
+- shell script syntax
+- Codex session monitor Python syntax
+- multi-agent name normalization
+- lifecycle event normalization
+- documented hook directory coverage

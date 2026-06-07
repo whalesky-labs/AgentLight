@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+agents=(
+  codex
+  codex-cli
+  codex-desktop
+  claude
+  claude-code
+  cursor
+  cursor-agent
+  gemini
+  gemini-cli
+  qwen
+  qwen-code
+  copilot
+  copilot-cli
+  opencode
+  open-code
+  kimi
+  codebuddy
+  kiro
+  antigravity
+  openclaw
+  open-claw
+  hermes
+  pi
+)
+
+events=(
+  prompt
+  user-message
+  task-started
+  thinking
+  function-call
+  web-search
+  agent-message
+  task-complete
+  permission-request
+  turn-aborted
+  idle
+)
+
+printf 'Checking shell scripts...\n'
+bash -n \
+  scripts/agentlight \
+  scripts/agentlight-gate \
+  scripts/agentlight-event \
+  hooks/agents/generic-wrapper.sh \
+  hooks/cursor/agent-light.sh
+
+printf 'Checking Python monitor...\n'
+python3 -m py_compile scripts/codex-session-monitor
+
+printf 'Checking agent normalization...\n'
+for agent in "${agents[@]}"; do
+  scripts/agentlight-event --agent "$agent" --event tool-call >/dev/null
+done
+
+printf 'Checking event normalization...\n'
+for event in "${events[@]}"; do
+  scripts/agentlight-event --agent codex --event "$event" >/dev/null
+done
+
+printf 'Checking documented hook directories...\n'
+for dir in \
+  hooks/agents \
+  hooks/codex \
+  hooks/cursor \
+  hooks/claude \
+  hooks/gemini \
+  hooks/qwen \
+  hooks/copilot \
+  hooks/opencode \
+  hooks/kimi \
+  hooks/codebuddy \
+  hooks/kiro \
+  hooks/antigravity \
+  hooks/openclaw \
+  hooks/hermes \
+  hooks/pi; do
+  test -f "$dir/README.md"
+done
+
+printf 'AgentLight multi-agent bridge verification passed.\n'

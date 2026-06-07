@@ -295,3 +295,19 @@ pio device monitor
 - 已安装 PlatformIO 的 ESP32 平台
 - USB 线支持数据传输，不只是充电线
 - `platformio.ini` 中已开启 `ARDUINO_USB_CDC_ON_BOOT=1`
+
+## 桥接层验证
+
+多 Agent 桥接层可以用内置脚本验证：
+
+```bash
+scripts/verify-agent-bridge
+```
+
+它会检查：
+
+- shell 脚本语法
+- Codex session monitor Python 语法
+- 多 Agent 名称归一化
+- 生命周期事件归一化
+- hooks 文档目录是否完整
