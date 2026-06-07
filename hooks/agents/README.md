@@ -61,6 +61,9 @@ Different tools expose different integration points:
 
 ## Platform Notes
 
+For the full compatibility matrix, see
+`docs/agent-platform-compatibility.md`.
+
 | Platform | Integration note |
 | --- | --- |
 | Codex | `scripts/codex-session-monitor` supports local session JSONL monitoring. |
@@ -75,3 +78,6 @@ Different tools expose different integration points:
 The project intentionally keeps platform adapters thin. AgentLight does not
 own or reimplement each AI tool; it normalizes their lifecycle events into a
 small status vocabulary that the firmware already understands.
+
+AgentLight is a hardware status light project. It does not provide desktop pet
+animation, tray UI, dashboards, permission bubbles, or terminal focus.

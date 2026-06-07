@@ -30,6 +30,33 @@ agents=(
   pi
 )
 
+platforms=(
+  "Claude Code"
+  "Codex CLI"
+  "Codex Desktop"
+  "GitHub Copilot CLI"
+  "Gemini CLI"
+  "Antigravity CLI"
+  "Cursor Agent"
+  "CodeBuddy"
+  "Kiro CLI"
+  "Kimi Code CLI"
+  "Qwen Code"
+  "opencode"
+  "Pi"
+  "OpenClaw"
+  "Hermes Agent"
+)
+
+evidence_files=(
+  scripts/codex-session-monitor
+  scripts/agentlight-event
+  scripts/multi-agent-monitor
+  hooks/agents/generic-wrapper.sh
+  hooks/cursor/hooks.json.snippet
+  config/agent-monitors.example.json
+)
+
 events=(
   prompt
   user-message
@@ -83,6 +110,15 @@ for dir in \
   hooks/hermes \
   hooks/pi; do
   test -f "$dir/README.md"
+done
+
+printf 'Checking compatibility matrix...\n'
+test -f docs/agent-platform-compatibility.md
+for platform in "${platforms[@]}"; do
+  grep -Fq "$platform" docs/agent-platform-compatibility.md
+done
+for file in "${evidence_files[@]}"; do
+  grep -Fq "$file" docs/agent-platform-compatibility.md
 done
 
 printf 'Checking multi-agent monitor config...\n'

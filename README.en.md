@@ -205,6 +205,11 @@ Stage 3 uses hooks instead of a GUI client:
 - Hermes: see [hooks/hermes/README.md](./hooks/hermes/README.md)
 - Pi: see [hooks/pi/README.md](./hooks/pi/README.md)
 
+For the full platform compatibility matrix, see
+[docs/agent-platform-compatibility.md](./docs/agent-platform-compatibility.md).
+The matrix separates implemented monitors, hook templates, and generic wrapper
+routes so the project does not overstate native integrations.
+
 All platforms eventually call the same normalized entrypoint:
 
 ```bash
@@ -215,15 +220,17 @@ The shared entrypoint currently supports these agent names:
 
 | Platform | Support mode |
 | --- | --- |
-| Codex CLI / Desktop | session file monitor plus hook/wrapper entrypoint |
-| Claude Code | hook/wrapper entrypoint |
+| Codex CLI / Desktop | session file monitor plus shared event entrypoint and wrapper docs |
+| Claude Code | shared event entrypoint plus hook/wrapper docs |
 | Cursor Agent | Cursor hook template |
-| Gemini CLI | wrapper entrypoint |
-| Qwen Code | wrapper entrypoint |
-| GitHub Copilot CLI | generic wrapper entrypoint |
-| opencode | wrapper entrypoint |
+| Gemini CLI / Qwen Code / GitHub Copilot CLI / opencode | generic wrapper entrypoint |
 | Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | generic event entrypoint plus wrapper docs, waiting for tool-specific hook wiring |
 | ChatGPT Desktop / Claude Desktop | no stable public hook yet; can be wired through external automation later |
+
+AgentLight does not implement a desktop pet, tray panel, dashboard, permission
+bubbles, or terminal focus. Those remain in the original AI tool or a separate
+desktop client. This project only syncs observable agent status to the hardware
+red/yellow/green light.
 
 Codex can also be monitored by reading local session files. This is useful for
 verifying whether Codex activity is observable before sending anything to the

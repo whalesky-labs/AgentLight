@@ -197,6 +197,8 @@ scripts/agentlight-gate error
 - Hermes：见 [hooks/hermes/README.md](./hooks/hermes/README.md)
 - Pi：见 [hooks/pi/README.md](./hooks/pi/README.md)
 
+完整平台兼容矩阵见 [docs/agent-platform-compatibility.md](./docs/agent-platform-compatibility.md)。矩阵会区分“已实现监听器 / Hook 模板 / 通用 wrapper 接入”，避免把通用入口写成已经完成的原生集成。
+
 所有平台最终都调用同一个归一化入口：
 
 ```bash
@@ -207,15 +209,14 @@ scripts/agentlight-event --agent <agent> --event <event> --send
 
 | 平台 | 支持方式 |
 | --- | --- |
-| Codex CLI / Desktop | session 文件监听 + hook/wrapper 入口 |
-| Claude Code | hook/wrapper 入口 |
+| Codex CLI / Desktop | session 文件监听 + 统一事件入口 + wrapper 文档 |
+| Claude Code | 统一事件入口 + hook/wrapper 文档 |
 | Cursor Agent | Cursor Hook 模板 |
-| Gemini CLI | wrapper 入口 |
-| Qwen Code | wrapper 入口 |
-| GitHub Copilot CLI | 通用 wrapper 入口 |
-| opencode | wrapper 入口 |
+| Gemini CLI / Qwen Code / GitHub Copilot CLI / opencode | 通用 wrapper 入口 |
 | Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | 通用事件入口 + wrapper 文档，等待具体工具 hook 接入 |
 | ChatGPT Desktop / Claude Desktop | 暂无稳定公开 hook；可通过外部自动化或未来适配接入统一事件入口 |
+
+说明：AgentLight 不做桌面宠物、托盘面板、Dashboard、权限气泡或终端聚焦；这些仍由原 AI 工具或其他桌面客户端处理。本项目只负责把可观察到的 Agent 状态同步到硬件红黄绿灯。
 
 Codex 也支持通过本地 session 文件进行只读监听。这个方式适合先验证“Codex 工作状态能不能被观察到”，不直接控制硬件：
 
