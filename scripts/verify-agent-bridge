@@ -4,59 +4,6 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-agents=(
-  codex
-  codex-cli
-  codex-desktop
-  claude
-  claude-code
-  cursor
-  cursor-agent
-  gemini
-  gemini-cli
-  qwen
-  qwen-code
-  copilot
-  copilot-cli
-  opencode
-  open-code
-  kimi
-  codebuddy
-  kiro
-  antigravity
-  openclaw
-  open-claw
-  hermes
-  pi
-)
-
-platforms=(
-  "Claude Code"
-  "Codex CLI"
-  "Codex Desktop"
-  "GitHub Copilot CLI"
-  "Gemini CLI"
-  "Antigravity CLI"
-  "Cursor Agent"
-  "CodeBuddy"
-  "Kiro CLI"
-  "Kimi Code CLI"
-  "Qwen Code"
-  "opencode"
-  "Pi"
-  "OpenClaw"
-  "Hermes Agent"
-)
-
-evidence_files=(
-  scripts/codex-session-monitor
-  scripts/agentlight-event
-  scripts/multi-agent-monitor
-  hooks/agents/generic-wrapper.sh
-  hooks/cursor/hooks.json.snippet
-  config/agent-monitors.example.json
-)
-
 events=(
   prompt
   user-message
@@ -82,9 +29,59 @@ bash -n \
 printf 'Checking Python monitor...\n'
 python3 -m py_compile scripts/codex-session-monitor scripts/multi-agent-monitor
 
+printf 'Checking platform registry...\n'
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+path = Path("config/agent-platforms.json")
+data = json.loads(path.read_text(encoding="utf-8"))
+required = {"name", "canonicalAgent", "aliases", "supportMode", "evidence", "limitations"}
+platforms = data.get("platforms", [])
+if len(platforms) != 15:
+    raise SystemExit(f"expected 15 platforms, got {len(platforms)}")
+
+names = set()
+for platform in platforms:
+    missing = required - platform.keys()
+    if missing:
+        raise SystemExit(f"{platform.get('name', '<unknown>')} missing fields: {sorted(missing)}")
+    name = platform["name"]
+    if name in names:
+        raise SystemExit(f"duplicate platform: {name}")
+    names.add(name)
+    if not platform["aliases"]:
+        raise SystemExit(f"{name} has no aliases")
+    if not platform["evidence"]:
+        raise SystemExit(f"{name} has no evidence")
+    if not platform["limitations"].strip():
+        raise SystemExit(f"{name} has no limitations text")
+    for evidence in platform["evidence"]:
+        if not Path(evidence).exists():
+            raise SystemExit(f"{name} evidence missing: {evidence}")
+PY
+
 printf 'Checking agent normalization...\n'
-for agent in "${agents[@]}"; do
-  scripts/agentlight-event --agent "$agent" --event tool-call >/dev/null
+python3 - <<'PY' | while IFS= read -r record; do
+import json
+from pathlib import Path
+
+data = json.loads(Path("config/agent-platforms.json").read_text(encoding="utf-8"))
+for platform in data["platforms"]:
+    for alias in platform["aliases"]:
+        print(f"{alias}\t{platform['canonicalAgent']}")
+PY
+  alias="${record%%$'\t'*}"
+  expected="${record#*$'\t'}"
+  output="$(scripts/agentlight-event --agent "$alias" --event tool-call)"
+  case "$output" in
+    *"agent=${expected} "*)
+      ;;
+    *)
+      printf 'Alias %s normalized incorrectly. Expected %s, got: %s\n' "$alias" "$expected" "$output" >&2
+      exit 1
+      ;;
+  esac
 done
 
 printf 'Checking event normalization...\n'
@@ -114,12 +111,34 @@ done
 
 printf 'Checking compatibility matrix...\n'
 test -f docs/agent-platform-compatibility.md
-for platform in "${platforms[@]}"; do
-  grep -Fq "$platform" docs/agent-platform-compatibility.md
-done
-for file in "${evidence_files[@]}"; do
-  grep -Fq "$file" docs/agent-platform-compatibility.md
-done
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+registry = json.loads(Path("config/agent-platforms.json").read_text(encoding="utf-8"))
+matrix = Path("docs/agent-platform-compatibility.md").read_text(encoding="utf-8")
+readme = Path("README.md").read_text(encoding="utf-8")
+readme_en = Path("README.en.md").read_text(encoding="utf-8")
+
+if "docs/agent-platform-compatibility.md" not in readme:
+    raise SystemExit("Chinese README does not link compatibility matrix")
+if "docs/agent-platform-compatibility.md" not in readme_en:
+    raise SystemExit("English README does not link compatibility matrix")
+if "config/agent-platforms.json" not in matrix:
+    raise SystemExit("compatibility matrix does not mention platform registry")
+
+for platform in registry["platforms"]:
+    name = platform["name"]
+    if name not in matrix:
+        raise SystemExit(f"matrix missing platform: {name}")
+    if platform["supportMode"] not in matrix:
+        raise SystemExit(f"matrix missing support mode for {name}: {platform['supportMode']}")
+    for evidence in platform["evidence"]:
+        if evidence not in matrix:
+            raise SystemExit(f"matrix missing evidence for {name}: {evidence}")
+    if platform["limitations"] not in matrix:
+        raise SystemExit(f"matrix missing limitations for {name}")
+PY
 
 printf 'Checking multi-agent monitor config...\n'
 scripts/multi-agent-monitor --config config/agent-monitors.example.json --once --limit 1 >/dev/null || true

@@ -1,0 +1,137 @@
+{
+  "source": "https://github.com/rullerzhou-afk/clawd-on-desk/blob/main/README.zh-CN.md",
+  "scope": "AgentLight supports observable AI agent status synchronization to ESP32-C3 hardware lights. Desktop pet UI, permission bubbles, dashboards, terminal focus, and automatic third-party config mutation are out of scope.",
+  "normalizedEvents": [
+    "prompt",
+    "start",
+    "thinking",
+    "tool",
+    "typing",
+    "done",
+    "waiting",
+    "error",
+    "idle"
+  ],
+  "platforms": [
+    {
+      "name": "Claude Code",
+      "canonicalAgent": "claude",
+      "aliases": ["claude", "claude-code", "clawd", "clawd-on-desk"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/claude/README.md", "hooks/agents/generic-wrapper.sh"],
+      "limitations": "No automatic Claude configuration writes; permission handling remains in Claude Code."
+    },
+    {
+      "name": "Codex CLI",
+      "canonicalAgent": "codex",
+      "aliases": ["codex", "codex-cli"],
+      "supportMode": "session-jsonl-monitor-and-event-entrypoint",
+      "evidence": ["scripts/codex-session-monitor", "hooks/codex/README.md"],
+      "limitations": "Session monitoring is read-only and depends on Codex local JSONL records."
+    },
+    {
+      "name": "Codex Desktop",
+      "canonicalAgent": "codex",
+      "aliases": ["codex-desktop"],
+      "supportMode": "session-jsonl-monitor-and-event-entrypoint",
+      "evidence": ["scripts/codex-session-monitor", "hooks/codex/README.md"],
+      "limitations": "Does not control Codex Desktop UI; only observes visible local Codex session records."
+    },
+    {
+      "name": "GitHub Copilot CLI",
+      "canonicalAgent": "copilot",
+      "aliases": ["copilot", "copilot-cli"],
+      "supportMode": "generic-wrapper",
+      "evidence": ["hooks/copilot/README.md", "hooks/agents/generic-wrapper.sh"],
+      "limitations": "No automatic ~/.copilot/hooks/hooks.json writes."
+    },
+    {
+      "name": "Gemini CLI",
+      "canonicalAgent": "gemini",
+      "aliases": ["gemini", "gemini-cli"],
+      "supportMode": "generic-wrapper-or-configurable-monitor",
+      "evidence": ["hooks/gemini/README.md", "scripts/multi-agent-monitor", "config/agent-monitors.example.json"],
+      "limitations": "No automatic ~/.gemini/settings.json writes."
+    },
+    {
+      "name": "Antigravity CLI",
+      "canonicalAgent": "antigravity",
+      "aliases": ["antigravity"],
+      "supportMode": "generic-wrapper-or-event-entrypoint",
+      "evidence": ["hooks/antigravity/README.md", "hooks/agents/generic-wrapper.sh"],
+      "limitations": "Status synchronization only; Antigravity terminal handles permission menus."
+    },
+    {
+      "name": "Cursor Agent",
+      "canonicalAgent": "cursor",
+      "aliases": ["cursor", "cursor-agent"],
+      "supportMode": "hook-template",
+      "evidence": ["hooks/cursor/README.md", "hooks/cursor/hooks.json.snippet", "hooks/cursor/agent-light.sh"],
+      "limitations": "User must merge the snippet into Cursor hook configuration."
+    },
+    {
+      "name": "CodeBuddy",
+      "canonicalAgent": "codebuddy",
+      "aliases": ["codebuddy"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/codebuddy/README.md"],
+      "limitations": "No automatic CodeBuddy configuration writes; permission handling remains in CodeBuddy."
+    },
+    {
+      "name": "Kiro CLI",
+      "canonicalAgent": "kiro",
+      "aliases": ["kiro"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/kiro/README.md"],
+      "limitations": "No automatic Kiro agent configuration creation."
+    },
+    {
+      "name": "Kimi Code CLI",
+      "canonicalAgent": "kimi",
+      "aliases": ["kimi", "kimi-cli"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/kimi/README.md"],
+      "limitations": "No automatic ~/.kimi/config.toml writes."
+    },
+    {
+      "name": "Qwen Code",
+      "canonicalAgent": "qwen",
+      "aliases": ["qwen", "qwen-code", "qwen-cli"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/qwen/README.md"],
+      "limitations": "No automatic ~/.qwen/settings.json writes; permission handling remains in Qwen."
+    },
+    {
+      "name": "opencode",
+      "canonicalAgent": "opencode",
+      "aliases": ["opencode", "open-code"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/opencode/README.md"],
+      "limitations": "No automatic opencode plugin configuration writes."
+    },
+    {
+      "name": "Pi",
+      "canonicalAgent": "pi",
+      "aliases": ["pi"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/pi/README.md"],
+      "limitations": "Only synchronizes lifecycle/tool activity that can be connected through callbacks, logs, or wrappers."
+    },
+    {
+      "name": "OpenClaw",
+      "canonicalAgent": "openclaw",
+      "aliases": ["openclaw", "open-claw"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/openclaw/README.md"],
+      "limitations": "Status synchronization only; no permission bubbles or terminal focus."
+    },
+    {
+      "name": "Hermes Agent",
+      "canonicalAgent": "hermes",
+      "aliases": ["hermes"],
+      "supportMode": "event-entrypoint-or-wrapper",
+      "evidence": ["hooks/hermes/README.md"],
+      "limitations": "Only synchronizes lifecycle/tool activity that can be connected through callbacks, logs, or wrappers."
+    }
+  ]
+}
