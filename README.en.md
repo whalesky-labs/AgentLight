@@ -27,8 +27,9 @@
 # AgentLight
 
 AgentLight is an ESP32-C3 desktop AI status light project. It supports USB
-serial, Bluetooth LE, and Wi-Fi HTTP commands so Codex, ChatGPT, Claude,
-Cursor, and other AI workflows can show task state on a toy traffic light.
+serial, Bluetooth LE, and Wi-Fi HTTP commands so Codex, Claude Code, Cursor,
+Gemini, Qwen, opencode, and other AI agent workflows can show task state on a
+toy traffic light.
 
 This repository contains two parts:
 
@@ -188,14 +189,33 @@ scripts/agentlight-gate error
 
 Stage 3 uses hooks instead of a GUI client:
 
+- Multi-agent entrypoint: see [hooks/agents/README.md](./hooks/agents/README.md)
 - Cursor: see [hooks/cursor/README.md](./hooks/cursor/README.md)
 - Codex: see [hooks/codex/README.md](./hooks/codex/README.md)
+- Claude Code: see [hooks/claude/README.md](./hooks/claude/README.md)
+- Gemini CLI: see [hooks/gemini/README.md](./hooks/gemini/README.md)
+- Qwen Code: see [hooks/qwen/README.md](./hooks/qwen/README.md)
+- opencode: see [hooks/opencode/README.md](./hooks/opencode/README.md)
 
-All hooks eventually call the same entrypoint:
+All platforms eventually call the same normalized entrypoint:
 
 ```bash
-scripts/agentlight-gate <event>
+scripts/agentlight-event --agent <agent> --event <event> --send
 ```
+
+The shared entrypoint currently supports these agent names:
+
+| Platform | Support mode |
+| --- | --- |
+| Codex CLI / Desktop | session file monitor plus hook/wrapper entrypoint |
+| Claude Code | hook/wrapper entrypoint |
+| Cursor Agent | Cursor hook template |
+| Gemini CLI | wrapper entrypoint |
+| Qwen Code | wrapper entrypoint |
+| GitHub Copilot CLI | generic wrapper entrypoint |
+| opencode | wrapper entrypoint |
+| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | generic event entrypoint, waiting for tool-specific hook wiring |
+| ChatGPT Desktop / Claude Desktop | no stable public hook yet; can be wired through external automation later |
 
 Codex can also be monitored by reading local session files. This is useful for
 verifying whether Codex activity is observable before sending anything to the
@@ -254,6 +274,7 @@ src/main.cpp          Firmware composition root and main loop scheduling
 scripts/              No-GUI command bridge and event gate
 hooks/                AI tool hook templates and integration notes
 scripts/codex-session-monitor  Codex session file status monitor
+scripts/agentlight-event        Multi-agent event normalization entrypoint
 ```
 
 Layering rules:

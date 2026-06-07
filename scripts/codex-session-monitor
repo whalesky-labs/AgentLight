@@ -76,6 +76,11 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Maximum number of normalized events to print before exiting. 0 means unlimited.",
     )
+    parser.add_argument(
+        "--event-command",
+        default="",
+        help="Optional command to receive '<agent> <status>' for every normalized event.",
+    )
     return parser.parse_args()
 
 
@@ -188,6 +193,20 @@ def print_event(event: MonitorEvent) -> None:
     )
 
 
+def dispatch_event(event: MonitorEvent, event_command: str) -> None:
+    if not event_command:
+        return
+
+    import subprocess
+
+    subprocess.run(
+        [event_command, "codex", event.status],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
 def consume_line(line: str, path: Path) -> MonitorEvent | None:
     line = line.strip()
     if not line:
@@ -199,7 +218,7 @@ def consume_line(line: str, path: Path) -> MonitorEvent | None:
     return normalize_event(obj, path)
 
 
-def run_once(paths: list[Path], limit: int) -> int:
+def run_once(paths: list[Path], limit: int, event_command: str) -> int:
     count = 0
     for path in paths:
         for line in iter_existing_lines(path):
@@ -207,6 +226,7 @@ def run_once(paths: list[Path], limit: int) -> int:
             if event is None:
                 continue
             print_event(event)
+            dispatch_event(event, event_command)
             count += 1
             if limit and count >= limit:
                 return count
@@ -238,6 +258,7 @@ def run_tail(args: argparse.Namespace) -> int:
                         event = consume_line(line, path)
                         if event is not None:
                             print_event(event)
+                            dispatch_event(event, args.event_command)
                             count += 1
                             if args.limit and count >= args.limit:
                                 return count
@@ -258,7 +279,7 @@ def main() -> int:
         return 1
 
     if args.once:
-        count = run_once(paths, args.limit)
+        count = run_once(paths, args.limit, args.event_command)
         if count == 0:
             print("No normalized Codex status events found.", file=sys.stderr)
             return 1

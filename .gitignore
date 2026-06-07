@@ -8,6 +8,8 @@ compile_commands.json
 # Local editor and tooling state
 .vscode/
 .idea/
+__pycache__/
+*.pyc
 *.swp
 *.swo
 *.sublime-workspace

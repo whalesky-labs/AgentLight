@@ -40,6 +40,9 @@ map_event_to_state() {
   event="$(printf '%s' "$event" | tr '[:upper:]' '[:lower:]')"
 
   case "$event" in
+    prompt)
+      printf 'yellow-breathe\n'
+      ;;
     idle|ready)
       printf 'green\n'
       ;;
@@ -50,6 +53,9 @@ map_event_to_state() {
       printf 'yellow-blink\n'
       ;;
     thinking|generate|generating)
+      printf 'yellow-breathe\n'
+      ;;
+    typing|responding)
       printf 'yellow-breathe\n'
       ;;
     done|success|complete|completed)

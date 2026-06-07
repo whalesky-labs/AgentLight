@@ -26,7 +26,7 @@
 
 # AgentLight
 
-AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB 串口、Bluetooth LE 和 Wi-Fi HTTP 接收状态命令，把 Codex、ChatGPT、Claude、Cursor 等 AI 桌面工作流的执行状态显示到玩具红绿灯上。
+AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB 串口、Bluetooth LE 和 Wi-Fi HTTP 接收状态命令，把 Codex、Claude Code、Cursor、Gemini、Qwen、opencode 等 AI Agent 工作流的执行状态显示到玩具红绿灯上。
 
 当前仓库包含两部分：
 
@@ -181,14 +181,33 @@ scripts/agentlight-gate error
 
 第三阶段不做 GUI 客户端，优先通过 Hook 接入：
 
+- 多 Agent 统一入口：见 [hooks/agents/README.md](./hooks/agents/README.md)
 - Cursor：见 [hooks/cursor/README.md](./hooks/cursor/README.md)
 - Codex：见 [hooks/codex/README.md](./hooks/codex/README.md)
+- Claude Code：见 [hooks/claude/README.md](./hooks/claude/README.md)
+- Gemini CLI：见 [hooks/gemini/README.md](./hooks/gemini/README.md)
+- Qwen Code：见 [hooks/qwen/README.md](./hooks/qwen/README.md)
+- opencode：见 [hooks/opencode/README.md](./hooks/opencode/README.md)
 
-所有 Hook 最终都调用同一个入口：
+所有平台最终都调用同一个归一化入口：
 
 ```bash
-scripts/agentlight-gate <event>
+scripts/agentlight-event --agent <agent> --event <event> --send
 ```
+
+当前统一入口支持这些 Agent 名称：
+
+| 平台 | 支持方式 |
+| --- | --- |
+| Codex CLI / Desktop | session 文件监听 + hook/wrapper 入口 |
+| Claude Code | hook/wrapper 入口 |
+| Cursor Agent | Cursor Hook 模板 |
+| Gemini CLI | wrapper 入口 |
+| Qwen Code | wrapper 入口 |
+| GitHub Copilot CLI | 通用 wrapper 入口 |
+| opencode | wrapper 入口 |
+| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | 通用事件入口，等待具体工具 hook 接入 |
+| ChatGPT Desktop / Claude Desktop | 暂无稳定公开 hook；可通过外部自动化或未来适配接入统一事件入口 |
 
 Codex 也支持通过本地 session 文件进行只读监听。这个方式适合先验证“Codex 工作状态能不能被观察到”，不直接控制硬件：
 
@@ -243,6 +262,7 @@ src/main.cpp          固件装配入口，连接业务层与硬件通道
 scripts/              无客户端命令桥接与事件 Gate
 hooks/                AI 工具 Hook 模板与接入说明
 scripts/codex-session-monitor  Codex session 文件状态监听器
+scripts/agentlight-event        多 Agent 事件归一化入口
 ```
 
 分层原则：

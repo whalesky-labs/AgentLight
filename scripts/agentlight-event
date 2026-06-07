@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+AgentLight multi-agent event entrypoint
+
+Usage:
+  scripts/agentlight-event --agent <name> --event <event> [--send]
+  scripts/agentlight-event <agent> <event>
+
+Agents:
+  codex
+  claude
+  cursor
+  gemini
+  qwen
+  copilot
+  opencode
+  kimi
+  codebuddy
+  kiro
+  antigravity
+  openclaw
+  hermes
+  pi
+
+Events:
+  prompt
+  start
+  thinking
+  tool
+  typing
+  done
+  waiting
+  error
+  idle
+
+Options:
+  --send       Forward the normalized event to scripts/agentlight-gate.
+  --dry-run   Print only. This is the default.
+
+Environment:
+  AGENTLIGHT_EVENT_SEND=1   Forward events to scripts/agentlight-gate by default.
+EOF
+}
+
+normalize_agent() {
+  local value="$1"
+  value="$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')"
+  value="${value// /-}"
+  value="${value//_/-}"
+
+  case "$value" in
+    codex|codex-cli|codex-desktop)
+      printf 'codex\n'
+      ;;
+    claude|claude-code|clawd|clawd-on-desk)
+      printf 'claude\n'
+      ;;
+    cursor|cursor-agent)
+      printf 'cursor\n'
+      ;;
+    gemini|gemini-cli)
+      printf 'gemini\n'
+      ;;
+    qwen|qwen-code|qwen-cli)
+      printf 'qwen\n'
+      ;;
+    copilot|copilot-cli)
+      printf 'copilot\n'
+      ;;
+    opencode|open-code)
+      printf 'opencode\n'
+      ;;
+    kimi|kimi-cli)
+      printf 'kimi\n'
+      ;;
+    codebuddy)
+      printf 'codebuddy\n'
+      ;;
+    kiro)
+      printf 'kiro\n'
+      ;;
+    antigravity)
+      printf 'antigravity\n'
+      ;;
+    openclaw|open-claw)
+      printf 'openclaw\n'
+      ;;
+    hermes)
+      printf 'hermes\n'
+      ;;
+    pi)
+      printf 'pi\n'
+      ;;
+    *)
+      printf 'Unknown agent: %s\n' "$1" >&2
+      return 2
+      ;;
+  esac
+}
+
+normalize_event() {
+  local value="$1"
+  value="$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')"
+  value="${value// /-}"
+  value="${value//_/-}"
+
+  case "$value" in
+    user-prompt|user-message|prompt|submit|prompt-submit)
+      printf 'prompt\n'
+      ;;
+    session-start|task-started|task-start|turn-started|turn-start|start|started|busy|running)
+      printf 'start\n'
+      ;;
+    reasoning|think|thinking|generate|generating)
+      printf 'thinking\n'
+      ;;
+    tool|tool-call|function-call|command|exec|working|web-search|search)
+      printf 'tool\n'
+      ;;
+    agent-message|message|typing|responding)
+      printf 'typing\n'
+      ;;
+    task-complete|turn-completed|turn-complete|complete|completed|done|success|stop)
+      printf 'done\n'
+      ;;
+    permission|permission-request|approval|confirm|confirmation|waiting|blocked|need-input)
+      printf 'waiting\n'
+      ;;
+    abort|aborted|turn-aborted|error|failed|failure)
+      printf 'error\n'
+      ;;
+    idle|ready)
+      printf 'idle\n'
+      ;;
+    *)
+      printf 'Unknown event: %s\n' "$1" >&2
+      return 2
+      ;;
+  esac
+}
+
+send="${AGENTLIGHT_EVENT_SEND:-0}"
+agent=""
+event=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --agent)
+      agent="${2:-}"
+      shift 2
+      ;;
+    --event)
+      event="${2:-}"
+      shift 2
+      ;;
+    --send)
+      send="1"
+      shift
+      ;;
+    --dry-run)
+      send="0"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf 'Unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      if [[ -z "$agent" ]]; then
+        agent="$1"
+      elif [[ -z "$event" ]]; then
+        event="$1"
+      else
+        printf 'Unexpected argument: %s\n' "$1" >&2
+        exit 2
+      fi
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$agent" || -z "$event" ]]; then
+  usage >&2
+  exit 2
+fi
+
+agent="$(normalize_agent "$agent")"
+event="$(normalize_event "$event")"
+
+timestamp="$(date '+%Y-%m-%dT%H:%M:%S%z')"
+printf '%s agent=%s event=%s' "$timestamp" "$agent" "$event"
+
+if [[ "$send" == "1" ]]; then
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  response="$("${script_dir}/agentlight-gate" "$event")"
+  printf ' sent=true response=%s\n' "$response"
+else
+  printf ' sent=false\n'
+fi

@@ -4,6 +4,12 @@ AgentLight does not require a desktop GUI client. For Codex, use the same
 script bridge whenever a stable lifecycle hook, wrapper script, or automation
 entrypoint is available.
 
+For multi-agent status normalization, prefer:
+
+```bash
+scripts/agentlight-event --agent codex --event start --send
+```
+
 You can also monitor Codex activity without controlling the hardware by tailing
 Codex's local session JSONL files.
 
@@ -12,6 +18,7 @@ Codex's local session JSONL files.
 ```bash
 scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --from-start
 scripts/codex-session-monitor --once --limit 20
+scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --event-command scripts/agentlight-event
 ```
 
 The monitor reads `~/.codex/sessions/**/*.jsonl` and prints normalized status

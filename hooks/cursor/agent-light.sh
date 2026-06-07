@@ -13,4 +13,4 @@ if [[ -z "$event" ]]; then
   exit 2
 fi
 
-"${repo_root}/scripts/agentlight-gate" "$event"
+"${repo_root}/scripts/agentlight-event" --agent cursor --event "$event" --send
