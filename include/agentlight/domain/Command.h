@@ -15,11 +15,10 @@ enum class CommandType {
 
 struct Command {
   CommandType type;
-  LightState state;
+  LightPattern pattern;
   String raw;
 };
 
 Command parseCommand(const String& line);
 
 }  // namespace agentlight
-

@@ -1,7 +1,29 @@
+# PlatformIO build outputs
 .pio/
-.vscode/
-.superpowers/
+.pioenvs/
+.piolibdeps/
+libdeps/
 compile_commands.json
+
+# Local editor and tooling state
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# Codex / brainstorming local artifacts
+.superpowers/
+
+# Logs and temporary files
 *.log
 *.tmp
+*.bak
+*.orig
+*.pid
+*.seed
+
+# OS files
 .DS_Store
+Thumbs.db

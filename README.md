@@ -1,55 +1,141 @@
-# AgentLight Firmware
+<p align="center">
+  <img src="https://avatars.githubusercontent.com/u/277389313?s=200&v=4" width="128" height="128" alt="AgentLight">
+</p>
 
-AgentLight is an ESP32-C3 firmware project for a small desktop AI status light.
-It supports USB serial and BLE commands so a desktop bridge can show AI task
-state on a toy traffic light.
+<h1 align="center">AgentLight</h1>
 
-## Hardware
+<p align="center">
+  基于 ESP32-C3 的 AI 任务状态交通灯固件。
+</p>
+
+<p align="center">
+  USB 串口控制 · Bluetooth LE 控制 · 红黄绿灯状态映射 · PlatformIO 固件工程
+</p>
+
+<p align="center">
+  <a href="platformio.ini"><img src="https://img.shields.io/badge/Board-ESP32--C3%20SuperMini-000000?logo=espressif&logoColor=white" alt="ESP32-C3 SuperMini"></a>
+  <a href="platformio.ini"><img src="https://img.shields.io/badge/PlatformIO-ready-F5822A?logo=platformio&logoColor=white" alt="PlatformIO"></a>
+  <a href="platformio.ini"><img src="https://img.shields.io/badge/Framework-Arduino-00979D?logo=arduino&logoColor=white" alt="Arduino framework"></a>
+  <a href="src/infrastructure/UsbCommandChannel.cpp"><img src="https://img.shields.io/badge/Control-USB%20Serial-4A90E2" alt="USB Serial"></a>
+  <a href="src/infrastructure/BleCommandChannel.cpp"><img src="https://img.shields.io/badge/Control-Bluetooth%20LE-0082FC?logo=bluetooth&logoColor=white" alt="Bluetooth LE"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
+</p>
+
+[简体中文](./README.md) | [English](./README.en.md)
+
+# AgentLight 固件
+
+AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯固件项目。它通过 USB 串口和 Bluetooth LE 接收状态命令，把 Codex、ChatGPT、Claude、Cursor 等 AI 桌面工作流的执行状态显示到玩具红绿灯上。
+
+当前仓库只负责 **ESP32-C3 固件**。电脑端状态桥接程序会在后续独立实现。
+
+## 硬件
 
 - ESP32-C3 SuperMini
-- Toy red/yellow/green light
-- 220R current-limiting resistors
+- 玩具红 / 黄 / 绿灯
+- 220R 限流电阻
 
-Default wiring:
+默认接线：
 
-| ESP32-C3 pin | Part |
+| ESP32-C3 引脚 | 连接 |
 | --- | --- |
-| GPIO4 | 220R -> red LED positive |
-| GPIO5 | 220R -> yellow LED positive |
-| GPIO6 | 220R -> green LED positive |
-| GND | LED common negative |
+| GPIO4 | 220R -> 红灯正极 |
+| GPIO5 | 220R -> 黄灯正极 |
+| GPIO6 | 220R -> 绿灯正极 |
+| GND | 三个灯共用负极 |
 
-If the toy light is common-anode, set `AGENTLIGHT_ACTIVE_LOW=1` in
-`platformio.ini` and wire the common positive to `3V3`.
+如果玩具灯是共阳接法，把 [platformio.ini](./platformio.ini) 里的 `AGENTLIGHT_ACTIVE_LOW=1`，并把共用正极接到 `3V3`。
 
-## Commands
+## 命令
 
-Send one command per line over USB serial, or write the same text to the BLE RX
-characteristic.
+通过 USB 串口发送一行命令，或者向 BLE RX 特征写入同样的文本。
 
-| Command | Result |
+命令协议使用纯文本，一次发送一条命令：
+
+- USB 串口：以 `\n` 或 `\r\n` 结尾
+- BLE：向 RX 特征写入命令文本
+- 命令不区分大小写，固件会统一转换为大写处理
+- 成功切换状态时返回 `OK <STATE>`
+
+| 命令 | 结果 |
 | --- | --- |
-| `GREEN` | Green on, red/yellow off |
-| `YELLOW` | Yellow on, red/green off |
-| `RED` | Red on, yellow/green off |
-| `OFF` | All lights off |
-| `PING` | Responds `PONG` |
-| `STATUS` | Responds with the current light state |
-| `HELP` | Responds with supported commands |
+| `GREEN` | 绿灯亮，红灯 / 黄灯灭 |
+| `GREEN_BREATHE` | 绿灯呼吸 |
+| `GREEN_BLINK` | 绿灯闪烁 |
+| `YELLOW` | 黄灯常亮，红灯 / 绿灯灭 |
+| `YELLOW_BREATHE` | 黄灯呼吸 |
+| `YELLOW_BLINK` | 黄灯闪烁 |
+| `RED` | 红灯常亮，黄灯 / 绿灯灭 |
+| `RED_BLINK` | 红灯闪烁 |
+| `RED_BREATHE` | 红灯呼吸 |
+| `OFF` | 全部熄灭 |
+| `PING` | 返回 `PONG` |
+| `STATUS` | 返回当前灯光状态 |
+| `HELP` | 返回支持的命令列表 |
 
-BLE device name: `AgentLight`
+响应示例：
 
-BLE service and characteristics:
+```text
+GREEN_BREATHE -> OK GREEN_BREATHE
+YELLOW_BLINK  -> OK YELLOW_BLINK
+STATUS        -> STATUS YELLOW_BLINK
+PING          -> PONG
+```
 
-| Item | UUID |
+BLE 设备名：`AgentLight`
+
+BLE 服务与特征：
+
+| 项目 | UUID |
 | --- | --- |
-| Service | `8f16d7a0-6c6d-4d68-8d64-6b4d2a86b601` |
-| RX write | `8f16d7a1-6c6d-4d68-8d64-6b4d2a86b601` |
-| TX notify/read | `8f16d7a2-6c6d-4d68-8d64-6b4d2a86b601` |
+| 服务 | `8f16d7a0-6c6d-4d68-8d64-6b4d2a86b601` |
+| RX 写入 | `8f16d7a1-6c6d-4d68-8d64-6b4d2a86b601` |
+| TX 通知 / 读取 | `8f16d7a2-6c6d-4d68-8d64-6b4d2a86b601` |
 
-## Build
+## 状态约定
 
-This project uses PlatformIO with the Arduino framework.
+| 状态 | 灯效 | 含义 |
+| --- | --- | --- |
+| `OFF` | 全灭 | 未连接 / 关闭 |
+| `GREEN` | 绿灯常亮 | 空闲，可开始新任务 |
+| `GREEN_BREATHE` | 绿灯呼吸 | 已连接，待命中 |
+| `GREEN_BLINK` | 绿灯闪烁 | 任务完成提示 / 心跳测试 |
+| `YELLOW` | 黄灯常亮 | AI 正在执行普通任务 |
+| `YELLOW_BREATHE` | 黄灯呼吸 | AI 正在长时间思考 / 生成 |
+| `YELLOW_BLINK` | 黄灯闪烁 | 工具调用 / 命令执行中 |
+| `RED` | 红灯常亮 | 错误 |
+| `RED_BLINK` | 红灯闪烁 | 需要人工确认 / 阻塞 |
+| `RED_BREATHE` | 红灯呼吸 | 低优先级提醒 / 等待查看 |
+
+## 灯效时序
+
+| 灯效 | 固件行为 |
+| --- | --- |
+| 常亮 | 目标颜色持续点亮，其他颜色熄灭 |
+| 闪烁 | 800ms 周期，亮 400ms / 灭 400ms |
+| 呼吸 | 2000ms 周期，亮度从低到高再回落 |
+
+当前呼吸效果使用软件 PWM 实现，不需要额外硬件。对于玩具灯或普通 LED，220R 电阻仍然需要串联在 GPIO 与 LED 之间。
+
+## 架构
+
+```text
+src/domain            命令、颜色、灯效与状态模式模型
+src/application       状态灯业务用例，负责命令处理与当前状态维护
+src/infrastructure    GPIO / USB 串口 / BLE 通道实现
+src/main.cpp          固件装配入口，连接业务层与硬件通道
+```
+
+分层原则：
+
+- `domain` 不直接访问硬件，只定义状态与命令协议
+- `application` 不关心 USB、BLE 或 GPIO 细节，只处理业务语义
+- `infrastructure` 承担硬件 IO、串口和 BLE 适配
+- `main.cpp` 只负责对象装配和主循环调度
+
+## 构建与烧录
+
+本项目使用 PlatformIO + Arduino framework。
 
 ```bash
 pio run
@@ -57,6 +143,8 @@ pio run -t upload
 pio device monitor
 ```
 
-If USB serial does not appear, install PlatformIO's ESP32 platform and make
-sure the board is connected with a data-capable USB cable.
+如果看不到 USB 串口，请确认：
 
+- 已安装 PlatformIO 的 ESP32 平台
+- USB 线支持数据传输，不只是充电线
+- `platformio.ini` 中已开启 `ARDUINO_USB_CDC_ON_BOOT=1`

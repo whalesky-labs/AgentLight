@@ -16,23 +16,22 @@ String normalize(const String& value) {
 Command parseCommand(const String& line) {
   const String normalized = normalize(line);
 
-  LightState state = LightState::Off;
-  if (tryParseLightState(normalized, state)) {
-    return {CommandType::SetLight, state, normalized};
+  LightPattern pattern = {LightState::Off, LightEffect::Steady};
+  if (tryParseLightPattern(normalized, pattern)) {
+    return {CommandType::SetLight, pattern, normalized};
   }
 
   if (normalized == "PING") {
-    return {CommandType::Ping, LightState::Off, normalized};
+    return {CommandType::Ping, pattern, normalized};
   }
   if (normalized == "STATUS") {
-    return {CommandType::Status, LightState::Off, normalized};
+    return {CommandType::Status, pattern, normalized};
   }
   if (normalized == "HELP" || normalized == "?") {
-    return {CommandType::Help, LightState::Off, normalized};
+    return {CommandType::Help, pattern, normalized};
   }
 
-  return {CommandType::Unknown, LightState::Off, normalized};
+  return {CommandType::Unknown, pattern, normalized};
 }
 
 }  // namespace agentlight
-

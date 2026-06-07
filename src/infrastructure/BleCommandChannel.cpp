@@ -30,8 +30,8 @@ class RxCallbacks : public BLECharacteristicCallbacks {
       : channel_(channel), handler_(handler) {}
 
   void onWrite(BLECharacteristic* characteristic) override {
-    const std::string value = characteristic->getValue();
-    if (value.empty()) {
+    const auto value = characteristic->getValue();
+    if (value.length() == 0) {
       return;
     }
 
@@ -82,4 +82,3 @@ void BleCommandChannel::publish(const String& message) {
 }
 
 }  // namespace agentlight
-

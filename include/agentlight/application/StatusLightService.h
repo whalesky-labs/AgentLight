@@ -10,16 +10,16 @@ class StatusLightService {
  public:
   explicit StatusLightService(LightOutput& output);
 
-  void begin(LightState initialState);
+  void begin(const LightPattern& initialPattern);
+  void tick(unsigned long nowMs);
   String handleCommand(const String& line);
-  LightState currentState() const;
+  LightPattern currentPattern() const;
 
  private:
-  void setState(LightState state);
+  void setPattern(const LightPattern& pattern);
 
   LightOutput& output_;
-  LightState currentState_;
+  LightPattern currentPattern_;
 };
 
 }  // namespace agentlight
-

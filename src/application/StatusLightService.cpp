@@ -4,10 +4,14 @@
 namespace agentlight {
 
 StatusLightService::StatusLightService(LightOutput& output)
-    : output_(output), currentState_(LightState::Off) {}
+    : output_(output), currentPattern_({LightState::Off, LightEffect::Steady}) {}
 
-void StatusLightService::begin(LightState initialState) {
-  setState(initialState);
+void StatusLightService::begin(const LightPattern& initialPattern) {
+  setPattern(initialPattern);
+}
+
+void StatusLightService::tick(unsigned long nowMs) {
+  output_.tick(nowMs);
 }
 
 String StatusLightService::handleCommand(const String& line) {
@@ -15,28 +19,27 @@ String StatusLightService::handleCommand(const String& line) {
 
   switch (command.type) {
     case CommandType::SetLight:
-      setState(command.state);
-      return String("OK ") + toText(currentState_);
+      setPattern(command.pattern);
+      return String("OK ") + toText(currentPattern_);
     case CommandType::Ping:
       return "PONG";
     case CommandType::Status:
-      return String("STATUS ") + toText(currentState_);
+      return String("STATUS ") + toText(currentPattern_);
     case CommandType::Help:
-      return "COMMANDS GREEN YELLOW RED OFF PING STATUS HELP";
+      return "COMMANDS GREEN GREEN_BREATHE GREEN_BLINK YELLOW YELLOW_BREATHE YELLOW_BLINK RED RED_BLINK RED_BREATHE OFF PING STATUS HELP";
     case CommandType::Unknown:
     default:
       return String("ERR UNKNOWN_COMMAND ") + command.raw;
   }
 }
 
-LightState StatusLightService::currentState() const {
-  return currentState_;
+LightPattern StatusLightService::currentPattern() const {
+  return currentPattern_;
 }
 
-void StatusLightService::setState(LightState state) {
-  currentState_ = state;
-  output_.setLight(state);
+void StatusLightService::setPattern(const LightPattern& pattern) {
+  currentPattern_ = pattern;
+  output_.setPattern(pattern);
 }
 
 }  // namespace agentlight
-

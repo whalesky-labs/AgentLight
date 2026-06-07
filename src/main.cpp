@@ -41,7 +41,7 @@ String handleCommand(const String& command) {
 
 void setup() {
   lightDriver.begin();
-  statusLight.begin(agentlight::LightState::Off);
+  statusLight.begin({agentlight::LightState::Off, agentlight::LightEffect::Steady});
 
   usbChannel.begin(115200);
   delay(300);
@@ -52,5 +52,6 @@ void setup() {
 
 void loop() {
   usbChannel.poll(handleCommand);
+  statusLight.tick(millis());
   delay(5);
 }

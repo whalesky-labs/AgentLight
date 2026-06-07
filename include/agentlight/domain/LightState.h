@@ -11,8 +11,20 @@ enum class LightState {
   Green,
 };
 
+enum class LightEffect {
+  Steady,
+  Blink,
+  Breathe,
+};
+
+struct LightPattern {
+  LightState state;
+  LightEffect effect;
+};
+
 const char* toText(LightState state);
-bool tryParseLightState(const String& value, LightState& state);
+const char* toText(LightEffect effect);
+String toText(const LightPattern& pattern);
+bool tryParseLightPattern(const String& value, LightPattern& pattern);
 
 }  // namespace agentlight
-

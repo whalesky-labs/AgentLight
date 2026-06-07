@@ -27,23 +27,71 @@ const char* toText(LightState state) {
   }
 }
 
-bool tryParseLightState(const String& value, LightState& state) {
+const char* toText(LightEffect effect) {
+  switch (effect) {
+    case LightEffect::Blink:
+      return "BLINK";
+    case LightEffect::Breathe:
+      return "BREATHE";
+    case LightEffect::Steady:
+    default:
+      return "STEADY";
+  }
+}
+
+String toText(const LightPattern& pattern) {
+  if (pattern.state == LightState::Off) {
+    return "OFF";
+  }
+
+  if (pattern.effect == LightEffect::Steady) {
+    return toText(pattern.state);
+  }
+
+  return String(toText(pattern.state)) + "_" + toText(pattern.effect);
+}
+
+bool tryParseLightPattern(const String& value, LightPattern& pattern) {
   const String normalized = normalize(value);
 
   if (normalized == "GREEN") {
-    state = LightState::Green;
+    pattern = {LightState::Green, LightEffect::Steady};
+    return true;
+  }
+  if (normalized == "GREEN_BLINK") {
+    pattern = {LightState::Green, LightEffect::Blink};
+    return true;
+  }
+  if (normalized == "GREEN_BREATHE") {
+    pattern = {LightState::Green, LightEffect::Breathe};
     return true;
   }
   if (normalized == "YELLOW" || normalized == "AMBER") {
-    state = LightState::Yellow;
+    pattern = {LightState::Yellow, LightEffect::Steady};
+    return true;
+  }
+  if (normalized == "YELLOW_BLINK" || normalized == "AMBER_BLINK") {
+    pattern = {LightState::Yellow, LightEffect::Blink};
+    return true;
+  }
+  if (normalized == "YELLOW_BREATHE" || normalized == "AMBER_BREATHE") {
+    pattern = {LightState::Yellow, LightEffect::Breathe};
     return true;
   }
   if (normalized == "RED") {
-    state = LightState::Red;
+    pattern = {LightState::Red, LightEffect::Steady};
+    return true;
+  }
+  if (normalized == "RED_BLINK") {
+    pattern = {LightState::Red, LightEffect::Blink};
+    return true;
+  }
+  if (normalized == "RED_BREATHE") {
+    pattern = {LightState::Red, LightEffect::Breathe};
     return true;
   }
   if (normalized == "OFF") {
-    state = LightState::Off;
+    pattern = {LightState::Off, LightEffect::Steady};
     return true;
   }
 
@@ -51,4 +99,3 @@ bool tryParseLightState(const String& value, LightState& state) {
 }
 
 }  // namespace agentlight
-
