@@ -53,7 +53,7 @@ bash -n \
   hooks/cursor/agent-light.sh
 
 printf 'Checking Python monitor...\n'
-python3 -m py_compile scripts/codex-session-monitor
+python3 -m py_compile scripts/codex-session-monitor scripts/multi-agent-monitor
 
 printf 'Checking agent normalization...\n'
 for agent in "${agents[@]}"; do
@@ -84,5 +84,8 @@ for dir in \
   hooks/pi; do
   test -f "$dir/README.md"
 done
+
+printf 'Checking multi-agent monitor config...\n'
+scripts/multi-agent-monitor --config config/agent-monitors.example.json --once --limit 1 >/dev/null || true
 
 printf 'AgentLight multi-agent bridge verification passed.\n'

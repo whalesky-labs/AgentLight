@@ -235,6 +235,19 @@ scripts/codex-session-monitor --once --limit 20
 | `success` | `task_complete` |
 | `error` | `turn_aborted` |
 
+如果要把多个平台的日志/命令输出接入统一事件流，可以使用配置化监听器：
+
+```bash
+scripts/multi-agent-monitor --config config/agent-monitors.example.json
+scripts/multi-agent-monitor --config config/agent-monitors.example.json --send
+```
+
+配置文件支持：
+
+- `file` 类型：tail 文本日志或 JSONL 日志
+- `command` 类型：运行一个命令并读取 stdout
+- `rules`：用 `contains` / `equals` / `json_path` 把平台输出映射到统一事件
+
 ## 状态约定
 
 | 状态 | 灯效 | 含义 |
@@ -271,6 +284,8 @@ scripts/              无客户端命令桥接与事件 Gate
 hooks/                AI 工具 Hook 模板与接入说明
 scripts/codex-session-monitor  Codex session 文件状态监听器
 scripts/agentlight-event        多 Agent 事件归一化入口
+scripts/multi-agent-monitor     多 Agent 配置化日志/命令监听器
+config/agent-monitors.example.json  监听器示例配置
 ```
 
 分层原则：
@@ -311,3 +326,4 @@ scripts/verify-agent-bridge
 - 多 Agent 名称归一化
 - 生命周期事件归一化
 - hooks 文档目录是否完整
+- 多 Agent monitor 示例配置是否可加载

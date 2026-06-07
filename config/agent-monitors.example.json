@@ -1,0 +1,52 @@
+{
+  "monitors": [
+    {
+      "name": "codex-session-jsonl",
+      "agent": "codex",
+      "type": "file",
+      "glob": "~/.codex/sessions/**/*.jsonl",
+      "format": "jsonl",
+      "from_start": false,
+      "rules": [
+        { "json_path": "payload.type", "equals": "task_started", "event": "start" },
+        { "json_path": "payload.type", "equals": "task_complete", "event": "done" },
+        { "json_path": "payload.type", "equals": "turn_aborted", "event": "error" },
+        { "json_path": "payload.type", "equals": "agent_message", "event": "typing" },
+        { "json_path": "payload.type", "equals": "user_message", "event": "prompt" },
+        { "json_path": "payload.type", "equals": "web_search_end", "event": "tool" },
+        { "json_path": "payload.type", "equals": "function_call", "event": "tool" },
+        { "json_path": "payload.type", "equals": "custom_tool_call", "event": "tool" },
+        { "json_path": "payload.type", "equals": "reasoning", "event": "thinking" }
+      ]
+    },
+    {
+      "name": "claude-code-jsonl-example",
+      "agent": "claude-code",
+      "type": "file",
+      "glob": "~/.claude/**/*.jsonl",
+      "format": "jsonl",
+      "from_start": false,
+      "rules": [
+        { "json_path": "type", "contains": "tool", "event": "tool" },
+        { "json_path": "type", "contains": "message", "event": "typing" },
+        { "json_path": "type", "contains": "error", "event": "error" },
+        { "json_path": "type", "contains": "stop", "event": "done" }
+      ]
+    },
+    {
+      "name": "generic-text-log-example",
+      "agent": "gemini",
+      "type": "file",
+      "glob": "~/agentlight-agent.log",
+      "format": "text",
+      "from_start": false,
+      "rules": [
+        { "contains": "PROMPT", "event": "prompt" },
+        { "contains": "START", "event": "start" },
+        { "contains": "TOOL", "event": "tool" },
+        { "contains": "DONE", "event": "done" },
+        { "contains": "ERROR", "event": "error" }
+      ]
+    }
+  ]
+}

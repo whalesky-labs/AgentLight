@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""Configurable multi-agent status monitor.
+
+The monitor reads simple JSON configuration and normalizes file/command output
+from different AI agents into AgentLight lifecycle events.
+"""
+
+from __future__ import annotations
+
+import argparse
+import glob
+import json
+import os
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+
+@dataclass
+class Rule:
+    event: str
+    contains: str = ""
+    equals: str = ""
+    json_path: str = ""
+
+
+@dataclass
+class Monitor:
+    name: str
+    agent: str
+    type: str
+    format: str
+    rules: list[Rule]
+    glob: str = ""
+    command: list[str] | None = None
+    from_start: bool = False
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Monitor multiple AI agent outputs and normalize status events.")
+    parser.add_argument(
+        "--config",
+        default="config/agent-monitors.example.json",
+        help="Path to monitor config JSON.",
+    )
+    parser.add_argument("--once", action="store_true", help="Process existing content once and exit.")
+    parser.add_argument("--send", action="store_true", help="Forward normalized events to scripts/agentlight-event --send.")
+    parser.add_argument("--poll-interval", type=float, default=0.5, help="Polling interval for file monitors.")
+    parser.add_argument("--limit", type=int, default=0, help="Maximum normalized events to print before exit.")
+    return parser.parse_args()
+
+
+def load_config(path: Path) -> list[Monitor]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    monitors = []
+    for item in data.get("monitors", []):
+        monitors.append(
+            Monitor(
+                name=item["name"],
+                agent=item["agent"],
+                type=item["type"],
+                format=item.get("format", "text"),
+                glob=item.get("glob", ""),
+                command=item.get("command"),
+                from_start=bool(item.get("from_start", False)),
+                rules=[
+                    Rule(
+                        event=rule["event"],
+                        contains=rule.get("contains", ""),
+                        equals=rule.get("equals", ""),
+                        json_path=rule.get("json_path", ""),
+                    )
+                    for rule in item.get("rules", [])
+                ],
+            )
+        )
+    return monitors
+
+
+def get_json_path(obj: Any, path: str) -> str:
+    current = obj
+    for part in path.split("."):
+        if not isinstance(current, dict):
+            return ""
+        current = current.get(part)
+    if current is None:
+        return ""
+    return str(current)
+
+
+def line_value(line: str, fmt: str, json_path: str) -> str:
+    if fmt != "jsonl" or not json_path:
+        return line
+    try:
+        obj = json.loads(line)
+    except json.JSONDecodeError:
+        return ""
+    return get_json_path(obj, json_path)
+
+
+def match_event(line: str, monitor: Monitor) -> str:
+    for rule in monitor.rules:
+        value = line_value(line, monitor.format, rule.json_path)
+        if rule.equals and value == rule.equals:
+            return rule.event
+        if rule.contains and rule.contains.lower() in value.lower():
+            return rule.event
+    return ""
+
+
+def emit_event(agent: str, event: str, source: str, send: bool) -> None:
+    command = ["scripts/agentlight-event", "--agent", agent, "--event", event]
+    if send:
+        command.append("--send")
+
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    output = result.stdout.strip() or result.stderr.strip()
+    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    print(f"{timestamp} monitor={source} {output}", flush=True)
+
+
+def expand_files(pattern: str) -> list[Path]:
+    return [Path(path) for path in glob.glob(os.path.expanduser(pattern), recursive=True)]
+
+
+def process_existing(monitor: Monitor, send: bool, limit: int) -> int:
+    count = 0
+    for path in expand_files(monitor.glob):
+        if not path.is_file():
+            continue
+        with path.open("r", encoding="utf-8", errors="replace") as file:
+            for line in file:
+                event = match_event(line.strip(), monitor)
+                if not event:
+                    continue
+                emit_event(monitor.agent, event, monitor.name, send)
+                count += 1
+                if limit and count >= limit:
+                    return count
+    return count
+
+
+def run_file_monitors(monitors: list[Monitor], send: bool, poll_interval: float, limit: int) -> int:
+    offsets: dict[Path, int] = {}
+    count = 0
+    print("AgentLight multi-agent monitor started", flush=True)
+    try:
+        while True:
+            for monitor in monitors:
+                for path in expand_files(monitor.glob):
+                    if not path.is_file():
+                        continue
+                    if path not in offsets:
+                        offsets[path] = 0 if monitor.from_start else path.stat().st_size
+                        print(f"Watching {monitor.name}: {path}", flush=True)
+                    with path.open("r", encoding="utf-8", errors="replace") as file:
+                        file.seek(offsets[path])
+                        for line in file:
+                            event = match_event(line.strip(), monitor)
+                            if not event:
+                                continue
+                            emit_event(monitor.agent, event, monitor.name, send)
+                            count += 1
+                            if limit and count >= limit:
+                                return count
+                        offsets[path] = file.tell()
+            time.sleep(poll_interval)
+    except KeyboardInterrupt:
+        print("AgentLight multi-agent monitor stopped", flush=True)
+        return count
+
+
+def run_command_monitors(monitors: list[Monitor], send: bool, limit: int) -> int:
+    count = 0
+    for monitor in monitors:
+        if not monitor.command:
+            continue
+        process = subprocess.Popen(monitor.command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        assert process.stdout is not None
+        for line in process.stdout:
+            event = match_event(line.strip(), monitor)
+            if not event:
+                continue
+            emit_event(monitor.agent, event, monitor.name, send)
+            count += 1
+            if limit and count >= limit:
+                process.terminate()
+                return count
+    return count
+
+
+def main() -> int:
+    args = parse_args()
+    config_path = Path(args.config)
+    if not config_path.exists():
+        print(f"Config not found: {config_path}", file=sys.stderr)
+        return 1
+
+    monitors = load_config(config_path)
+    file_monitors = [monitor for monitor in monitors if monitor.type == "file"]
+    command_monitors = [monitor for monitor in monitors if monitor.type == "command"]
+
+    if args.once:
+        count = 0
+        for monitor in file_monitors:
+            count += process_existing(monitor, args.send, max(0, args.limit - count) if args.limit else 0)
+            if args.limit and count >= args.limit:
+                return 0
+        count += run_command_monitors(command_monitors, args.send, max(0, args.limit - count) if args.limit else 0)
+        return 0 if count > 0 else 1
+
+    if command_monitors:
+        print("Command monitors run sequentially; file monitors run after command monitors exit.", flush=True)
+        run_command_monitors(command_monitors, args.send, args.limit)
+
+    return 0 if run_file_monitors(file_monitors, args.send, args.poll_interval, args.limit) >= 0 else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

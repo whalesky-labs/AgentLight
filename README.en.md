@@ -245,6 +245,19 @@ The monitor normalizes Codex session JSONL records into:
 | `success` | `task_complete` |
 | `error` | `turn_aborted` |
 
+For multiple platforms, use the configurable monitor:
+
+```bash
+scripts/multi-agent-monitor --config config/agent-monitors.example.json
+scripts/multi-agent-monitor --config config/agent-monitors.example.json --send
+```
+
+The config supports:
+
+- `file` monitors for text logs or JSONL logs
+- `command` monitors that read stdout from a command
+- `rules` using `contains`, `equals`, and `json_path` to map tool output into normalized events
+
 ## State Mapping
 
 | State | Effect | Meaning |
@@ -283,6 +296,8 @@ scripts/              No-GUI command bridge and event gate
 hooks/                AI tool hook templates and integration notes
 scripts/codex-session-monitor  Codex session file status monitor
 scripts/agentlight-event        Multi-agent event normalization entrypoint
+scripts/multi-agent-monitor     Configurable multi-agent log/command monitor
+config/agent-monitors.example.json  Example monitor configuration
 ```
 
 Layering rules:
@@ -323,3 +338,4 @@ It checks:
 - multi-agent name normalization
 - lifecycle event normalization
 - documented hook directory coverage
+- multi-agent monitor example config loading
