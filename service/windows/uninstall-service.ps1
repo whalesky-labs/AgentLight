@@ -1,5 +1,5 @@
 param(
-    [string]$ServiceName = "AgentLightAgent"
+    [string]$ServiceName = "whalesky-labs-AgentLight"
 )
 
 $ErrorActionPreference = "Stop"

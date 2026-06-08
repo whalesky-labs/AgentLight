@@ -70,6 +70,12 @@ test -f service/windows/install-service.ps1
 test -f service/windows/uninstall-service.ps1
 test -f service/macos/install-launch-agent.sh
 test -f service/macos/uninstall-launch-agent.sh
+grep -Fq 'whalesky-labs-AgentLight' config/agentlight-agent.example.json
+grep -Fq 'whalesky-labs-AgentLight' docs/agent-service.md
+grep -Fq 'whalesky-labs-AgentLight' service/windows/install-service.ps1
+grep -Fq 'whalesky-labs-AgentLight' service/windows/uninstall-service.ps1
+grep -Fq 'com.whalesky-labs.AgentLight.agent' service/macos/install-launch-agent.sh
+grep -Fq 'com.whalesky-labs.AgentLight.agent' service/macos/uninstall-launch-agent.sh
 
 printf 'Checking agent normalization...\n'
 python3 - <<'PY' | while IFS= read -r record; do

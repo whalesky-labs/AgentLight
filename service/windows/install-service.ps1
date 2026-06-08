@@ -1,9 +1,9 @@
 param(
-    [string]$ServiceName = "AgentLightAgent",
-    [string]$DisplayName = "AgentLight Agent",
+    [string]$ServiceName = "whalesky-labs-AgentLight",
+    [string]$DisplayName = "WhaleSky Labs AgentLight",
     [string]$PythonPath = "python",
     [string]$RepoRoot = "",
-    [string]$ConfigPath = "$env:ProgramData\AgentLight\agentlight-agent.json"
+    [string]$ConfigPath = "$env:ProgramData\whalesky-labs-AgentLight\agentlight-agent.json"
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
 
 $agentScript = Join-Path $RepoRoot "scripts\agentlight-agent"
 $configTemplate = Join-Path $RepoRoot "config\agentlight-agent.example.json"
-$programData = Join-Path $env:ProgramData "AgentLight"
+$programData = Join-Path $env:ProgramData "whalesky-labs-AgentLight"
 $logDir = Join-Path $programData "logs"
 
 New-Item -ItemType Directory -Path $programData -Force | Out-Null
@@ -46,7 +46,7 @@ if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
 }
 
 sc.exe create $ServiceName binPath= $binaryPath start= auto DisplayName= $DisplayName | Out-Null
-sc.exe description $ServiceName "AgentLight background service for AI Agent status light synchronization." | Out-Null
+sc.exe description $ServiceName "WhaleSky Labs AgentLight background service for AI Agent status light synchronization." | Out-Null
 sc.exe failure $ServiceName reset= 60 actions= restart/5000/restart/5000/restart/5000 | Out-Null
 
 Start-Service -Name $ServiceName

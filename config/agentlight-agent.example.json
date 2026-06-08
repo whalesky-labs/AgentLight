@@ -1,5 +1,5 @@
 {
-  "agentName": "AgentLightAgent",
+  "agentName": "whalesky-labs-AgentLight",
   "monitorConfig": "config/agent-monitors.example.json",
   "sendToHardware": true,
   "pollIntervalSeconds": 0.5,

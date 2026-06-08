@@ -54,11 +54,11 @@ def default_log_file() -> Path:
     system = platform.system().lower()
     if system == "windows":
         root = Path(os.environ.get("ProgramData", "C:/ProgramData"))
-        return root / "AgentLight" / "logs" / "agentlight-agent.log"
+        return root / "whalesky-labs-AgentLight" / "logs" / "agentlight-agent.log"
     if system == "darwin":
-        return Path.home() / "Library" / "Logs" / "AgentLight" / "agentlight-agent.log"
+        return Path.home() / "Library" / "Logs" / "whalesky-labs-AgentLight" / "agentlight-agent.log"
     state_home = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
-    return state_home / "agentlight" / "agentlight-agent.log"
+    return state_home / "whalesky-labs-AgentLight" / "agentlight-agent.log"
 
 
 def open_log(path: Path):

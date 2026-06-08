@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-label="com.whaleskylabs.agentlight.agent"
+label="com.whalesky-labs.AgentLight.agent"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
 
 if [[ -f "$plist_path" ]]; then

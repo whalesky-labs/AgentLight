@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-label="com.whaleskylabs.agentlight.agent"
+label="com.whalesky-labs.AgentLight.agent"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-config_dir="${HOME}/.agentlight"
+config_dir="${HOME}/.whalesky-labs-AgentLight"
 config_path="${config_dir}/agentlight-agent.json"
-log_dir="${HOME}/Library/Logs/AgentLight"
+log_dir="${HOME}/Library/Logs/whalesky-labs-AgentLight"
 plist_dir="${HOME}/Library/LaunchAgents"
 plist_path="${plist_dir}/${label}.plist"
 python_path="${PYTHON_PATH:-$(command -v python3)}"
