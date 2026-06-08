@@ -17,7 +17,7 @@
       "canonicalAgent": "claude",
       "aliases": ["claude", "claude-code"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/claude/README.md", "hooks/agents/generic-wrapper.sh"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "No automatic Claude configuration writes; permission handling remains in Claude Code."
     },
     {
@@ -41,7 +41,7 @@
       "canonicalAgent": "copilot",
       "aliases": ["copilot", "copilot-cli"],
       "supportMode": "generic-wrapper",
-      "evidence": ["hooks/copilot/README.md", "hooks/agents/generic-wrapper.sh"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "No automatic ~/.copilot/hooks/hooks.json writes."
     },
     {
@@ -49,7 +49,7 @@
       "canonicalAgent": "gemini",
       "aliases": ["gemini", "gemini-cli"],
       "supportMode": "generic-wrapper-or-configurable-monitor",
-      "evidence": ["hooks/gemini/README.md", "scripts/multi-agent-monitor", "config/agent-monitors.example.json"],
+      "evidence": ["hooks/agents/README.md", "scripts/multi-agent-monitor", "config/agent-monitors.example.json"],
       "limitations": "No automatic ~/.gemini/settings.json writes."
     },
     {
@@ -57,7 +57,7 @@
       "canonicalAgent": "antigravity",
       "aliases": ["antigravity"],
       "supportMode": "generic-wrapper-or-event-entrypoint",
-      "evidence": ["hooks/antigravity/README.md", "hooks/agents/generic-wrapper.sh"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "Status synchronization only; Antigravity terminal handles permission menus."
     },
     {
@@ -73,7 +73,7 @@
       "canonicalAgent": "codebuddy",
       "aliases": ["codebuddy"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/codebuddy/README.md"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "No automatic CodeBuddy configuration writes; permission handling remains in CodeBuddy."
     },
     {
@@ -81,7 +81,7 @@
       "canonicalAgent": "kiro",
       "aliases": ["kiro"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/kiro/README.md"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "No automatic Kiro agent configuration creation."
     },
     {
@@ -89,7 +89,7 @@
       "canonicalAgent": "kimi",
       "aliases": ["kimi", "kimi-cli"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/kimi/README.md"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "No automatic ~/.kimi/config.toml writes."
     },
     {
@@ -97,7 +97,7 @@
       "canonicalAgent": "qwen",
       "aliases": ["qwen", "qwen-code", "qwen-cli"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/qwen/README.md"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "No automatic ~/.qwen/settings.json writes; permission handling remains in Qwen."
     },
     {
@@ -105,7 +105,7 @@
       "canonicalAgent": "opencode",
       "aliases": ["opencode", "open-code"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/opencode/README.md"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "No automatic opencode plugin configuration writes."
     },
     {
@@ -113,7 +113,7 @@
       "canonicalAgent": "pi",
       "aliases": ["pi"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/pi/README.md"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "Only synchronizes lifecycle/tool activity that can be connected through callbacks, logs, or wrappers."
     },
     {
@@ -121,7 +121,7 @@
       "canonicalAgent": "openclaw",
       "aliases": ["openclaw", "open-claw"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/openclaw/README.md"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "Status synchronization only; no permission bubbles or terminal focus."
     },
     {
@@ -129,7 +129,7 @@
       "canonicalAgent": "hermes",
       "aliases": ["hermes"],
       "supportMode": "event-entrypoint-or-wrapper",
-      "evidence": ["hooks/hermes/README.md"],
+      "evidence": ["hooks/agents/README.md", "hooks/agents/generic-wrapper.sh"],
       "limitations": "Only synchronizes lifecycle/tool activity that can be connected through callbacks, logs, or wrappers."
     }
   ]

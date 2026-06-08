@@ -167,7 +167,7 @@ scripts/agentlight red-blink
 | macOS | LaunchAgent |
 | Linux | systemd user service |
 
-统一服务入口是 `scripts/agentlight-agent`，安装脚本位于 `service/windows` 和 `service/macos`。完整说明见 [docs/agent-service.md](./docs/agent-service.md)。
+统一服务入口是 `scripts/agentlight-agent`，安装脚本位于 `service/windows` 和 `service/macos`。启动和排查步骤见 [docs/user-guide.md](./docs/user-guide.md)。
 
 ## 事件 Gate
 
@@ -196,20 +196,10 @@ scripts/agentlight-gate error
 第三阶段不做 GUI 客户端，优先通过 Hook 接入：
 
 - 多 Agent 统一入口：见 [hooks/agents/README.md](./hooks/agents/README.md)
-- Cursor：见 [hooks/cursor/README.md](./hooks/cursor/README.md)
 - Codex：见 [hooks/codex/README.md](./hooks/codex/README.md)
-- Claude Code：见 [hooks/claude/README.md](./hooks/claude/README.md)
-- Gemini CLI：见 [hooks/gemini/README.md](./hooks/gemini/README.md)
-- Qwen Code：见 [hooks/qwen/README.md](./hooks/qwen/README.md)
-- opencode：见 [hooks/opencode/README.md](./hooks/opencode/README.md)
-- Copilot CLI：见 [hooks/copilot/README.md](./hooks/copilot/README.md)
-- Kimi：见 [hooks/kimi/README.md](./hooks/kimi/README.md)
-- CodeBuddy：见 [hooks/codebuddy/README.md](./hooks/codebuddy/README.md)
-- Kiro：见 [hooks/kiro/README.md](./hooks/kiro/README.md)
-- Antigravity：见 [hooks/antigravity/README.md](./hooks/antigravity/README.md)
-- OpenClaw：见 [hooks/openclaw/README.md](./hooks/openclaw/README.md)
-- Hermes：见 [hooks/hermes/README.md](./hooks/hermes/README.md)
-- Pi：见 [hooks/pi/README.md](./hooks/pi/README.md)
+- Cursor：见 [hooks/cursor/README.md](./hooks/cursor/README.md)
+
+Claude Code、Gemini CLI、Qwen Code、opencode、Copilot CLI、Kimi、CodeBuddy、Kiro、Antigravity、OpenClaw、Hermes、Pi 等平台统一走多 Agent 入口或通用 wrapper，不再为每个平台维护重复模板文档。
 
 完整平台兼容矩阵见 [docs/agent-platform-compatibility.md](./docs/agent-platform-compatibility.md)。矩阵会区分“已实现监听器 / Hook 模板 / 通用 wrapper 接入”，避免把通用入口写成已经完成的原生集成。
 
@@ -318,7 +308,7 @@ AgentLight/
 │   ├── agentlight-agent.example.json    后台 Agent 服务示例配置
 │   └── agent-platforms.json             AI Agent 兼容平台清单
 ├── tests/                      桌面 Agent 分层与配置行为测试
-├── docs/                       使用说明、服务与兼容性文档
+├── docs/                       使用说明、兼容性、代码规范与协议说明
 ├── platformio.ini              ESP32-C3 SuperMini 固件构建配置
 └── CHANGELOG.md                中文版本发布说明
 ```

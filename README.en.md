@@ -177,7 +177,7 @@ desktop app:
 
 The shared service entrypoint is `scripts/agentlight-agent`, with install
 scripts under `service/windows` and `service/macos`. See
-[docs/agent-service.md](./docs/agent-service.md).
+[docs/user-guide.md](./docs/user-guide.md).
 
 ## Event Gate
 
@@ -208,20 +208,13 @@ scripts/agentlight-gate error
 Stage 3 uses hooks instead of a GUI client:
 
 - Multi-agent entrypoint: see [hooks/agents/README.md](./hooks/agents/README.md)
-- Cursor: see [hooks/cursor/README.md](./hooks/cursor/README.md)
 - Codex: see [hooks/codex/README.md](./hooks/codex/README.md)
-- Claude Code: see [hooks/claude/README.md](./hooks/claude/README.md)
-- Gemini CLI: see [hooks/gemini/README.md](./hooks/gemini/README.md)
-- Qwen Code: see [hooks/qwen/README.md](./hooks/qwen/README.md)
-- opencode: see [hooks/opencode/README.md](./hooks/opencode/README.md)
-- Copilot CLI: see [hooks/copilot/README.md](./hooks/copilot/README.md)
-- Kimi: see [hooks/kimi/README.md](./hooks/kimi/README.md)
-- CodeBuddy: see [hooks/codebuddy/README.md](./hooks/codebuddy/README.md)
-- Kiro: see [hooks/kiro/README.md](./hooks/kiro/README.md)
-- Antigravity: see [hooks/antigravity/README.md](./hooks/antigravity/README.md)
-- OpenClaw: see [hooks/openclaw/README.md](./hooks/openclaw/README.md)
-- Hermes: see [hooks/hermes/README.md](./hooks/hermes/README.md)
-- Pi: see [hooks/pi/README.md](./hooks/pi/README.md)
+- Cursor: see [hooks/cursor/README.md](./hooks/cursor/README.md)
+
+Claude Code, Gemini CLI, Qwen Code, opencode, Copilot CLI, Kimi, CodeBuddy,
+Kiro, Antigravity, OpenClaw, Hermes, Pi, and similar platforms use the shared
+multi-agent entrypoint or generic wrapper. The project does not maintain one
+duplicated template document per generic platform.
 
 For the full platform compatibility matrix, see
 [docs/agent-platform-compatibility.md](./docs/agent-platform-compatibility.md).
@@ -340,7 +333,7 @@ AgentLight/
 │   ├── agentlight-agent.example.json    Example background agent service config
 │   └── agent-platforms.json             Compatible AI Agent platform registry
 ├── tests/                      Desktop agent layering and config behavior tests
-├── docs/                       Chinese user guide, service, and compatibility documents
+├── docs/                       Chinese user guide, compatibility, code standards, and license notes
 ├── platformio.ini              ESP32-C3 SuperMini firmware build config
 └── CHANGELOG.md                Chinese release notes
 ```

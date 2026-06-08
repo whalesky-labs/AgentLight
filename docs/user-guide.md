@@ -141,6 +141,8 @@ export AGENTLIGHT_BASE_URL="http://192.168.4.1"
 - 多会话策略固定为 `latest-event-wins`。
 - 同一平台内哪个会话最后产生状态事件，硬件灯就显示哪个会话的状态。
 - `sendToHardware=true` 时，事件会继续发送到硬件；测试监听时可以先改成 `false`。
+- 服务入口会按当前平台配置启动 `scripts/multi-agent-monitor --config <monitor-config> --platform <activePlatform> --send`。
+- 如果监听器退出，后台服务会按配置等待后重新启动监听器。
 
 ### 前台试运行
 

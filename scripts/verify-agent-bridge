@@ -64,11 +64,36 @@ grep -Fq 'docs/license.md' README.md
 grep -Fq 'docs/license.md' README.en.md
 grep -Fq 'docs/user-guide.md' README.md
 grep -Fq 'docs/user-guide.md' README.en.md
+if grep -R -n -E 'agent-service|hooks/(antigravity|claude|codebuddy|copilot|gemini|hermes|kimi|kiro|openclaw|opencode|pi|qwen)/README' README.md README.en.md docs hooks config .github 2>/dev/null; then
+    printf 'Public documentation references removed duplicate docs.\n' >&2
+    exit 1
+fi
+for removed_doc in \
+  docs/agent-service.md \
+  hooks/antigravity/README.md \
+  hooks/claude/README.md \
+  hooks/codebuddy/README.md \
+  hooks/copilot/README.md \
+  hooks/gemini/README.md \
+  hooks/hermes/README.md \
+  hooks/kimi/README.md \
+  hooks/kiro/README.md \
+  hooks/openclaw/README.md \
+  hooks/opencode/README.md \
+  hooks/pi/README.md \
+  hooks/qwen/README.md; do
+  if [[ -f "$removed_doc" ]]; then
+    printf 'Duplicate template documentation should not be restored: %s\n' "$removed_doc" >&2
+    exit 1
+  fi
+done
 grep -Fq '启动电脑端后台服务' docs/user-guide.md
 grep -Fq 'Windows 后台服务' docs/user-guide.md
 grep -Fq 'macOS 后台服务' docs/user-guide.md
 grep -Fq '准备硬件' docs/user-guide.md
 grep -Fq '验证硬件' docs/user-guide.md
+grep -Fq 'scripts/multi-agent-monitor --config <monitor-config> --platform <activePlatform> --send' docs/user-guide.md
+grep -Fq '重新启动监听器' docs/user-guide.md
 python3 - <<'PY'
 from pathlib import Path
 
@@ -215,7 +240,6 @@ cat > "$monitor_tmp_dir/agent-monitors.json" <<EOF
 }
 EOF
 scripts/multi-agent-monitor --config "$monitor_tmp_dir/agent-monitors.json" --platform codex --once --limit 1 >/dev/null
-test -f docs/agent-service.md
 test -f service/windows/install-service.ps1
 test -f service/windows/uninstall-service.ps1
 test -f service/macos/install-launch-agent.sh
@@ -223,8 +247,8 @@ test -f service/macos/uninstall-launch-agent.sh
 grep -Fq 'whalesky-labs-AgentLight' config/agentlight-agent.example.json
 grep -Fq '"activePlatform": "codex"' config/agentlight-agent.example.json
 grep -Fq '"multiSessionMode": "latest-event-wins"' config/agentlight-agent.example.json
-grep -Fq 'whalesky-labs-AgentLight' docs/agent-service.md
-grep -Fq 'latest-event-wins' docs/agent-service.md
+grep -Fq 'whalesky-labs-AgentLight' docs/user-guide.md
+grep -Fq 'latest-event-wins' docs/user-guide.md
 grep -Fq 'whalesky-labs-AgentLight' service/windows/install-service.ps1
 grep -Fq 'whalesky-labs-AgentLight' service/windows/uninstall-service.ps1
 grep -Fq 'com.whalesky-labs.AgentLight.agent' service/macos/install-launch-agent.sh
@@ -262,19 +286,7 @@ printf 'Checking documented hook directories...\n'
 for dir in \
   hooks/agents \
   hooks/codex \
-  hooks/cursor \
-  hooks/claude \
-  hooks/gemini \
-  hooks/qwen \
-  hooks/copilot \
-  hooks/opencode \
-  hooks/kimi \
-  hooks/codebuddy \
-  hooks/kiro \
-  hooks/antigravity \
-  hooks/openclaw \
-  hooks/hermes \
-  hooks/pi; do
+  hooks/cursor; do
   test -f "$dir/README.md"
 done
 
