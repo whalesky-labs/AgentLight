@@ -1,6 +1,6 @@
 # CHANGELOG
 
-本文件记录 AgentLight 的版本发布说明。CI 构建 GitHub Release 时会读取本文件内容，并优先使用当前版本号对应的章节；如果没有找到对应章节，则使用 `Unreleased` 章节。
+本文件记录 AgentLight 的版本发布说明。CI 构建 GitHub Release 时会读取本文件内容，并优先使用当前版本号对应的章节；如果没有找到对应章节，则使用 `Unreleased` 章节内容生成本次版本的发布说明。
 
 ## Unreleased
 

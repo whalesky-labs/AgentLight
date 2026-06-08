@@ -75,6 +75,7 @@ def read_changelog_section(changelog: Path, version: str) -> tuple[str, str]:
 
 def render_release_notes(output: Path, values: dict[str, str]) -> None:
     changelog_title, changelog_body = read_changelog_section(Path("CHANGELOG.md"), values["VERSION"])
+    release_note_title = values["VERSION"] if changelog_title == "Unreleased" else changelog_title
     content = f"""# AgentLight 固件发布说明
 
 ## 版本信息
@@ -84,7 +85,7 @@ def render_release_notes(output: Path, values: dict[str, str]) -> None:
 - 构建环境：`{values["ENVIRONMENT"]}`
 - Git 提交：`{values["GIT_SHA"]}`
 - 构建时间：`{values["BUILD_TIME"]}`
-- 发布说明来源：`CHANGELOG.md` / `{changelog_title}`
+- 发布说明来源：`CHANGELOG.md` / `{release_note_title}`
 
 ## 发布说明
 

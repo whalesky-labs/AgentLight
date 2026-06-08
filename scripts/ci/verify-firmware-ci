@@ -46,7 +46,7 @@ grep -Fq 'partitions.bin' "${dist_dir}/firmware-assets.sha256"
 grep -Fq 'manifest.json' "${dist_dir}/firmware-assets.sha256"
 grep -Fq '版本号：`v0.0.1`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '构建通道：`preview`' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '发布说明来源：`CHANGELOG.md` / `Unreleased`' "${dist_dir}/firmware-release-notes.md"
+grep -Fq '发布说明来源：`CHANGELOG.md` / `v0.0.1`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '支持 CI 正式构建和预览构建' "${dist_dir}/firmware-release-notes.md"
 
 python3 - <<PY
