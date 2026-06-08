@@ -29,7 +29,16 @@ bash -n \
   service/macos/uninstall-launch-agent.sh
 
 printf 'Checking Python monitor...\n'
-python3 -m py_compile scripts/codex-session-monitor scripts/multi-agent-monitor scripts/agentlight-agent
+python3 -m py_compile \
+  scripts/codex-session-monitor \
+  scripts/multi-agent-monitor \
+  scripts/agentlight-agent \
+  scripts/ci/resolve-firmware-version \
+  scripts/ci/prepare-firmware-release \
+  scripts/ci/package-firmware
+
+printf 'Checking firmware CI scripts...\n'
+scripts/ci/verify-firmware-ci >/dev/null
 
 printf 'Checking platform registry...\n'
 python3 - <<'PY'

@@ -40,18 +40,35 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/.cache
+            ~/.platformio/packages
+            ~/.platformio/platforms
+          key: platformio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            platformio-${{ runner.os }}-
 
       - name: Install PlatformIO
         run: python -m pip install --upgrade platformio
 
-      - name: Resolve firmware version
-        id: version
+      - name: Prepare firmware release metadata
+        id: release
         env:
           INPUT_VERSION: ${{ inputs.version }}
+          INPUT_PUBLISH_RELEASE: ${{ inputs.publish_release }}
         run: |
-          version="$(scripts/ci/resolve-firmware-version --version "$INPUT_VERSION")"
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "FIRMWARE_VERSION=${version}" >> "$GITHUB_ENV"
+          scripts/ci/prepare-firmware-release > release.env
+          cat release.env
+          cat release.env >> "$GITHUB_OUTPUT"
+          grep '^version=' release.env | sed 's/^version=/FIRMWARE_VERSION=/' >> "$GITHUB_ENV"
+
+      - name: Verify firmware CI scripts
+        run: scripts/ci/verify-firmware-ci
 
       - name: Build firmware
         run: pio run -e "$PLATFORMIO_ENV"
@@ -68,18 +85,22 @@ jobs:
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: agentlight-firmware-${{ steps.version.outputs.version }}
+          name: agentlight-firmware-${{ steps.release.outputs.version }}
           path: |
-            dist/agentlight-firmware-${{ steps.version.outputs.version }}.zip
+            dist/agentlight-firmware-${{ steps.release.outputs.version }}.zip
             dist/firmware-release-notes.md
+            dist/firmware-package.sha256
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+        if: steps.release.outputs.should_publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: AgentLight Firmware ${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.release.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
+          name: AgentLight Firmware ${{ steps.release.outputs.version }}
           body_path: dist/firmware-release-notes.md
-          files: dist/agentlight-firmware-${{ steps.version.outputs.version }}.zip
+          files: |
+            dist/agentlight-firmware-${{ steps.release.outputs.version }}.zip
+            dist/firmware-package.sha256
           fail_on_unmatched_files: true

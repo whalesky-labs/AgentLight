@@ -365,6 +365,7 @@ CI generates:
 
 - `agentlight-firmware-<version>.zip`
 - `firmware-release-notes.md`
+- `firmware-package.sha256`
 
 The firmware package contains:
 

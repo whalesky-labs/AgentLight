@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
+
+build_dir="${tmp_dir}/build"
+dist_dir="${tmp_dir}/dist"
+mkdir -p "$build_dir"
+
+printf 'firmware' > "${build_dir}/firmware.bin"
+printf 'bootloader' > "${build_dir}/bootloader.bin"
+printf 'partitions' > "${build_dir}/partitions.bin"
+
+test "$(scripts/ci/resolve-firmware-version --version 1.2.3)" = "v1.2.3"
+test "$(scripts/ci/resolve-firmware-version --ref refs/tags/v2.0.0)" = "v2.0.0"
+
+metadata="$(GITHUB_RUN_NUMBER=9 scripts/ci/prepare-firmware-release --event-name workflow_dispatch --version v3.0.0 --publish-release true)"
+printf '%s\n' "$metadata" | grep -Fq 'version=v3.0.0'
+printf '%s\n' "$metadata" | grep -Fq 'should_publish=true'
+printf '%s\n' "$metadata" | grep -Fq 'tag_name=v3.0.0'
+
+scripts/ci/package-firmware \
+  --version v0.0.1 \
+  --environment test-env \
+  --build-dir "$build_dir" \
+  --dist-dir "$dist_dir" >/dev/null
+
+test -f "${dist_dir}/agentlight-firmware-v0.0.1.zip"
+test -f "${dist_dir}/firmware-release-notes.md"
+test -f "${dist_dir}/firmware-package.sha256"
+grep -Fq 'agentlight-firmware-v0.0.1.zip' "${dist_dir}/firmware-package.sha256"
+grep -Fq '版本号：`v0.0.1`' "${dist_dir}/firmware-release-notes.md"
+
+python3 - <<PY
+import json
+import zipfile
+from pathlib import Path
+
+archive = Path("${dist_dir}/agentlight-firmware-v0.0.1.zip")
+with zipfile.ZipFile(archive) as zip_file:
+    names = set(zip_file.namelist())
+    required = {"firmware.bin", "bootloader.bin", "partitions.bin", "manifest.json", "RELEASE_NOTES.md"}
+    missing = required - names
+    if missing:
+        raise SystemExit(f"zip missing files: {sorted(missing)}")
+    manifest = json.loads(zip_file.read("manifest.json").decode("utf-8"))
+
+if manifest["version"] != "v0.0.1":
+    raise SystemExit("manifest version mismatch")
+if manifest["files"]["firmware"]["offset"] != "0x10000":
+    raise SystemExit("firmware offset mismatch")
+if manifest["files"]["bootloader"]["offset"] != "0x0000":
+    raise SystemExit("bootloader offset mismatch")
+if manifest["files"]["partitions"]["offset"] != "0x8000":
+    raise SystemExit("partitions offset mismatch")
+PY
+
+printf 'Firmware CI verification passed.\n'

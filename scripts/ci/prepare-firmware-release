@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Prepare firmware CI release metadata."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Prepare AgentLight firmware CI metadata.")
+    parser.add_argument("--event-name", default=os.environ.get("GITHUB_EVENT_NAME", ""))
+    parser.add_argument("--ref", default=os.environ.get("GITHUB_REF", ""))
+    parser.add_argument("--version", default=os.environ.get("INPUT_VERSION", ""))
+    parser.add_argument("--publish-release", default=os.environ.get("INPUT_PUBLISH_RELEASE", "false"))
+    return parser.parse_args()
+
+
+def run_resolver(version: str, ref: str) -> str:
+    command = [sys.executable, "scripts/ci/resolve-firmware-version", "--version", version, "--ref", ref]
+    return subprocess.check_output(command, text=True).strip()
+
+
+def truthy(value: str) -> bool:
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def main() -> int:
+    args = parse_args()
+    version = run_resolver(args.version, args.ref)
+    is_tag = args.ref.startswith("refs/tags/v")
+    manual_publish = args.event_name == "workflow_dispatch" and truthy(args.publish_release)
+    should_publish = is_tag or manual_publish
+    tag_name = args.ref.removeprefix("refs/tags/") if is_tag else version
+
+    print(f"version={version}")
+    print(f"should_publish={str(should_publish).lower()}")
+    print(f"tag_name={tag_name}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

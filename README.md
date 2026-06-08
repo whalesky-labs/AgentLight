@@ -343,6 +343,7 @@ CI 会生成：
 
 - `agentlight-firmware-<version>.zip`
 - `firmware-release-notes.md`
+- `firmware-package.sha256`
 
 固件包内包含：
 

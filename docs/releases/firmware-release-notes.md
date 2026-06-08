@@ -7,6 +7,7 @@
 - Git 提交：`{{GIT_SHA}}`
 - 构建时间：`{{BUILD_TIME}}`
 - 固件包：`{{ARTIFACT_NAME}}`
+- 校验文件：`firmware-package.sha256`
 
 ## 本次发布
 
