@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+#
+# This file is part of AgentLight.
+#
+# @link     https://github.com/whalesky-labs/AgentLight
+# @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
+# @contact  root@imoi.cn
+# @license  https://github.com/whalesky-labs/AgentLight
+#
+
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -27,6 +36,49 @@ bash -n \
   hooks/cursor/agent-light.sh \
   service/macos/install-launch-agent.sh \
   service/macos/uninstall-launch-agent.sh
+
+printf 'Checking engineering standards...\n'
+test -f AGENTS.md
+test -f .editorconfig
+test -f docs/code-standards.md
+grep -Fq 'This file is part of AgentLight.' AGENTS.md
+grep -Fq 'docs/code-standards.md' README.md
+grep -Fq 'docs/code-standards.md' README.en.md
+python3 - <<'PY'
+from pathlib import Path
+
+required = [
+    *Path("src").rglob("*.cpp"),
+    *Path("include").rglob("*.h"),
+    *Path("agentlight_agent").rglob("*.py"),
+    *Path("tests").rglob("*.py"),
+    Path("scripts/agentlight"),
+    Path("scripts/agentlight-agent"),
+    Path("scripts/agentlight-event"),
+    Path("scripts/agentlight-gate"),
+    Path("scripts/multi-agent-monitor"),
+    Path("scripts/codex-session-monitor"),
+    Path("scripts/verify-agent-bridge"),
+    Path("scripts/ci/package-firmware"),
+    Path("scripts/ci/prepare-firmware-release"),
+    Path("scripts/ci/resolve-firmware-version"),
+    Path("scripts/ci/verify-firmware-ci"),
+    Path("hooks/agents/generic-wrapper.sh"),
+    Path("hooks/cursor/agent-light.sh"),
+    Path("service/macos/install-launch-agent.sh"),
+    Path("service/macos/uninstall-launch-agent.sh"),
+    Path("service/windows/install-service.ps1"),
+    Path("service/windows/uninstall-service.ps1"),
+]
+
+missing = [
+    str(path)
+    for path in required
+    if "This file is part of AgentLight." not in path.read_text(encoding="utf-8")[:800]
+]
+if missing:
+    raise SystemExit("missing AgentLight file header: " + ", ".join(missing))
+PY
 
 printf 'Checking Python monitor...\n'
 python3 -m py_compile \

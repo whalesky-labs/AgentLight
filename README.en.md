@@ -342,6 +342,8 @@ AgentLight/
 └── CHANGELOG.md                Bilingual release notes
 ```
 
+Project code standards are documented in [docs/code-standards.md](./docs/code-standards.md), and repository-level rules are defined in [AGENTS.md](./AGENTS.md).
+
 Layering rules:
 
 - `domain` does not access hardware directly

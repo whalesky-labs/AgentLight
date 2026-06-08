@@ -321,6 +321,8 @@ AgentLight/
 └── CHANGELOG.md                中英双语版本发布说明
 ```
 
+项目代码规范见 [docs/code-standards.md](./docs/code-standards.md)，仓库级执行规则见 [AGENTS.md](./AGENTS.md)。
+
 分层原则：
 
 - `domain` 不直接访问硬件，只定义状态与命令协议
