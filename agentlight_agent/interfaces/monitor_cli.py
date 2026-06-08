@@ -9,6 +9,9 @@ from agentlight_agent.infrastructure.json_config import load_monitors
 from agentlight_agent.infrastructure.monitor_runner import EventEmitter, MonitorRunner
 
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Monitor multiple AI agent outputs and normalize status events.")
     parser.add_argument(
@@ -35,7 +38,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"No monitors configured for platform: {args.platform}", file=sys.stderr)
             return 1
 
-        service = MonitorService(MonitorRunner(EventEmitter()))
+        service = MonitorService(MonitorRunner(EventEmitter(REPO_ROOT / "scripts" / "agentlight-event")))
         return service.run(
             monitors,
             once=args.once,
@@ -50,4 +53,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

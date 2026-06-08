@@ -10,6 +10,7 @@ from agentlight_agent.application.monitor_service import MonitorService
 from agentlight_agent.domain.matching import match_event
 from agentlight_agent.domain.models import MonitorFormat, MultiSessionMode
 from agentlight_agent.infrastructure.json_config import load_agent_config, load_monitors
+from agentlight_agent.infrastructure.monitor_runner import EventEmitter
 
 
 def write_json(path: Path, data: dict) -> None:
@@ -122,6 +123,13 @@ class AgentArchitectureTest(unittest.TestCase):
             selected = MonitorService.filter_by_platform(monitors, "codex")
 
             self.assertEqual([monitor.name for monitor in selected], ["codex-jsonl"])
+
+    def test_event_emitter_accepts_absolute_command_path(self) -> None:
+        command = Path("/tmp/agentlight-event")
+
+        emitter = EventEmitter(command)
+
+        self.assertEqual(emitter.event_command, str(command))
 
 
 if __name__ == "__main__":

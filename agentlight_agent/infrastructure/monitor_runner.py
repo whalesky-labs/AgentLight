@@ -11,8 +11,12 @@ from agentlight_agent.domain.models import Monitor, MonitorType
 
 
 class EventEmitter:
-    def __init__(self, event_command: str = "scripts/agentlight-event") -> None:
-        self._event_command = event_command
+    def __init__(self, event_command: str | Path = "scripts/agentlight-event") -> None:
+        self._event_command = str(event_command)
+
+    @property
+    def event_command(self) -> str:
+        return self._event_command
 
     def emit(self, agent: str, event: str, source: str, *, send: bool) -> None:
         command = [self._event_command, "--agent", agent, "--event", event]
@@ -123,4 +127,3 @@ def _remaining(limit: int, count: int) -> int:
     if not limit:
         return 0
     return max(0, limit - count)
-
