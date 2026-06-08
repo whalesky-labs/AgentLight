@@ -12,11 +12,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Optional firmware version, for example v1.0.0"
+        description: "可选固件版本号，例如 v1.0.0"
         required: false
         type: string
       build_channel:
-        description: "Firmware build channel"
+        description: "固件构建通道"
         required: false
         default: preview
         type: choice
@@ -24,7 +24,7 @@ on:
           - stable
           - preview
       publish_release:
-        description: "Create a GitHub Release"
+        description: "是否创建 GitHub Release"
         required: false
         default: false
         type: boolean
