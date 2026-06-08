@@ -31,7 +31,7 @@ Events:
   error
 
 Environment:
-  AGENTLIGHT_COOLDOWN_MS  Duplicate event cooldown, defaults to 300
+  AGENTLIGHT_COOLDOWN_MS  Duplicate suppression window in milliseconds, defaults to 300
   AGENTLIGHT_STATE_DIR    State cache directory
   AGENTLIGHT_HOST         Passed through to scripts/agentlight
   AGENTLIGHT_BASE_URL     Passed through to scripts/agentlight
@@ -39,9 +39,23 @@ EOF
 }
 
 now_ms() {
-  local now
-  now="$(date +%s)"
-  printf '%s000\n' "$now"
+  python3 - <<'PY'
+import time
+
+print(time.monotonic_ns() // 1_000_000)
+PY
+}
+
+assert_non_negative_integer() {
+  local name="$1"
+  local value="$2"
+
+  case "$value" in
+    ''|*[!0-9]*)
+      printf '%s must be a non-negative integer, got: %s\n' "$name" "$value" >&2
+      return 2
+      ;;
+  esac
 }
 
 map_event_to_state() {
@@ -91,6 +105,7 @@ fi
 event="$1"
 state="$(map_event_to_state "$event")"
 cooldown_ms="${AGENTLIGHT_COOLDOWN_MS:-$DEFAULT_COOLDOWN_MS}"
+assert_non_negative_integer "AGENTLIGHT_COOLDOWN_MS" "$cooldown_ms"
 current_ms="$(now_ms)"
 
 mkdir -p "$STATE_DIR"
@@ -104,7 +119,7 @@ fi
 
 elapsed_ms=$((current_ms - ${last_ms:-0}))
 if [[ "$event" == "$last_event" && "$state" == "$last_state" && "$elapsed_ms" -lt "$cooldown_ms" ]]; then
-  printf 'SKIP duplicate event=%s state=%s elapsed_ms=%s\n' "$event" "$state" "$elapsed_ms"
+  printf 'SKIP duplicate event=%s state=%s elapsed_ms=%s window_ms=%s\n' "$event" "$state" "$elapsed_ms" "$cooldown_ms"
   exit 0
 fi
 

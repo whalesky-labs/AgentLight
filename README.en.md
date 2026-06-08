@@ -179,8 +179,9 @@ scripts under `service/windows` and `service/macos`. See
 
 ## Event Gate
 
-`scripts/agentlight-gate` receives AI lifecycle events and applies lightweight
-deduplication.
+`scripts/agentlight-gate` receives AI lifecycle events, maps them to light
+states, and suppresses exact duplicate events within a short time window so the
+same state is not sent repeatedly.
 
 ```bash
 scripts/agentlight-gate start
@@ -323,7 +324,7 @@ AgentLight/
 │   └── interfaces/             CLI adapters behind the scripts entrypoints
 ├── scripts/
 │   ├── agentlight              No-GUI command bridge entrypoint
-│   ├── agentlight-gate         AI event throttling and light-state mapping
+│   ├── agentlight-gate         AI event mapping and duplicate suppression
 │   ├── agentlight-event        Multi-agent event normalization entrypoint
 │   ├── agentlight-agent        Background agent service compatibility entrypoint
 │   ├── codex-session-monitor   Codex session file status monitor

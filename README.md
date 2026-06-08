@@ -169,7 +169,7 @@ scripts/agentlight red-blink
 
 ## 事件 Gate
 
-`scripts/agentlight-gate` 用来承接 AI 工具生命周期事件，并做简单防抖和去重。
+`scripts/agentlight-gate` 用来承接 AI 工具生命周期事件，将事件映射为灯光状态，并在短时间窗口内抑制完全重复的事件，避免同一状态被连续重复发送。
 
 ```bash
 scripts/agentlight-gate start
@@ -302,7 +302,7 @@ AgentLight/
 │   └── interfaces/             CLI 适配层，承接 scripts 入口
 ├── scripts/
 │   ├── agentlight              无客户端命令桥接入口
-│   ├── agentlight-gate         AI 事件到灯光状态的节流与映射
+│   ├── agentlight-gate         AI 事件到灯光状态的映射与重复事件抑制
 │   ├── agentlight-event        多 Agent 事件归一化入口
 │   ├── agentlight-agent        后台 Agent 服务兼容入口
 │   ├── codex-session-monitor   Codex session 文件状态监听器
