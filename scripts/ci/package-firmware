@@ -57,19 +57,25 @@ def git_output(*args: str) -> str:
 
 def read_changelog_section(changelog: Path, version: str) -> tuple[str, str]:
     content = changelog.read_text(encoding="utf-8").splitlines()
-    headings: list[tuple[int, str, str]] = []
+    headings: list[tuple[int, int, str, str]] = []
     for index, line in enumerate(content):
-        if line.startswith("## "):
-            title = line.removeprefix("## ").strip()
+        heading = re.match(r"^(#{2,3})\s+(.+)$", line)
+        if heading:
+            level = len(heading.group(1))
+            title = heading.group(2).strip()
             normalized = title.split(" ", 1)[0].strip()
             normalized = re.sub(r"^\[?([^\]]+)\]?$", r"\1", normalized)
-            headings.append((index, title, normalized))
+            headings.append((index, level, title, normalized))
 
     targets = [version, version.lstrip("v"), "Unreleased"]
     for target in targets:
-        for position, (start, title, normalized) in enumerate(headings):
+        for position, (start, level, title, normalized) in enumerate(headings):
             if normalized == target:
-                end = headings[position + 1][0] if position + 1 < len(headings) else len(content)
+                end = len(content)
+                for next_start, next_level, _, _ in headings[position + 1 :]:
+                    if next_level <= level:
+                        end = next_start
+                        break
                 section = "\n".join(content[start + 1 : end]).strip()
                 return title, section or "本版本暂无额外发布说明。"
 

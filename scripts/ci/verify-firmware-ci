@@ -17,6 +17,9 @@ grep -Fq 'board_build.partitions = huge_app.csv' platformio.ini
 grep -Fq 'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"' .github/workflows/firmware.yml
 grep -Fq 'Show firmware release notes' .github/workflows/firmware.yml
 grep -Fq 'GITHUB_STEP_SUMMARY' .github/workflows/firmware.yml
+grep -Fq '## 中文' CHANGELOG.md
+grep -Fq '## English' CHANGELOG.md
+grep -Fq '### Unreleased' CHANGELOG.md
 
 test "$(env -u FIRMWARE_VERSION -u GITHUB_REF -u GITHUB_RUN_NUMBER scripts/ci/resolve-firmware-version --version 1.2.3)" = "v1.2.3"
 test "$(env -u FIRMWARE_VERSION -u GITHUB_REF -u GITHUB_RUN_NUMBER scripts/ci/resolve-firmware-version --ref refs/tags/v1.2026.051+1775834670)" = "v1.2026.051+1775834670"
@@ -61,6 +64,10 @@ grep -Fq '构建号：`0`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '构建通道：`preview`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '发布说明来源：`CHANGELOG.md` / `v0.0.1`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '支持 CI 正式构建和预览构建' "${dist_dir}/firmware-release-notes.md"
+if grep -Fq 'This file records AgentLight release notes' "${dist_dir}/firmware-release-notes.md"; then
+    printf 'English changelog section leaked into Chinese release notes.\n' >&2
+    exit 1
+fi
 
 python3 - <<PY
 import json
