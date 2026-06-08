@@ -62,12 +62,11 @@ grep -Fq '展示版本：`0.0.1 (0)`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '短版本：`0.0.1`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '构建号：`0`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '构建通道：`preview`' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '发布说明来源：`CHANGELOG.md` / `v0.0.1`' "${dist_dir}/firmware-release-notes.md"
+grep -Fq '发布说明来源：`CHANGELOG.md` / `中文:v0.0.1` / `English:v0.0.1`' "${dist_dir}/firmware-release-notes.md"
+grep -Fq '## 发布说明（中文）' "${dist_dir}/firmware-release-notes.md"
+grep -Fq '## Release Notes (English)' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '支持 CI 正式构建和预览构建' "${dist_dir}/firmware-release-notes.md"
-if grep -Fq 'This file records AgentLight release notes' "${dist_dir}/firmware-release-notes.md"; then
-    printf 'English changelog section leaked into Chinese release notes.\n' >&2
-    exit 1
-fi
+grep -Fq 'Support stable and preview CI builds' "${dist_dir}/firmware-release-notes.md"
 
 python3 - <<PY
 import json
