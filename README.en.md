@@ -310,19 +310,30 @@ between the GPIO pin and the LED.
 ## Architecture
 
 ```text
-src/domain            Command, color, effect, and light pattern models
-src/application       Status light use case and current state management
-src/infrastructure    GPIO / USB serial / BLE / Wi-Fi HTTP channel implementations
-src/main.cpp          Firmware composition root and main loop scheduling
-scripts/              No-GUI command bridge and event gate
-hooks/                AI tool hook templates and integration notes
-service/              Windows Service Agent and macOS LaunchAgent installers
-scripts/codex-session-monitor  Codex session file status monitor
-scripts/agentlight-event        Multi-agent event normalization entrypoint
-scripts/agentlight-agent        Background agent service entrypoint
-scripts/multi-agent-monitor     Configurable multi-agent log/command monitor
-config/agent-monitors.example.json  Example monitor configuration
-config/agentlight-agent.example.json  Example background agent service config
+AgentLight/
+├── src/
+│   ├── domain/                 Command, color, effect, and light pattern models
+│   ├── application/            Status light use case and current state management
+│   ├── infrastructure/         GPIO / USB serial / BLE / Wi-Fi HTTP channel implementations
+│   └── main.cpp                Firmware composition root and main loop scheduling
+├── scripts/
+│   ├── agentlight              No-GUI command bridge entrypoint
+│   ├── agentlight-gate         AI event throttling and light-state mapping
+│   ├── agentlight-event        Multi-agent event normalization entrypoint
+│   ├── agentlight-agent        Background agent service entrypoint
+│   ├── codex-session-monitor   Codex session file status monitor
+│   └── multi-agent-monitor     Configurable multi-agent log/command monitor
+├── hooks/                      AI tool hook templates and integration notes
+├── service/
+│   ├── windows/                Windows Service Agent installers
+│   └── macos/                  macOS LaunchAgent installers
+├── config/
+│   ├── agent-monitors.example.json      Example monitor configuration
+│   ├── agentlight-agent.example.json    Example background agent service config
+│   └── agent-platforms.json             Compatible AI Agent platform registry
+├── docs/                       Service and compatibility documents
+├── platformio.ini              ESP32-C3 SuperMini firmware build config
+└── CHANGELOG.md                Bilingual release notes
 ```
 
 Layering rules:

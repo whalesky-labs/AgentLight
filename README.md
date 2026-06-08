@@ -289,19 +289,30 @@ scripts/multi-agent-monitor --config config/agent-monitors.example.json --send
 ## 架构
 
 ```text
-src/domain            命令、颜色、灯效与状态模式模型
-src/application       状态灯业务用例，负责命令处理与当前状态维护
-src/infrastructure    GPIO / USB 串口 / BLE / Wi-Fi HTTP 通道实现
-src/main.cpp          固件装配入口，连接业务层与硬件通道
-scripts/              无客户端命令桥接与事件 Gate
-hooks/                AI 工具 Hook 模板与接入说明
-service/              Windows Service Agent 与 macOS LaunchAgent 安装脚本
-scripts/codex-session-monitor  Codex session 文件状态监听器
-scripts/agentlight-event        多 Agent 事件归一化入口
-scripts/agentlight-agent        后台 Agent 服务入口
-scripts/multi-agent-monitor     多 Agent 配置化日志/命令监听器
-config/agent-monitors.example.json  监听器示例配置
-config/agentlight-agent.example.json  后台 Agent 服务示例配置
+AgentLight/
+├── src/
+│   ├── domain/                 命令、颜色、灯效与状态模式模型
+│   ├── application/            状态灯业务用例，负责命令处理与当前状态维护
+│   ├── infrastructure/         GPIO / USB 串口 / BLE / Wi-Fi HTTP 通道实现
+│   └── main.cpp                固件装配入口，连接业务层与硬件通道
+├── scripts/
+│   ├── agentlight              无客户端命令桥接入口
+│   ├── agentlight-gate         AI 事件到灯光状态的节流与映射
+│   ├── agentlight-event        多 Agent 事件归一化入口
+│   ├── agentlight-agent        后台 Agent 服务入口
+│   ├── codex-session-monitor   Codex session 文件状态监听器
+│   └── multi-agent-monitor     多 Agent 配置化日志/命令监听器
+├── hooks/                      AI 工具 Hook 模板与接入说明
+├── service/
+│   ├── windows/                Windows Service Agent 安装脚本
+│   └── macos/                  macOS LaunchAgent 安装脚本
+├── config/
+│   ├── agent-monitors.example.json      监听器示例配置
+│   ├── agentlight-agent.example.json    后台 Agent 服务示例配置
+│   └── agent-platforms.json             AI Agent 兼容平台清单
+├── docs/                       服务与兼容性文档
+├── platformio.ini              ESP32-C3 SuperMini 固件构建配置
+└── CHANGELOG.md                中英双语版本发布说明
 ```
 
 分层原则：
