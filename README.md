@@ -295,13 +295,18 @@ AgentLight/
 │   ├── application/            状态灯业务用例，负责命令处理与当前状态维护
 │   ├── infrastructure/         GPIO / USB 串口 / BLE / Wi-Fi HTTP 通道实现
 │   └── main.cpp                固件装配入口，连接业务层与硬件通道
+├── agentlight_agent/
+│   ├── domain/                 桌面 Agent 领域模型：监听器、规则、运行模式
+│   ├── application/            平台选择、监听编排、服务运行用例
+│   ├── infrastructure/         JSON 配置、路径解析、事件发送、监听执行器
+│   └── interfaces/             CLI 适配层，承接 scripts 入口
 ├── scripts/
 │   ├── agentlight              无客户端命令桥接入口
 │   ├── agentlight-gate         AI 事件到灯光状态的节流与映射
 │   ├── agentlight-event        多 Agent 事件归一化入口
-│   ├── agentlight-agent        后台 Agent 服务入口
+│   ├── agentlight-agent        后台 Agent 服务兼容入口
 │   ├── codex-session-monitor   Codex session 文件状态监听器
-│   └── multi-agent-monitor     多 Agent 配置化日志/命令监听器
+│   └── multi-agent-monitor     多 Agent 配置化监听兼容入口
 ├── hooks/                      AI 工具 Hook 模板与接入说明
 ├── service/
 │   ├── windows/                Windows Service Agent 安装脚本
@@ -310,6 +315,7 @@ AgentLight/
 │   ├── agent-monitors.example.json      监听器示例配置
 │   ├── agentlight-agent.example.json    后台 Agent 服务示例配置
 │   └── agent-platforms.json             AI Agent 兼容平台清单
+├── tests/                      桌面 Agent 分层与配置行为测试
 ├── docs/                       服务与兼容性文档
 ├── platformio.ini              ESP32-C3 SuperMini 固件构建配置
 └── CHANGELOG.md                中英双语版本发布说明
@@ -321,6 +327,10 @@ AgentLight/
 - `application` 不关心 USB、BLE、Wi-Fi 或 GPIO 细节，只处理业务语义
 - `infrastructure` 承担硬件 IO、串口、BLE 和 Wi-Fi HTTP 适配
 - `main.cpp` 只负责对象装配和主循环调度
+- `agentlight_agent/domain` 定义桌面端监听模型，不读取文件或启动进程
+- `agentlight_agent/application` 负责平台选择、多会话策略和服务编排
+- `agentlight_agent/infrastructure` 负责配置文件、文件监听、子进程和事件发送
+- `agentlight_agent/interfaces` 只处理 CLI 参数和输出，`scripts` 保持向后兼容
 
 服务运行策略：
 

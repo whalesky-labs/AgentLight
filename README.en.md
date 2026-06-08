@@ -316,13 +316,18 @@ AgentLight/
 │   ├── application/            Status light use case and current state management
 │   ├── infrastructure/         GPIO / USB serial / BLE / Wi-Fi HTTP channel implementations
 │   └── main.cpp                Firmware composition root and main loop scheduling
+├── agentlight_agent/
+│   ├── domain/                 Desktop agent domain models: monitors, rules, runtime modes
+│   ├── application/            Platform selection, monitor orchestration, service runtime use cases
+│   ├── infrastructure/         JSON config, path resolution, event emission, monitor runners
+│   └── interfaces/             CLI adapters behind the scripts entrypoints
 ├── scripts/
 │   ├── agentlight              No-GUI command bridge entrypoint
 │   ├── agentlight-gate         AI event throttling and light-state mapping
 │   ├── agentlight-event        Multi-agent event normalization entrypoint
-│   ├── agentlight-agent        Background agent service entrypoint
+│   ├── agentlight-agent        Background agent service compatibility entrypoint
 │   ├── codex-session-monitor   Codex session file status monitor
-│   └── multi-agent-monitor     Configurable multi-agent log/command monitor
+│   └── multi-agent-monitor     Configurable monitor compatibility entrypoint
 ├── hooks/                      AI tool hook templates and integration notes
 ├── service/
 │   ├── windows/                Windows Service Agent installers
@@ -331,6 +336,7 @@ AgentLight/
 │   ├── agent-monitors.example.json      Example monitor configuration
 │   ├── agentlight-agent.example.json    Example background agent service config
 │   └── agent-platforms.json             Compatible AI Agent platform registry
+├── tests/                      Desktop agent layering and config behavior tests
 ├── docs/                       Service and compatibility documents
 ├── platformio.ini              ESP32-C3 SuperMini firmware build config
 └── CHANGELOG.md                Bilingual release notes
@@ -342,6 +348,10 @@ Layering rules:
 - `application` handles business semantics without knowing USB, BLE, Wi-Fi, or GPIO details
 - `infrastructure` owns hardware IO, serial transport, BLE, and Wi-Fi HTTP adaptation
 - `main.cpp` only wires dependencies and schedules the main loop
+- `agentlight_agent/domain` defines desktop monitor models without reading files or starting processes
+- `agentlight_agent/application` owns platform selection, multi-session policy, and service orchestration
+- `agentlight_agent/infrastructure` owns config files, file monitoring, subprocesses, and event emission
+- `agentlight_agent/interfaces` only handles CLI arguments and output; `scripts` stays backward compatible
 
 Service runtime strategy:
 

@@ -30,12 +30,15 @@ bash -n \
 
 printf 'Checking Python monitor...\n'
 python3 -m py_compile \
+  $(find agentlight_agent -name '*.py' -print) \
   scripts/codex-session-monitor \
   scripts/multi-agent-monitor \
   scripts/agentlight-agent \
   scripts/ci/resolve-firmware-version \
   scripts/ci/prepare-firmware-release \
   scripts/ci/package-firmware
+
+python3 -m unittest discover -s tests -p 'test_*.py'
 
 printf 'Checking firmware CI scripts...\n'
 scripts/ci/verify-firmware-ci >/dev/null
