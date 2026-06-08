@@ -16,7 +16,7 @@ This file is part of AgentLight.
 @link     https://github.com/whalesky-labs/AgentLight
 @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
 @contact  root@imoi.cn
-@license  https://github.com/whalesky-labs/AgentLight
+@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE
 ```
 
 适用范围：
@@ -32,6 +32,13 @@ This file is part of AgentLight.
 - JSON/YAML/INI 配置
 - CI 配置文件
 - 生成物
+
+## 开源协议规范
+
+- 项目使用 MIT License 开源，SPDX 标识为 `MIT`。
+- 正式协议原文维护在根目录 [LICENSE](../LICENSE)。
+- 中文优先的协议说明维护在 [docs/license.md](./license.md)。
+- 源码文件头中的 `@license` 必须指向 `https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE`。
 
 ## 架构边界
 
@@ -127,4 +134,3 @@ Details:
 ```
 
 推送 GitHub 时必须使用本机 VPN 代理。
-

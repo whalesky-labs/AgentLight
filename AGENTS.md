@@ -8,6 +8,7 @@
 - 组织名称：`whalesky-labs`
 - 硬件目标：ESP32-C3 SuperMini
 - 对外服务名前缀：`whalesky-labs-AgentLight`
+- 开源协议：MIT License，SPDX 标识为 `MIT`
 
 ## 文件头规范
 
@@ -21,7 +22,7 @@ This file is part of AgentLight.
 @link     https://github.com/whalesky-labs/AgentLight
 @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
 @contact  root@imoi.cn
-@license  https://github.com/whalesky-labs/AgentLight
+@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE
 ```
 
 规则：
@@ -31,6 +32,12 @@ This file is part of AgentLight.
 - Shell 文件保留 shebang 在第一行，然后使用 `#` 行注释文件头。
 - PowerShell 文件使用 `<# ... #>` 块注释，并放在可执行代码之前。
 - Markdown、JSON、YAML、INI 和生成文件不添加源代码文件头。
+
+## 开源协议
+
+- 根目录 [LICENSE](./LICENSE) 是本项目的正式开源协议文件。
+- 中文优先的协议说明维护在 [docs/license.md](./docs/license.md)。
+- 文件头中的 `@license` 必须指向 `https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE`。
 
 ## 架构边界
 

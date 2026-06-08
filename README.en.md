@@ -452,3 +452,9 @@ It checks:
 - lifecycle event normalization
 - documented hook directory coverage
 - multi-agent monitor example config loading
+
+## License
+
+AgentLight is released under the [MIT License](./LICENSE), with SPDX identifier `MIT`.
+
+A Chinese-first license explanation is available in [docs/license.md](./docs/license.md). The repository root [LICENSE](./LICENSE) file is authoritative.

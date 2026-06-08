@@ -1,0 +1,23 @@
+# AgentLight 开源协议说明
+
+AgentLight 使用 MIT License 开源，SPDX 标识为 `MIT`。
+
+完整协议原文见根目录 [LICENSE](../LICENSE)。当本文说明与 `LICENSE` 原文存在差异时，以 `LICENSE` 为准。
+
+## 中文说明
+
+MIT License 是宽松型开源协议。你可以在遵守协议条件的前提下使用、复制、修改、合并、发布、分发、再授权或销售本项目的软件和文档。
+
+使用或分发本项目时，需要保留版权声明和 MIT License 协议文本。
+
+本项目按原样提供，不提供任何明示或暗示担保。作者或版权持有人不对因使用本项目产生的索赔、损害或其他责任负责。
+
+## English
+
+AgentLight is released under the MIT License, with the SPDX identifier `MIT`.
+
+The full license text is available in the repository root [LICENSE](../LICENSE). If this explanation differs from the license text, the `LICENSE` file controls.
+
+The MIT License is a permissive open source license. You may use, copy, modify, merge, publish, distribute, sublicense, or sell copies of this project's software and documentation, as long as the required copyright and license notices are preserved.
+
+The project is provided as is, without warranties. The authors or copyright holders are not liable for claims, damages, or other liability arising from use of the project.

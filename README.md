@@ -416,3 +416,9 @@ scripts/verify-agent-bridge
 - 生命周期事件归一化
 - hooks 文档目录是否完整
 - 多 Agent monitor 示例配置是否可加载
+
+## 开源协议
+
+AgentLight 使用 [MIT License](./LICENSE) 开源，SPDX 标识为 `MIT`。
+
+中文优先的协议说明见 [docs/license.md](./docs/license.md)。协议原文以根目录 [LICENSE](./LICENSE) 为准。

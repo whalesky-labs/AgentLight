@@ -5,7 +5,7 @@
 # @link     https://github.com/whalesky-labs/AgentLight
 # @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
 # @contact  root@imoi.cn
-# @license  https://github.com/whalesky-labs/AgentLight
+# @license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE
 #
 
 set -euo pipefail
@@ -41,12 +41,21 @@ printf 'Checking engineering standards...\n'
 test -f AGENTS.md
 test -f .editorconfig
 test -f docs/code-standards.md
+test -f LICENSE
+test -f docs/license.md
 grep -Fq 'This file is part of AgentLight.' AGENTS.md
+grep -Fq '@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE' AGENTS.md
+grep -Fq '@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE' docs/code-standards.md
+grep -Fq 'MIT License' LICENSE
+grep -Fq 'SPDX 标识为 `MIT`' docs/license.md
 grep -Fq 'docs/code-standards.md' README.md
 grep -Fq 'docs/code-standards.md' README.en.md
+grep -Fq 'docs/license.md' README.md
+grep -Fq 'docs/license.md' README.en.md
 python3 - <<'PY'
 from pathlib import Path
 
+required_license = "@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE"
 required = [
     *Path("src").rglob("*.cpp"),
     *Path("include").rglob("*.h"),
@@ -78,6 +87,14 @@ missing = [
 ]
 if missing:
     raise SystemExit("missing AgentLight file header: " + ", ".join(missing))
+
+missing_license = [
+    str(path)
+    for path in required
+    if required_license not in path.read_text(encoding="utf-8")[:800]
+]
+if missing_license:
+    raise SystemExit("missing AgentLight license header: " + ", ".join(missing_license))
 PY
 
 printf 'Checking Python monitor...\n'
