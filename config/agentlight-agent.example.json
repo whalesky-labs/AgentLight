@@ -1,0 +1,12 @@
+{
+  "agentName": "AgentLightAgent",
+  "monitorConfig": "config/agent-monitors.example.json",
+  "sendToHardware": true,
+  "pollIntervalSeconds": 0.5,
+  "restartDelaySeconds": 3,
+  "logFile": "",
+  "environment": {
+    "AGENTLIGHT_HOST": "192.168.4.1",
+    "AGENTLIGHT_TIMEOUT": "2"
+  }
+}

@@ -155,6 +155,18 @@ scripts/agentlight red-blink
 | `AGENTLIGHT_BASE_URL` | 空 | 完整基础 URL，优先级高于 host |
 | `AGENTLIGHT_TIMEOUT` | `2` | curl 超时时间，单位秒 |
 
+## 后台 Agent 服务
+
+电脑端推荐做成后台 Agent 服务，而不是桌面 App：
+
+| 系统 | 形态 |
+| --- | --- |
+| Windows | Windows Service Agent |
+| macOS | LaunchAgent |
+| Linux | systemd user service |
+
+统一服务入口是 `scripts/agentlight-agent`，安装脚本位于 `service/windows` 和 `service/macos`。完整说明见 [docs/agent-service.md](./docs/agent-service.md)。
+
 ## 事件 Gate
 
 `scripts/agentlight-gate` 用来承接 AI 工具生命周期事件，并做简单防抖和去重。
@@ -283,10 +295,13 @@ src/infrastructure    GPIO / USB 串口 / BLE / Wi-Fi HTTP 通道实现
 src/main.cpp          固件装配入口，连接业务层与硬件通道
 scripts/              无客户端命令桥接与事件 Gate
 hooks/                AI 工具 Hook 模板与接入说明
+service/              Windows Service Agent 与 macOS LaunchAgent 安装脚本
 scripts/codex-session-monitor  Codex session 文件状态监听器
 scripts/agentlight-event        多 Agent 事件归一化入口
+scripts/agentlight-agent        后台 Agent 服务入口
 scripts/multi-agent-monitor     多 Agent 配置化日志/命令监听器
 config/agent-monitors.example.json  监听器示例配置
+config/agentlight-agent.example.json  后台 Agent 服务示例配置
 ```
 
 分层原则：

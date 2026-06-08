@@ -162,6 +162,21 @@ Environment variables:
 | `AGENTLIGHT_BASE_URL` | empty | Full base URL, higher priority than host |
 | `AGENTLIGHT_TIMEOUT` | `2` | curl timeout in seconds |
 
+## Background Agent Service
+
+The computer-side bridge should run as a background agent service rather than a
+desktop app:
+
+| System | Form |
+| --- | --- |
+| Windows | Windows Service Agent |
+| macOS | LaunchAgent |
+| Linux | systemd user service |
+
+The shared service entrypoint is `scripts/agentlight-agent`, with install
+scripts under `service/windows` and `service/macos`. See
+[docs/agent-service.md](./docs/agent-service.md).
+
 ## Event Gate
 
 `scripts/agentlight-gate` receives AI lifecycle events and applies lightweight
@@ -301,10 +316,13 @@ src/infrastructure    GPIO / USB serial / BLE / Wi-Fi HTTP channel implementatio
 src/main.cpp          Firmware composition root and main loop scheduling
 scripts/              No-GUI command bridge and event gate
 hooks/                AI tool hook templates and integration notes
+service/              Windows Service Agent and macOS LaunchAgent installers
 scripts/codex-session-monitor  Codex session file status monitor
 scripts/agentlight-event        Multi-agent event normalization entrypoint
+scripts/agentlight-agent        Background agent service entrypoint
 scripts/multi-agent-monitor     Configurable multi-agent log/command monitor
 config/agent-monitors.example.json  Example monitor configuration
+config/agentlight-agent.example.json  Example background agent service config
 ```
 
 Layering rules:

@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""AgentLight background service runner.
+
+This process is the service entrypoint used by Windows Service wrappers,
+macOS LaunchAgent, and Linux user services. It supervises the existing
+multi-agent monitor and keeps the hardware bridge running.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import platform
+import subprocess
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = REPO_ROOT / "config" / "agentlight-agent.example.json"
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the AgentLight background agent.")
+    parser.add_argument("command", choices=["run", "check-config", "print-runtime"], nargs="?", default="run")
+    parser.add_argument("--config", default=os.environ.get("AGENTLIGHT_AGENT_CONFIG", str(DEFAULT_CONFIG)))
+    parser.add_argument("--once", action="store_true", help="Run one monitor pass and exit. Intended for tests.")
+    return parser.parse_args()
+
+
+def load_config(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise SystemExit(f"Agent config not found: {path}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    required = ["monitorConfig", "sendToHardware", "pollIntervalSeconds", "restartDelaySeconds", "environment"]
+    for key in required:
+        if key not in data:
+            raise SystemExit(f"Agent config missing required key: {key}")
+    return data
+
+
+def resolve_path(value: str, base: Path) -> Path:
+    path = Path(os.path.expanduser(value))
+    if not path.is_absolute():
+        path = base / path
+    return path
+
+
+def default_log_file() -> Path:
+    system = platform.system().lower()
+    if system == "windows":
+        root = Path(os.environ.get("ProgramData", "C:/ProgramData"))
+        return root / "AgentLight" / "logs" / "agentlight-agent.log"
+    if system == "darwin":
+        return Path.home() / "Library" / "Logs" / "AgentLight" / "agentlight-agent.log"
+    state_home = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+    return state_home / "agentlight" / "agentlight-agent.log"
+
+
+def open_log(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path.open("a", encoding="utf-8", buffering=1)
+
+
+def log_line(file, message: str) -> None:
+    timestamp = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+    file.write(f"{timestamp} {message}\n")
+    file.flush()
+
+
+def build_monitor_command(config: dict[str, Any], config_dir: Path, once: bool) -> list[str]:
+    monitor_config = resolve_path(str(config["monitorConfig"]), REPO_ROOT)
+    if not monitor_config.exists():
+        raise SystemExit(f"Monitor config not found: {monitor_config}")
+    command = [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "multi-agent-monitor"),
+        "--config",
+        str(monitor_config),
+        "--poll-interval",
+        str(config.get("pollIntervalSeconds", 0.5)),
+    ]
+    if config.get("sendToHardware", True):
+        command.append("--send")
+    if once:
+        command.extend(["--once", "--limit", "1"])
+    return command
+
+
+def runtime_info(config_path: Path, config: dict[str, Any]) -> dict[str, str]:
+    log_file = resolve_path(config.get("logFile") or str(default_log_file()), config_path.parent)
+    monitor_config = resolve_path(str(config["monitorConfig"]), REPO_ROOT)
+    if not monitor_config.exists():
+        raise SystemExit(f"Monitor config not found: {monitor_config}")
+    return {
+        "repoRoot": str(REPO_ROOT),
+        "config": str(config_path),
+        "monitorConfig": str(monitor_config),
+        "logFile": str(log_file),
+        "system": platform.system(),
+    }
+
+
+def run_agent(config_path: Path, config: dict[str, Any], once: bool) -> int:
+    log_file = resolve_path(config.get("logFile") or str(default_log_file()), config_path.parent)
+    env = os.environ.copy()
+    env.update({str(key): str(value) for key, value in config.get("environment", {}).items()})
+    env["AGENTLIGHT_AGENT_CONFIG"] = str(config_path)
+    env["PYTHONUNBUFFERED"] = "1"
+
+    restart_delay = float(config.get("restartDelaySeconds", 3))
+    command = build_monitor_command(config, config_path.parent, once)
+
+    with open_log(log_file) as log:
+        log_line(log, f"AgentLight agent starting command={command}")
+        while True:
+            process = subprocess.Popen(
+                command,
+                cwd=str(REPO_ROOT),
+                env=env,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            return_code = process.wait()
+            log_line(log, f"AgentLight monitor exited code={return_code}")
+            if once:
+                return 0
+            time.sleep(restart_delay)
+            log_line(log, "Restarting AgentLight monitor")
+
+
+def main() -> int:
+    args = parse_args()
+    config_path = resolve_path(args.config, Path.cwd())
+    config = load_config(config_path)
+
+    if args.command == "check-config":
+        info = runtime_info(config_path, config)
+        for key, value in info.items():
+            print(f"{key}={value}")
+        return 0
+
+    if args.command == "print-runtime":
+        print(json.dumps(runtime_info(config_path, config), ensure_ascii=False, indent=2))
+        return 0
+
+    return run_agent(config_path, config, args.once)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
