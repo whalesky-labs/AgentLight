@@ -1,15 +1,15 @@
-# Cursor Hooks
+# Cursor Hook 说明
 
-This directory contains a no-GUI AgentLight bridge for Cursor-style hook events.
+本目录提供无 GUI 的 AgentLight 桥接方式，用于接收 Cursor 风格 Hook 事件。
 
-## Files
+## 文件
 
-- `agent-light.sh` maps a hook event into `scripts/agentlight-gate`
-- `hooks.json.snippet` shows the intended hook wiring shape
+- `agent-light.sh`：把 Hook 事件映射到 `scripts/agentlight-gate`
+- `hooks.json.snippet`：展示预期的 Hook 配置形态
 
-## Event Mapping
+## 事件映射
 
-| Hook event | AgentLight event | Light state |
+| Hook 事件 | AgentLight 事件 | 灯光状态 |
 | --- | --- | --- |
 | agent start | `start` | `YELLOW_BLINK` |
 | tool call | `tool` | `YELLOW_BLINK` |
@@ -18,19 +18,19 @@ This directory contains a no-GUI AgentLight bridge for Cursor-style hook events.
 | waiting for user | `waiting` | `RED_BLINK` |
 | error | `error` | `RED` |
 
-## Setup
+## 配置
 
-1. Replace `/absolute/path/to/AgentLight` in `hooks.json.snippet` with this repository path.
-2. Merge the snippet into your Cursor hook configuration.
-3. Make sure the ESP32-C3 is powered and the computer can reach `http://192.168.4.1`.
+1. 把 `hooks.json.snippet` 里的 `/absolute/path/to/AgentLight` 替换为本仓库路径。
+2. 将片段合并到 Cursor Hook 配置中。
+3. 确认 ESP32-C3 已通电，并且电脑能访问 `http://192.168.4.1`。
 
-You can override the device URL:
+可以通过环境变量覆盖设备地址：
 
 ```bash
 export AGENTLIGHT_BASE_URL="http://192.168.4.1"
 ```
 
-Manual test:
+手动测试：
 
 ```bash
 hooks/cursor/agent-light.sh start

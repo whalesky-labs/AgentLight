@@ -1,19 +1,16 @@
-# Codex Hook Notes
+# Codex Hook 说明
 
-AgentLight does not require a desktop GUI client. For Codex, use the same
-script bridge whenever a stable lifecycle hook, wrapper script, or automation
-entrypoint is available.
+AgentLight 不需要桌面 GUI 客户端。对 Codex 来说，只要环境中能提供稳定的生命周期 Hook、wrapper 脚本或自动化入口，就可以复用同一套脚本桥接。
 
-For multi-agent status normalization, prefer:
+多 Agent 状态归一化优先使用：
 
 ```bash
 scripts/agentlight-event --agent codex --event start --send
 ```
 
-You can also monitor Codex activity without controlling the hardware by tailing
-Codex's local session JSONL files.
+如果只是观察 Codex 活动、暂时不控制硬件，可以监听 Codex 本地 session JSONL 文件。
 
-## Session Monitor
+## Session 监听器
 
 ```bash
 scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --from-start
@@ -21,8 +18,7 @@ scripts/codex-session-monitor --once --limit 20
 scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --event-command scripts/agentlight-event
 ```
 
-The monitor reads `~/.codex/sessions/**/*.jsonl` and prints normalized status
-lines:
+监听器读取 `~/.codex/sessions/**/*.jsonl`，并打印归一化状态：
 
 ```text
 status=prompt
@@ -33,9 +29,9 @@ status=success
 status=error
 ```
 
-Observed mappings:
+已观察到的映射关系：
 
-| Codex session record | Printed status |
+| Codex session 记录 | 打印状态 |
 | --- | --- |
 | `event_msg.task_started` | `thinking` |
 | `response_item.reasoning` | `thinking` |
@@ -45,7 +41,7 @@ Observed mappings:
 | `event_msg.task_complete` | `success` |
 | `event_msg.turn_aborted` | `error` |
 
-## Direct Commands
+## 直接命令
 
 ```bash
 scripts/agentlight-gate start
@@ -56,9 +52,9 @@ scripts/agentlight-gate waiting
 scripts/agentlight-gate error
 ```
 
-## Wrapper Pattern
+## Wrapper 模式
 
-If a Codex workflow is launched by a shell command, wrap it like this:
+如果 Codex 工作流由 Shell 命令启动，可以这样包一层：
 
 ```bash
 #!/usr/bin/env bash
@@ -74,17 +70,15 @@ else
 fi
 ```
 
-## Recommended State Mapping
+## 推荐状态映射
 
-| Codex lifecycle | AgentLight event | Light state |
+| Codex 生命周期 | AgentLight 事件 | 灯光状态 |
 | --- | --- | --- |
-| task starts | `start` | `YELLOW_BLINK` |
-| tool/command is running | `tool` | `YELLOW_BLINK` |
-| model is thinking/generating | `thinking` | `YELLOW_BREATHE` |
-| task completes | `done` | `GREEN_BLINK` |
-| needs user approval/input | `waiting` | `RED_BLINK` |
-| task fails | `error` | `RED` |
+| 任务开始 | `start` | `YELLOW_BLINK` |
+| 工具或命令运行中 | `tool` | `YELLOW_BLINK` |
+| 模型推理或生成中 | `thinking` | `YELLOW_BREATHE` |
+| 任务完成 | `done` | `GREEN_BLINK` |
+| 需要用户审批或输入 | `waiting` | `RED_BLINK` |
+| 任务失败 | `error` | `RED` |
 
-When a first-class Codex hook API is available in your environment, point that
-hook to `scripts/agentlight-gate <event>` and keep the firmware protocol
-unchanged.
+如果你的环境中已经有正式 Codex Hook API，把该 Hook 指向 `scripts/agentlight-gate <event>` 即可，固件命令协议不需要变化。

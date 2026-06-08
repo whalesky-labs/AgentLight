@@ -1,6 +1,6 @@
-# GitHub Copilot CLI Integration
+# GitHub Copilot CLI 接入说明
 
-Use the shared AgentLight event entrypoint:
+使用 AgentLight 统一事件入口：
 
 ```bash
 scripts/agentlight-event --agent copilot --event start --send
@@ -8,12 +8,10 @@ scripts/agentlight-event --agent copilot --event tool --send
 scripts/agentlight-event --agent copilot --event done --send
 ```
 
-Wrapper pattern:
+Wrapper 模式：
 
 ```bash
 /absolute/path/to/AgentLight/hooks/agents/generic-wrapper.sh copilot gh copilot "$@"
 ```
 
-If your Copilot setup exposes a different command name, keep the first argument
-as `copilot` and replace the command after it.
-
+如果你的 Copilot 环境使用其他命令名，保持第一个参数为 `copilot`，只替换它后面的实际执行命令。

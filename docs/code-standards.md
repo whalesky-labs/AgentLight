@@ -134,3 +134,9 @@ Details:
 ```
 
 推送 GitHub 时必须使用本机 VPN 代理。
+
+## Markdown 文档规范
+
+- 除 [README.en.md](../README.en.md) 外，所有 Markdown 文档正文必须使用中文。
+- 技术专有名词、命令、文件名、路径、协议名和配置键可以保留英文原文。
+- CI 生成的 `release-body.md` 也必须是中文发布说明。

@@ -91,65 +91,27 @@ def section_bounds(
     return start, end
 
 
-def read_changelog_section(
-    content: list[str],
-    headings: list[tuple[int, int, str, str]],
-    version: str,
-    language: str,
-    empty_text: str,
-) -> tuple[str, str]:
-    language_start = 0
-    language_end = len(content)
-    for position, (_, level, _, normalized) in enumerate(headings):
-        if level == 2 and normalized == language:
-            language_start, language_end = section_bounds(headings, position, len(content))
-            break
-
-    scoped_headings = [
-        (index, level, title, normalized)
-        for index, level, title, normalized in headings
-        if language_start < index < language_end
-    ]
-
+def read_changelog_section(changelog: Path, version: str) -> tuple[str, str]:
+    content = changelog.read_text(encoding="utf-8").splitlines()
+    headings = collect_changelog_headings(content)
     targets = [version, version.lstrip("v"), "Unreleased"]
     for target in targets:
-        for position, (start, level, title, normalized) in enumerate(scoped_headings):
+        for position, (start, level, title, normalized) in enumerate(headings):
             if normalized == target:
-                end = language_end
-                for next_start, next_level, _, _ in scoped_headings[position + 1 :]:
+                end = len(content)
+                for next_start, next_level, _, _ in headings[position + 1 :]:
                     if next_level <= level:
                         end = next_start
                         break
                 section = "\n".join(content[start + 1 : end]).strip()
-                return title, section or empty_text
+                return title, section or "本版本暂无额外发布说明。"
 
-    raise SystemExit(f"CHANGELOG {language} section not found for {version} or Unreleased")
-
-
-def read_changelog_sections(changelog: Path, version: str) -> tuple[str, str, str, str]:
-    content = changelog.read_text(encoding="utf-8").splitlines()
-    headings = collect_changelog_headings(content)
-    zh_title, zh_body = read_changelog_section(
-        content,
-        headings,
-        version,
-        "中文",
-        "本版本暂无额外发布说明。",
-    )
-    en_title, en_body = read_changelog_section(
-        content,
-        headings,
-        version,
-        "English",
-        "No additional release notes for this version.",
-    )
-    return zh_title, zh_body, en_title, en_body
+    raise SystemExit(f"CHANGELOG section not found for {version} or Unreleased")
 
 
 def render_release_notes(output: Path, values: dict[str, str]) -> None:
-    zh_title, zh_body, en_title, en_body = read_changelog_sections(Path("CHANGELOG.md"), values["VERSION"])
-    zh_source_title = values["VERSION"] if zh_title == "Unreleased" else zh_title
-    en_source_title = values["VERSION"] if en_title == "Unreleased" else en_title
+    changelog_title, changelog_body = read_changelog_section(Path("CHANGELOG.md"), values["VERSION"])
+    source_title = values["VERSION"] if changelog_title == "Unreleased" else changelog_title
     content = f"""# AgentLight 固件发布说明
 
 ## 版本信息
@@ -162,15 +124,11 @@ def render_release_notes(output: Path, values: dict[str, str]) -> None:
 - 构建环境：`{values["ENVIRONMENT"]}`
 - Git 提交：`{values["GIT_SHA"]}`
 - 构建时间：`{values["BUILD_TIME"]}`
-- 发布说明来源：`CHANGELOG.md` / `中文:{zh_source_title}` / `English:{en_source_title}`
+- 发布说明来源：`CHANGELOG.md` / `{source_title}`
 
-## 发布说明（中文）
+## 发布说明
 
-{zh_body}
-
-## Release Notes (English)
-
-{en_body}
+{changelog_body}
 
 ## 发布资产
 

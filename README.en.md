@@ -422,10 +422,10 @@ for ESP32-C3 SuperMini boards with 4MB flash. The single App partition is 3MB
 so the combined USB, BLE, and Wi-Fi firmware fits without removing control
 channels.
 
-Release notes are maintained in [CHANGELOG.md](./CHANGELOG.md). CI reads the
-matching version section from both the Chinese and English changelog blocks; if
-no matching section exists, it uses each block's `Unreleased` section and
-appends the build channel, environment, Git commit, build time, and asset list.
+Release notes are maintained in the Chinese [CHANGELOG.md](./CHANGELOG.md). CI
+reads the matching version section; if no matching section exists, it uses the
+`Unreleased` section and appends the build channel, environment, Git commit,
+build time, and asset list.
 `manifest.json` includes the version, build channel, Git commit, SHA256 values,
 and flash offsets. When a `v*` tag is pushed, or when manual release publishing
 is enabled, CI creates a GitHub Release and uses the generated notes as the
@@ -457,4 +457,4 @@ It checks:
 
 AgentLight is released under the [MIT License](./LICENSE), with SPDX identifier `MIT`.
 
-A Chinese-first license explanation is available in [docs/license.md](./docs/license.md). The repository root [LICENSE](./LICENSE) file is authoritative.
+A Chinese license explanation is available in [docs/license.md](./docs/license.md). The repository root [LICENSE](./LICENSE) file is authoritative.

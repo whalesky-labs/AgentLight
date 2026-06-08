@@ -1,6 +1,6 @@
-# Pi Integration
+# Pi 接入说明
 
-Use the shared AgentLight event entrypoint:
+使用 AgentLight 统一事件入口：
 
 ```bash
 scripts/agentlight-event --agent pi --event start --send
@@ -8,15 +8,14 @@ scripts/agentlight-event --agent pi --event tool --send
 scripts/agentlight-event --agent pi --event done --send
 ```
 
-Wrapper pattern:
+Wrapper 模式：
 
 ```bash
 /absolute/path/to/AgentLight/hooks/agents/generic-wrapper.sh pi pi "$@"
 ```
 
-If Pi is not launched from a CLI, connect any available automation callback to:
+如果 Pi 不是从 CLI 启动，可以把任何可用的自动化回调连接到：
 
 ```bash
 /absolute/path/to/AgentLight/scripts/agentlight-event --agent pi --event <event> --send
 ```
-

@@ -1,18 +1,16 @@
-# Multi-Agent Integration
+# 多 Agent 接入说明
 
-AgentLight uses one normalized event entrypoint for all AI agents:
+AgentLight 为所有 AI Agent 提供一个统一的状态事件入口：
 
 ```bash
 scripts/agentlight-event --agent <agent> --event <event>
 ```
 
-By default it only prints normalized status. Add `--send` or set
-`AGENTLIGHT_EVENT_SEND=1` to forward the event to `scripts/agentlight-gate` and
-then to the light.
+默认情况下，该命令只打印归一化后的状态。需要把事件继续发送到硬件灯时，增加 `--send`，或设置 `AGENTLIGHT_EVENT_SEND=1`，事件会进入 `scripts/agentlight-gate` 并转换为灯光状态。
 
-## Supported Agent Names
+## 支持的 Agent 名称
 
-| Agent | Accepted names |
+| Agent | 可接受名称 |
 | --- | --- |
 | Codex | `codex`, `codex-cli`, `codex-desktop` |
 | Claude Code | `claude`, `claude-code` |
@@ -29,21 +27,21 @@ then to the light.
 | Hermes | `hermes` |
 | Pi | `pi` |
 
-## Normalized Events
+## 归一化事件
 
-| Event | Meaning |
+| 事件 | 含义 |
 | --- | --- |
-| `prompt` | User prompt submitted |
-| `start` | Agent turn/task started |
-| `thinking` | Model reasoning or generating |
-| `tool` | Tool call, shell command, web search, or function call |
-| `typing` | Agent response text is being produced |
-| `done` | Turn/task completed successfully |
-| `waiting` | Permission, approval, or human input required |
-| `error` | Abort or failure |
-| `idle` | Agent is idle or ready |
+| `prompt` | 用户提交提示词 |
+| `start` | Agent 回合或任务开始 |
+| `thinking` | 模型正在推理或生成 |
+| `tool` | 工具调用、Shell 命令、网页搜索或函数调用 |
+| `typing` | Agent 正在输出回复文本 |
+| `done` | 回合或任务成功完成 |
+| `waiting` | 等待权限、审批或用户输入 |
+| `error` | 中止或失败 |
+| `idle` | Agent 空闲或准备就绪 |
 
-## Examples
+## 示例
 
 ```bash
 scripts/agentlight-event --agent codex --event task_started
@@ -51,33 +49,29 @@ scripts/agentlight-event --agent claude-code --event tool_call --send
 scripts/agentlight-event cursor done
 ```
 
-## Hook Strategy
+## Hook 策略
 
-Different tools expose different integration points:
+不同工具暴露的接入点不同：
 
-- Tools with hooks should call `scripts/agentlight-event --agent <agent> --event <event> --send`.
-- Tools with JSONL session logs can be tailed by a monitor script, like `scripts/codex-session-monitor`.
-- Tools without stable hooks can use a wrapper script around the CLI process to at least emit `start`, `done`, and `error`.
+- 有 Hook 的工具，让 Hook 调用 `scripts/agentlight-event --agent <agent> --event <event> --send`。
+- 有 JSONL 会话日志的工具，用监听脚本读取，例如 `scripts/codex-session-monitor`。
+- 暂无稳定 Hook 的工具，可以用 wrapper 包住 CLI 进程，至少发出 `start`、`done`、`error`。
 
-## Platform Notes
+## 平台说明
 
-For the full compatibility matrix, see
-`docs/agent-platform-compatibility.md`.
+完整兼容矩阵见 `docs/agent-platform-compatibility.md`。
 
-| Platform | Integration note |
+| 平台 | 接入说明 |
 | --- | --- |
-| Codex | `scripts/codex-session-monitor` supports local session JSONL monitoring. |
-| Cursor | `hooks/cursor/agent-light.sh` wraps Cursor hook events. |
-| Claude Code | Use native hooks when available, otherwise `generic-wrapper.sh`. |
-| Gemini CLI | Use `generic-wrapper.sh` unless a local hook/event stream is configured. |
-| Qwen Code | Use `generic-wrapper.sh` unless a local hook/event stream is configured. |
-| Copilot CLI | Use `generic-wrapper.sh` around the Copilot command. |
-| opencode | Use `generic-wrapper.sh` around the opencode command. |
-| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | Use the shared event entrypoint or wrapper until tool-specific hooks are connected. |
+| Codex | `scripts/codex-session-monitor` 支持本地 session JSONL 监听。 |
+| Cursor | `hooks/cursor/agent-light.sh` 用于接收 Cursor Hook 事件。 |
+| Claude Code | 优先使用原生 Hook；没有 Hook 时使用 `generic-wrapper.sh`。 |
+| Gemini CLI | 没有本地 Hook 或事件流时使用 `generic-wrapper.sh`。 |
+| Qwen Code | 没有本地 Hook 或事件流时使用 `generic-wrapper.sh`。 |
+| Copilot CLI | 用 `generic-wrapper.sh` 包住 Copilot 命令。 |
+| opencode | 用 `generic-wrapper.sh` 包住 opencode 命令。 |
+| Kimi / CodeBuddy / Kiro / Antigravity / OpenClaw / Hermes / Pi | 接入专用 Hook 前，先使用统一事件入口或 wrapper。 |
 
-The project intentionally keeps platform adapters thin. AgentLight does not
-own or reimplement each AI tool; it normalizes their lifecycle events into a
-small status vocabulary that the firmware already understands.
+本项目刻意保持平台适配层很薄。AgentLight 不拥有也不重新实现各个 AI 工具，只把它们可观察到的生命周期事件归一化为固件能够理解的少量状态。
 
-AgentLight is a hardware status light project. It does not provide desktop pet
-animation, tray UI, dashboards, permission bubbles, or terminal focus.
+AgentLight 是硬件状态灯项目，不提供桌面宠物动画、托盘界面、Dashboard、权限气泡或终端聚焦能力。

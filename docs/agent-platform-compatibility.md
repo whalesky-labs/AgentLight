@@ -15,21 +15,21 @@
 
 | 平台 | supportMode | AgentLight 当前支持方式 | 证据文件 | 当前限制 |
 | --- | --- | --- | --- | --- |
-| Claude Code | `event-entrypoint-or-wrapper` | 统一事件入口 + hook/wrapper 文档 | `hooks/claude/README.md`、`hooks/agents/generic-wrapper.sh` | No automatic Claude configuration writes; permission handling remains in Claude Code. |
-| Codex CLI | `session-jsonl-monitor-and-event-entrypoint` | session JSONL 监听 + 统一事件入口 + wrapper 文档 | `scripts/codex-session-monitor`、`hooks/codex/README.md` | Session monitoring is read-only and depends on Codex local JSONL records. |
-| Codex Desktop | `session-jsonl-monitor-and-event-entrypoint` | session JSONL 监听 + 统一事件入口 | `scripts/codex-session-monitor`、`hooks/codex/README.md` | Does not control Codex Desktop UI; only observes visible local Codex session records. |
-| GitHub Copilot CLI | `generic-wrapper` | 通用 wrapper 入口 | `hooks/copilot/README.md`、`hooks/agents/generic-wrapper.sh` | No automatic ~/.copilot/hooks/hooks.json writes. |
-| Gemini CLI | `generic-wrapper-or-configurable-monitor` | 通用 wrapper 入口 + 可配置日志/命令监听 | `hooks/gemini/README.md`、`scripts/multi-agent-monitor`、`config/agent-monitors.example.json` | No automatic ~/.gemini/settings.json writes. |
-| Antigravity CLI | `generic-wrapper-or-event-entrypoint` | 通用 wrapper 入口 | `hooks/antigravity/README.md`、`hooks/agents/generic-wrapper.sh` | Status synchronization only; Antigravity terminal handles permission menus. |
-| Cursor Agent | `hook-template` | Cursor Hook 模板 | `hooks/cursor/README.md`、`hooks/cursor/hooks.json.snippet`、`hooks/cursor/agent-light.sh` | User must merge the snippet into Cursor hook configuration. |
-| CodeBuddy | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/codebuddy/README.md` | No automatic CodeBuddy configuration writes; permission handling remains in CodeBuddy. |
-| Kiro CLI | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/kiro/README.md` | No automatic Kiro agent configuration creation. |
-| Kimi Code CLI | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/kimi/README.md` | No automatic ~/.kimi/config.toml writes. |
-| Qwen Code | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/qwen/README.md` | No automatic ~/.qwen/settings.json writes; permission handling remains in Qwen. |
-| opencode | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/opencode/README.md` | No automatic opencode plugin configuration writes. |
-| Pi | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/pi/README.md` | Only synchronizes lifecycle/tool activity that can be connected through callbacks, logs, or wrappers. |
-| OpenClaw | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/openclaw/README.md` | Status synchronization only; no permission bubbles or terminal focus. |
-| Hermes Agent | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/hermes/README.md` | Only synchronizes lifecycle/tool activity that can be connected through callbacks, logs, or wrappers. |
+| Claude Code | `event-entrypoint-or-wrapper` | 统一事件入口 + hook/wrapper 文档 | `hooks/claude/README.md`、`hooks/agents/generic-wrapper.sh` | 不自动写入 Claude 配置；权限处理仍由 Claude Code 负责。 |
+| Codex CLI | `session-jsonl-monitor-and-event-entrypoint` | session JSONL 监听 + 统一事件入口 + wrapper 文档 | `scripts/codex-session-monitor`、`hooks/codex/README.md` | session 监听只读，依赖 Codex 本地 JSONL 记录。 |
+| Codex Desktop | `session-jsonl-monitor-and-event-entrypoint` | session JSONL 监听 + 统一事件入口 | `scripts/codex-session-monitor`、`hooks/codex/README.md` | 不控制 Codex Desktop 界面，只观察本地可见的 Codex session 记录。 |
+| GitHub Copilot CLI | `generic-wrapper` | 通用 wrapper 入口 | `hooks/copilot/README.md`、`hooks/agents/generic-wrapper.sh` | 不自动写入 `~/.copilot/hooks/hooks.json`。 |
+| Gemini CLI | `generic-wrapper-or-configurable-monitor` | 通用 wrapper 入口 + 可配置日志/命令监听 | `hooks/gemini/README.md`、`scripts/multi-agent-monitor`、`config/agent-monitors.example.json` | 不自动写入 `~/.gemini/settings.json`。 |
+| Antigravity CLI | `generic-wrapper-or-event-entrypoint` | 通用 wrapper 入口 | `hooks/antigravity/README.md`、`hooks/agents/generic-wrapper.sh` | 只同步状态；Antigravity 终端仍负责权限菜单。 |
+| Cursor Agent | `hook-template` | Cursor Hook 模板 | `hooks/cursor/README.md`、`hooks/cursor/hooks.json.snippet`、`hooks/cursor/agent-light.sh` | 需要用户自行把配置片段合并到 Cursor Hook 配置。 |
+| CodeBuddy | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/codebuddy/README.md` | 不自动写入 CodeBuddy 配置；权限处理仍由 CodeBuddy 负责。 |
+| Kiro CLI | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/kiro/README.md` | 不自动创建 Kiro Agent 配置。 |
+| Kimi Code CLI | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/kimi/README.md` | 不自动写入 `~/.kimi/config.toml`。 |
+| Qwen Code | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/qwen/README.md` | 不自动写入 `~/.qwen/settings.json`；权限处理仍由 Qwen 负责。 |
+| opencode | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/opencode/README.md` | 不自动写入 opencode 插件配置。 |
+| Pi | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/pi/README.md` | 只同步能够通过回调、日志或 wrapper 接入的生命周期和工具活动。 |
+| OpenClaw | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/openclaw/README.md` | 只同步状态，不提供权限气泡或终端聚焦。 |
+| Hermes Agent | `event-entrypoint-or-wrapper` | 统一事件入口 + 通用 wrapper 文档 | `hooks/hermes/README.md` | 只同步能够通过回调、日志或 wrapper 接入的生命周期和工具活动。 |
 
 ## Codex 状态监听
 

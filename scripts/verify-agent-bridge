@@ -95,6 +95,35 @@ missing_license = [
 ]
 if missing_license:
     raise SystemExit("missing AgentLight license header: " + ", ".join(missing_license))
+
+markdown_files = sorted(Path(".").glob("**/*.md"))
+allowed_english_markdown = {Path("README.en.md")}
+for path in markdown_files:
+    if any(part in {".git", ".pio", ".superpowers", "dist"} for part in path.parts):
+        continue
+    if path in allowed_english_markdown:
+        continue
+    text = path.read_text(encoding="utf-8")
+    forbidden_patterns = [
+        "## English",
+        "## License",
+        "## Build",
+        "## Firmware CI",
+        "## Bridge Verification",
+        "# Multi-Agent Integration",
+        "# Codex Hook Notes",
+        "# Cursor Hooks",
+        "Release Notes (English)",
+        "This file records",
+        "Use the shared",
+        "Wrapper pattern",
+        "No automatic",
+        "Only synchronizes",
+        "Status synchronization only",
+    ]
+    found = [pattern for pattern in forbidden_patterns if pattern in text]
+    if found:
+        raise SystemExit(f"non-Chinese markdown content found in {path}: {', '.join(found)}")
 PY
 
 printf 'Checking Python monitor...\n'
@@ -259,8 +288,6 @@ for platform in registry["platforms"]:
     for evidence in platform["evidence"]:
         if evidence not in matrix:
             raise SystemExit(f"matrix missing evidence for {name}: {evidence}")
-    if platform["limitations"] not in matrix:
-        raise SystemExit(f"matrix missing limitations for {name}")
 PY
 
 printf 'Checking multi-agent monitor config...\n'

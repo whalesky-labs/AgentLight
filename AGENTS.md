@@ -64,7 +64,7 @@ This file is part of AgentLight.
 - Python：使用类型注解，结构化领域数据使用 dataclass/enum，4 空格缩进，导入路径不产生隐藏全局副作用。
 - Shell：使用 `set -euo pipefail`，变量必须加引号，仓库相对路径必须显式解析。
 - PowerShell：使用 `$ErrorActionPreference = "Stop"`，服务名必须带 `whalesky-labs-AgentLight` 前缀。
-- Markdown：中英双语内容并存时，中文在前。
+- Markdown：除 `README.en.md` 外，所有 Markdown 文档正文必须使用中文。
 
 ## 验证要求
 

@@ -1,6 +1,6 @@
-# Hermes Integration
+# Hermes 接入说明
 
-Use the shared AgentLight event entrypoint:
+使用 AgentLight 统一事件入口：
 
 ```bash
 scripts/agentlight-event --agent hermes --event start --send
@@ -8,12 +8,10 @@ scripts/agentlight-event --agent hermes --event tool --send
 scripts/agentlight-event --agent hermes --event done --send
 ```
 
-Wrapper pattern:
+Wrapper 模式：
 
 ```bash
 /absolute/path/to/AgentLight/hooks/agents/generic-wrapper.sh hermes hermes "$@"
 ```
 
-If Hermes runs as a background service instead of a CLI, use its lifecycle
-callbacks or logs to call `scripts/agentlight-event`.
-
+如果 Hermes 以后台服务而不是 CLI 形式运行，可通过它的生命周期回调或日志监听调用 `scripts/agentlight-event`。
