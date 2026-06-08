@@ -357,9 +357,18 @@ Firmware version rules:
 
 | Scenario | Version source |
 | --- | --- |
-| Push a `v*` tag | Uses the tag name |
+| Push a `v*` tag | Uses the tag name, for example `v1.2026.051+1775834670` |
 | Manual run with `version` | Uses the provided version |
-| Normal push / PR | Generates `vYYYY.MM.DD.<run_number>` |
+| Normal push / PR | Generates `v1.<Year>.<DayOfYear>+<GITHUB_RUN_NUMBER>`; the trailing build number is incremented by CI |
+
+Release versions use CalVer:
+
+| Field | Rule | Example |
+| --- | --- | --- |
+| Display version | `<Major>.<Year>.<DayOfYear> (<BuildNumber>)` | `1.2026.051 (1775834670)` |
+| Git tag | `v<Major>.<Year>.<DayOfYear>+<BuildNumber>` | `v1.2026.051+1775834670` |
+| Short version | `<Major>.<Year>.<DayOfYear>` | `1.2026.051` |
+| Build number | `<BuildNumber>` | `1775834670` |
 
 Build channels:
 

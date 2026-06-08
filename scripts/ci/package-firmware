@@ -30,6 +30,9 @@ FLASH_OFFSETS = {
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Package AgentLight firmware outputs.")
     parser.add_argument("--version", required=True)
+    parser.add_argument("--display-version", default="")
+    parser.add_argument("--short-version", default="")
+    parser.add_argument("--build-number", default="")
     parser.add_argument("--environment", default="esp32-c3-supermini")
     parser.add_argument("--build-channel", choices=["stable", "preview"], default="preview")
     parser.add_argument("--build-dir", default=".pio/build/esp32-c3-supermini")
@@ -81,6 +84,9 @@ def render_release_notes(output: Path, values: dict[str, str]) -> None:
 ## 版本信息
 
 - 版本号：`{values["VERSION"]}`
+- 展示版本：`{values["DISPLAY_VERSION"]}`
+- 短版本：`{values["SHORT_VERSION"]}`
+- 构建号：`{values["BUILD_NUMBER"]}`
 - 构建通道：`{values["BUILD_CHANNEL"]}`
 - 构建环境：`{values["ENVIRONMENT"]}`
 - Git 提交：`{values["GIT_SHA"]}`
@@ -132,9 +138,15 @@ def main() -> int:
 
     build_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     git_sha = os.environ.get("GITHUB_SHA") or git_output("rev-parse", "HEAD")
+    short_version = args.short_version or args.version.removeprefix("v").split("+", 1)[0]
+    build_number = args.build_number or (args.version.split("+", 1)[1] if "+" in args.version else "0")
+    display_version = args.display_version or f"{short_version} ({build_number})"
     manifest = {
         "project": "AgentLight",
         "version": args.version,
+        "displayVersion": display_version,
+        "shortVersion": short_version,
+        "buildNumber": build_number,
         "environment": args.environment,
         "buildChannel": args.build_channel,
         "buildTime": build_time,
@@ -152,6 +164,9 @@ def main() -> int:
         notes_path,
         {
             "VERSION": args.version,
+            "DISPLAY_VERSION": display_version,
+            "SHORT_VERSION": short_version,
+            "BUILD_NUMBER": build_number,
             "ENVIRONMENT": args.environment,
             "BUILD_CHANNEL": args.build_channel,
             "GIT_SHA": git_sha,

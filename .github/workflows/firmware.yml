@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "可选固件版本号，例如 v1.0.0"
+        description: "可选固件版本号，例如 v1.2026.051+1775834670"
         required: false
         type: string
       build_channel:
@@ -76,6 +76,9 @@ jobs:
           cat release.env
           cat release.env >> "$GITHUB_OUTPUT"
           grep '^version=' release.env | sed 's/^version=/FIRMWARE_VERSION=/' >> "$GITHUB_ENV"
+          grep '^display_version=' release.env | sed 's/^display_version=/FIRMWARE_DISPLAY_VERSION=/' >> "$GITHUB_ENV"
+          grep '^short_version=' release.env | sed 's/^short_version=/FIRMWARE_SHORT_VERSION=/' >> "$GITHUB_ENV"
+          grep '^build_number=' release.env | sed 's/^build_number=/FIRMWARE_BUILD_NUMBER=/' >> "$GITHUB_ENV"
 
       - name: Verify firmware CI scripts
         run: scripts/ci/verify-firmware-ci
@@ -90,6 +93,9 @@ jobs:
         run: |
           scripts/ci/package-firmware \
             --version "$FIRMWARE_VERSION" \
+            --display-version "$FIRMWARE_DISPLAY_VERSION" \
+            --short-version "$FIRMWARE_SHORT_VERSION" \
+            --build-number "$FIRMWARE_BUILD_NUMBER" \
             --environment "$PLATFORMIO_ENV" \
             --build-channel "${{ steps.release.outputs.build_channel }}"
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 
@@ -48,9 +49,25 @@ def normalize_build_channel(value: str, is_tag: bool) -> str:
     return mapping[normalized]
 
 
+def split_version(version: str) -> tuple[str, str, str]:
+    normalized = version.removeprefix("v")
+    if "+" in normalized:
+        short_version, build_number = normalized.split("+", 1)
+    else:
+        short_version, build_number = normalized, ""
+
+    if not build_number:
+        match = re.search(r"([0-9]+)$", short_version)
+        build_number = match.group(1) if match else "0"
+
+    display_version = f"{short_version} ({build_number})"
+    return short_version, build_number, display_version
+
+
 def main() -> int:
     args = parse_args()
     version = run_resolver(args.version, args.ref)
+    short_version, build_number, display_version = split_version(version)
     is_tag = args.ref.startswith("refs/tags/v")
     build_channel = normalize_build_channel(args.build_channel, is_tag)
 
@@ -58,11 +75,14 @@ def main() -> int:
     should_publish = is_tag or manual_publish
     tag_name = args.ref.removeprefix("refs/tags/") if is_tag else version
     is_prerelease = build_channel == "preview"
-    release_name = f"AgentLight Firmware {version}"
+    release_name = f"AgentLight Firmware {display_version}"
     if is_prerelease:
         release_name = f"{release_name} Preview"
 
     print(f"version={version}")
+    print(f"short_version={short_version}")
+    print(f"build_number={build_number}")
+    print(f"display_version={display_version}")
     print(f"build_channel={build_channel}")
     print(f"should_publish={str(should_publish).lower()}")
     print(f"is_prerelease={str(is_prerelease).lower()}")

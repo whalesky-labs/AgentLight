@@ -3,8 +3,8 @@
 
 Priority:
 1. Explicit --version argument.
-2. Git tag refs like refs/tags/v1.2.3.
-3. CI-friendly calendar version vYYYY.MM.DD.<run_number>.
+2. Git tag refs like refs/tags/v1.2026.051+1775834670.
+3. CI CalVer v1.YYYY.DDD+<run_number>.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import os
 import re
 
 
-VERSION_PATTERN = re.compile(r"^v[0-9][0-9A-Za-z.-]*$")
+VERSION_PATTERN = re.compile(r"^v[0-9][0-9A-Za-z.+-]*$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +23,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--version", default=os.environ.get("FIRMWARE_VERSION", ""))
     parser.add_argument("--ref", default=os.environ.get("GITHUB_REF", ""))
     parser.add_argument("--run-number", default=os.environ.get("GITHUB_RUN_NUMBER", "0"))
+    parser.add_argument("--major", default=os.environ.get("FIRMWARE_VERSION_MAJOR", "1"))
     return parser.parse_args()
 
 
@@ -49,9 +50,12 @@ def main() -> int:
         print(clean_version(args.ref.removeprefix("refs/tags/")))
         return 0
 
-    today = dt.datetime.now(dt.timezone.utc).strftime("%Y.%m.%d")
+    major = re.sub(r"[^0-9]", "", args.major) or "1"
+    today = dt.datetime.now(dt.timezone.utc)
+    year = today.strftime("%Y")
+    day_of_year = today.strftime("%j")
     run_number = re.sub(r"[^0-9]", "", args.run_number) or "0"
-    print(f"v{today}.{run_number}")
+    print(f"v{major}.{year}.{day_of_year}+{run_number}")
     return 0
 
 

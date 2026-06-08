@@ -16,17 +16,21 @@ grep -Fq 'board_build.flash_size = 4MB' platformio.ini
 grep -Fq 'board_build.partitions = huge_app.csv' platformio.ini
 
 test "$(env -u FIRMWARE_VERSION -u GITHUB_REF -u GITHUB_RUN_NUMBER scripts/ci/resolve-firmware-version --version 1.2.3)" = "v1.2.3"
-test "$(env -u FIRMWARE_VERSION -u GITHUB_REF -u GITHUB_RUN_NUMBER scripts/ci/resolve-firmware-version --ref refs/tags/v2.0.0)" = "v2.0.0"
+test "$(env -u FIRMWARE_VERSION -u GITHUB_REF -u GITHUB_RUN_NUMBER scripts/ci/resolve-firmware-version --ref refs/tags/v1.2026.051+1775834670)" = "v1.2026.051+1775834670"
+test "$(env -u FIRMWARE_VERSION -u GITHUB_REF GITHUB_RUN_NUMBER=1775834670 scripts/ci/resolve-firmware-version)" = "v1.$(date -u +%Y).$(date -u +%j)+1775834670"
 
-metadata="$(GITHUB_RUN_NUMBER=9 scripts/ci/prepare-firmware-release --event-name workflow_dispatch --version v3.0.0 --publish-release true --build-channel 预览构建)"
-printf '%s\n' "$metadata" | grep -Fq 'version=v3.0.0'
+metadata="$(GITHUB_RUN_NUMBER=9 scripts/ci/prepare-firmware-release --event-name workflow_dispatch --version v1.2026.051+1775834670 --publish-release true --build-channel 预览构建)"
+printf '%s\n' "$metadata" | grep -Fq 'version=v1.2026.051+1775834670'
+printf '%s\n' "$metadata" | grep -Fq 'short_version=1.2026.051'
+printf '%s\n' "$metadata" | grep -Fq 'build_number=1775834670'
+printf '%s\n' "$metadata" | grep -Fq 'display_version=1.2026.051 (1775834670)'
 printf '%s\n' "$metadata" | grep -Fq 'build_channel=preview'
 printf '%s\n' "$metadata" | grep -Fq 'should_publish=true'
 printf '%s\n' "$metadata" | grep -Fq 'is_prerelease=true'
-printf '%s\n' "$metadata" | grep -Fq 'tag_name=v3.0.0'
-printf '%s\n' "$metadata" | grep -Fq 'release_name=AgentLight Firmware v3.0.0 Preview'
+printf '%s\n' "$metadata" | grep -Fq 'tag_name=v1.2026.051+1775834670'
+printf '%s\n' "$metadata" | grep -Fq 'release_name=AgentLight Firmware 1.2026.051 (1775834670) Preview'
 
-metadata="$(scripts/ci/prepare-firmware-release --event-name push --ref refs/tags/v4.0.0 --build-channel 正式构建)"
+metadata="$(scripts/ci/prepare-firmware-release --event-name push --ref refs/tags/v1.2026.052+1775834671 --build-channel 正式构建)"
 printf '%s\n' "$metadata" | grep -Fq 'build_channel=stable'
 printf '%s\n' "$metadata" | grep -Fq 'is_prerelease=false'
 
@@ -48,6 +52,9 @@ grep -Fq 'bootloader.bin' "${dist_dir}/firmware-assets.sha256"
 grep -Fq 'partitions.bin' "${dist_dir}/firmware-assets.sha256"
 grep -Fq 'manifest.json' "${dist_dir}/firmware-assets.sha256"
 grep -Fq '版本号：`v0.0.1`' "${dist_dir}/firmware-release-notes.md"
+grep -Fq '展示版本：`0.0.1 (0)`' "${dist_dir}/firmware-release-notes.md"
+grep -Fq '短版本：`0.0.1`' "${dist_dir}/firmware-release-notes.md"
+grep -Fq '构建号：`0`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '构建通道：`preview`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '发布说明来源：`CHANGELOG.md` / `v0.0.1`' "${dist_dir}/firmware-release-notes.md"
 grep -Fq '支持 CI 正式构建和预览构建' "${dist_dir}/firmware-release-notes.md"
@@ -60,6 +67,12 @@ manifest = json.loads(Path("${dist_dir}/manifest.json").read_text(encoding="utf-
 
 if manifest["version"] != "v0.0.1":
     raise SystemExit("manifest version mismatch")
+if manifest["displayVersion"] != "0.0.1 (0)":
+    raise SystemExit("manifest display version mismatch")
+if manifest["shortVersion"] != "0.0.1":
+    raise SystemExit("manifest short version mismatch")
+if manifest["buildNumber"] != "0":
+    raise SystemExit("manifest build number mismatch")
 if manifest["buildChannel"] != "preview":
     raise SystemExit("manifest build channel mismatch")
 if manifest["files"]["firmware"]["offset"] != "0x10000":
