@@ -2,9 +2,7 @@
 
 ## 总原则
 
-AgentLight 按企业级分层项目维护。任何代码变更都必须优先保持清晰边界、可测试性、可扩展性和可追踪性。
-
-不接受为了让流程表面通过而加入的兜底方案、临时补丁或绕过根因的兼容胶水。
+AgentLight 按清晰分层项目维护。任何代码变更都应保持边界清楚、可测试、可扩展、可追踪。
 
 ## 文件头规范
 
@@ -120,20 +118,6 @@ git diff --check
 ```bash
 pio run -e esp32-c3-supermini
 ```
-
-## 提交规范
-
-提交信息使用 conventional commit，并包含：
-
-```text
-Summary:
-- ...
-
-Details:
-- ...
-```
-
-推送 GitHub 时必须使用本机 VPN 代理。
 
 ## Markdown 文档规范
 

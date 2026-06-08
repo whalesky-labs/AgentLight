@@ -38,19 +38,28 @@ bash -n \
   service/macos/uninstall-launch-agent.sh
 
 printf 'Checking engineering standards...\n'
-test -f AGENTS.md
 test -f .editorconfig
 test -f docs/code-standards.md
 test -f LICENSE
 test -f docs/license.md
 test -f docs/user-guide.md
-grep -Fq 'This file is part of AgentLight.' AGENTS.md
-grep -Fq '@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE' AGENTS.md
 grep -Fq '@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE' docs/code-standards.md
 grep -Fq 'MIT License' LICENSE
 grep -Fq 'SPDX 标识为 `MIT`' docs/license.md
 grep -Fq 'docs/code-standards.md' README.md
 grep -Fq 'docs/code-standards.md' README.en.md
+if grep -Fq 'AGENTS.md' README.md README.en.md; then
+    printf 'Public README files must not reference internal agent rule files.\n' >&2
+    exit 1
+fi
+if [[ -f AGENTS.md ]]; then
+    printf 'AGENTS.md must not be published in the open source repository.\n' >&2
+    exit 1
+fi
+if grep -R -n -E '127\.0\.0\.1:7897|本机 VPN|这台 Mac|Summary:|Details:|兜底方案|临时补丁|兼容胶水|/Users/west' README.md README.en.md docs hooks CHANGELOG.md; then
+    printf 'Public Markdown contains internal workflow or local-environment details.\n' >&2
+    exit 1
+fi
 grep -Fq 'docs/license.md' README.md
 grep -Fq 'docs/license.md' README.en.md
 grep -Fq 'docs/user-guide.md' README.md

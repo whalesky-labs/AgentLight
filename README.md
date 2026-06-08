@@ -323,7 +323,7 @@ AgentLight/
 └── CHANGELOG.md                中文版本发布说明
 ```
 
-项目代码规范见 [docs/code-standards.md](./docs/code-standards.md)，仓库级执行规则见 [AGENTS.md](./AGENTS.md)。
+项目代码规范见 [docs/code-standards.md](./docs/code-standards.md)。
 
 分层原则：
 
