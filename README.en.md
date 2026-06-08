@@ -36,6 +36,8 @@ This repository contains two parts:
 - **ESP32-C3 firmware**: receives commands and controls the red/yellow/green lights
 - **No-GUI bridge layer**: sends state commands through shell scripts and AI tool hooks
 
+The complete user guide is available in Chinese at [docs/user-guide.md](./docs/user-guide.md).
+
 ## Hardware
 
 - ESP32-C3 SuperMini
@@ -338,9 +340,9 @@ AgentLight/
 │   ├── agentlight-agent.example.json    Example background agent service config
 │   └── agent-platforms.json             Compatible AI Agent platform registry
 ├── tests/                      Desktop agent layering and config behavior tests
-├── docs/                       Service and compatibility documents
+├── docs/                       Chinese user guide, service, and compatibility documents
 ├── platformio.ini              ESP32-C3 SuperMini firmware build config
-└── CHANGELOG.md                Bilingual release notes
+└── CHANGELOG.md                Chinese release notes
 ```
 
 Project code standards are documented in [docs/code-standards.md](./docs/code-standards.md), and repository-level rules are defined in [AGENTS.md](./AGENTS.md).

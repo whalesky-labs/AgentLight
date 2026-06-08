@@ -43,6 +43,7 @@ test -f .editorconfig
 test -f docs/code-standards.md
 test -f LICENSE
 test -f docs/license.md
+test -f docs/user-guide.md
 grep -Fq 'This file is part of AgentLight.' AGENTS.md
 grep -Fq '@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE' AGENTS.md
 grep -Fq '@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE' docs/code-standards.md
@@ -52,6 +53,13 @@ grep -Fq 'docs/code-standards.md' README.md
 grep -Fq 'docs/code-standards.md' README.en.md
 grep -Fq 'docs/license.md' README.md
 grep -Fq 'docs/license.md' README.en.md
+grep -Fq 'docs/user-guide.md' README.md
+grep -Fq 'docs/user-guide.md' README.en.md
+grep -Fq '启动电脑端后台服务' docs/user-guide.md
+grep -Fq 'Windows 后台服务' docs/user-guide.md
+grep -Fq 'macOS 后台服务' docs/user-guide.md
+grep -Fq '准备硬件' docs/user-guide.md
+grep -Fq '验证硬件' docs/user-guide.md
 python3 - <<'PY'
 from pathlib import Path
 

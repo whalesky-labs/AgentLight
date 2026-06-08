@@ -33,6 +33,8 @@ AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB
 - **ESP32-C3 固件**：负责接收命令并控制红 / 黄 / 绿灯
 - **无客户端桥接层**：通过 shell 脚本和 AI 工具 Hook 发送状态命令，不需要桌面 GUI App
 
+完整使用说明见 [docs/user-guide.md](./docs/user-guide.md)，包含硬件接线、固件烧录、设备验证、后台服务启动和 AI 工具接入。
+
 ## 硬件
 
 - ESP32-C3 SuperMini
@@ -316,9 +318,9 @@ AgentLight/
 │   ├── agentlight-agent.example.json    后台 Agent 服务示例配置
 │   └── agent-platforms.json             AI Agent 兼容平台清单
 ├── tests/                      桌面 Agent 分层与配置行为测试
-├── docs/                       服务与兼容性文档
+├── docs/                       使用说明、服务与兼容性文档
 ├── platformio.ini              ESP32-C3 SuperMini 固件构建配置
-└── CHANGELOG.md                中英双语版本发布说明
+└── CHANGELOG.md                中文版本发布说明
 ```
 
 项目代码规范见 [docs/code-standards.md](./docs/code-standards.md)，仓库级执行规则见 [AGENTS.md](./AGENTS.md)。
