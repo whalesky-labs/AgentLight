@@ -378,13 +378,13 @@ zip package:
 - `firmware-release-notes.md`
 - `firmware-assets.sha256`
 
-The release note template is
-[docs/releases/firmware-release-notes.md](./docs/releases/firmware-release-notes.md).
-CI fills in the version, build channel, environment, Git commit, build time, and
-core firmware asset name. `manifest.json` includes the version, build channel,
+Release notes are maintained in [CHANGELOG.md](./CHANGELOG.md). CI first reads
+the section matching the current version; if no matching section exists, it uses
+the `Unreleased` section and appends the build channel, environment, Git commit,
+build time, and asset list. `manifest.json` includes the version, build channel,
 Git commit, SHA256 values, and flash offsets. When a `v*` tag is pushed, or when
 manual release publishing is enabled, CI creates a GitHub Release and uses the
-rendered notes as the release body.
+generated notes as the release body.
 
 ## Bridge Verification
 

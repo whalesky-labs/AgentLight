@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -51,10 +52,59 @@ def git_output(*args: str) -> str:
         return ""
 
 
-def render_release_notes(template: Path, output: Path, values: dict[str, str]) -> None:
-    content = template.read_text(encoding="utf-8")
-    for key, value in values.items():
-        content = content.replace(f"{{{{{key}}}}}", value)
+def read_changelog_section(changelog: Path, version: str) -> tuple[str, str]:
+    content = changelog.read_text(encoding="utf-8").splitlines()
+    headings: list[tuple[int, str, str]] = []
+    for index, line in enumerate(content):
+        if line.startswith("## "):
+            title = line.removeprefix("## ").strip()
+            normalized = title.split(" ", 1)[0].strip()
+            normalized = re.sub(r"^\[?([^\]]+)\]?$", r"\1", normalized)
+            headings.append((index, title, normalized))
+
+    targets = [version, version.lstrip("v"), "Unreleased"]
+    for target in targets:
+        for position, (start, title, normalized) in enumerate(headings):
+            if normalized == target:
+                end = headings[position + 1][0] if position + 1 < len(headings) else len(content)
+                section = "\n".join(content[start + 1 : end]).strip()
+                return title, section or "本版本暂无额外发布说明。"
+
+    raise SystemExit(f"CHANGELOG section not found for {version} or Unreleased")
+
+
+def render_release_notes(output: Path, values: dict[str, str]) -> None:
+    changelog_title, changelog_body = read_changelog_section(Path("CHANGELOG.md"), values["VERSION"])
+    content = f"""# AgentLight 固件发布说明
+
+## 版本信息
+
+- 版本号：`{values["VERSION"]}`
+- 构建通道：`{values["BUILD_CHANNEL"]}`
+- 构建环境：`{values["ENVIRONMENT"]}`
+- Git 提交：`{values["GIT_SHA"]}`
+- 构建时间：`{values["BUILD_TIME"]}`
+- 发布说明来源：`CHANGELOG.md` / `{changelog_title}`
+
+## 发布说明
+
+{changelog_body}
+
+## 发布资产
+
+- `firmware.bin`
+- `bootloader.bin`
+- `partitions.bin`
+- `manifest.json`
+- `firmware-release-notes.md`
+- `firmware-assets.sha256`
+
+## 烧录提示
+
+1. 下载本次 Release 中的 `firmware.bin`、`bootloader.bin`、`partitions.bin` 和 `manifest.json`。
+2. 可用 `firmware-assets.sha256` 校验下载资产。
+3. 使用 PlatformIO、esptool 或后续提供的烧录脚本写入 ESP32-C3 SuperMini。
+"""
     output.write_text(content, encoding="utf-8")
 
 
@@ -98,7 +148,6 @@ def main() -> int:
 
     notes_path = dist_dir / "firmware-release-notes.md"
     render_release_notes(
-        Path("docs/releases/firmware-release-notes.md"),
         notes_path,
         {
             "VERSION": args.version,
@@ -106,7 +155,6 @@ def main() -> int:
             "BUILD_CHANNEL": args.build_channel,
             "GIT_SHA": git_sha,
             "BUILD_TIME": build_time,
-            "ARTIFACT_NAME": "firmware.bin",
         },
     )
 
