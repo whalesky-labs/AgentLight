@@ -15,6 +15,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ref", default=os.environ.get("GITHUB_REF", ""))
     parser.add_argument("--version", default=os.environ.get("INPUT_VERSION", ""))
     parser.add_argument("--publish-release", default=os.environ.get("INPUT_PUBLISH_RELEASE", "false"))
+    parser.add_argument("--build-channel", default=os.environ.get("INPUT_BUILD_CHANNEL", ""))
     return parser.parse_args()
 
 
@@ -31,13 +32,26 @@ def main() -> int:
     args = parse_args()
     version = run_resolver(args.version, args.ref)
     is_tag = args.ref.startswith("refs/tags/v")
+    build_channel = args.build_channel.strip().lower()
+    if not build_channel:
+        build_channel = "stable" if is_tag else "preview"
+    if build_channel not in {"stable", "preview"}:
+        raise SystemExit(f"Invalid build channel: {args.build_channel}")
+
     manual_publish = args.event_name == "workflow_dispatch" and truthy(args.publish_release)
     should_publish = is_tag or manual_publish
     tag_name = args.ref.removeprefix("refs/tags/") if is_tag else version
+    is_prerelease = build_channel == "preview"
+    release_name = f"AgentLight Firmware {version}"
+    if is_prerelease:
+        release_name = f"{release_name} Preview"
 
     print(f"version={version}")
+    print(f"build_channel={build_channel}")
     print(f"should_publish={str(should_publish).lower()}")
+    print(f"is_prerelease={str(is_prerelease).lower()}")
     print(f"tag_name={tag_name}")
+    print(f"release_name={release_name}")
     return 0
 
 

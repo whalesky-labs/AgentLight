@@ -361,25 +361,30 @@ Firmware version rules:
 | Manual run with `version` | Uses the provided version |
 | Normal push / PR | Generates `vYYYY.MM.DD.<run_number>` |
 
-CI generates:
+Build channels:
 
-- `agentlight-firmware-<version>.zip`
-- `firmware-release-notes.md`
-- `firmware-package.sha256`
+| Channel | Description |
+| --- | --- |
+| `stable` | Formal build; GitHub Release is not marked as prerelease. `v*` tags use this by default. |
+| `preview` | Preview build; GitHub Release is marked as prerelease. Normal push, PR, and manual runs use this by default. |
 
-The firmware package contains:
+CI generates and publishes these standalone assets without creating an extra
+zip package:
 
 - `firmware.bin`
 - `bootloader.bin`
 - `partitions.bin`
-- `manifest.json` with version, Git commit, SHA256, and flash offsets
-- `RELEASE_NOTES.md`
+- `manifest.json`
+- `firmware-release-notes.md`
+- `firmware-assets.sha256`
 
 The release note template is
 [docs/releases/firmware-release-notes.md](./docs/releases/firmware-release-notes.md).
-CI fills in the version, environment, Git commit, build time, and artifact name.
-When a `v*` tag is pushed, or when manual release publishing is enabled, CI
-creates a GitHub Release and uses the rendered notes as the release body.
+CI fills in the version, build channel, environment, Git commit, build time, and
+core firmware asset name. `manifest.json` includes the version, build channel,
+Git commit, SHA256 values, and flash offsets. When a `v*` tag is pushed, or when
+manual release publishing is enabled, CI creates a GitHub Release and uses the
+rendered notes as the release body.
 
 ## Bridge Verification
 

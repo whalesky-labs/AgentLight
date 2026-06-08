@@ -15,6 +15,14 @@ on:
         description: "Optional firmware version, for example v1.0.0"
         required: false
         type: string
+      build_channel:
+        description: "Firmware build channel"
+        required: false
+        default: preview
+        type: choice
+        options:
+          - stable
+          - preview
       publish_release:
         description: "Create a GitHub Release"
         required: false
@@ -61,6 +69,7 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_PUBLISH_RELEASE: ${{ inputs.publish_release }}
+          INPUT_BUILD_CHANNEL: ${{ inputs.build_channel }}
         run: |
           scripts/ci/prepare-firmware-release > release.env
           cat release.env
@@ -80,16 +89,20 @@ jobs:
         run: |
           scripts/ci/package-firmware \
             --version "$FIRMWARE_VERSION" \
-            --environment "$PLATFORMIO_ENV"
+            --environment "$PLATFORMIO_ENV" \
+            --build-channel "${{ steps.release.outputs.build_channel }}"
 
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: agentlight-firmware-${{ steps.release.outputs.version }}
           path: |
-            dist/agentlight-firmware-${{ steps.release.outputs.version }}.zip
+            dist/firmware.bin
+            dist/bootloader.bin
+            dist/partitions.bin
+            dist/manifest.json
             dist/firmware-release-notes.md
-            dist/firmware-package.sha256
+            dist/firmware-assets.sha256
           if-no-files-found: error
 
       - name: Publish GitHub Release
@@ -98,9 +111,14 @@ jobs:
         with:
           tag_name: ${{ steps.release.outputs.tag_name }}
           target_commitish: ${{ github.sha }}
-          name: AgentLight Firmware ${{ steps.release.outputs.version }}
+          name: ${{ steps.release.outputs.release_name }}
+          prerelease: ${{ steps.release.outputs.is_prerelease }}
           body_path: dist/firmware-release-notes.md
           files: |
-            dist/agentlight-firmware-${{ steps.release.outputs.version }}.zip
-            dist/firmware-package.sha256
+            dist/firmware.bin
+            dist/bootloader.bin
+            dist/partitions.bin
+            dist/manifest.json
+            dist/firmware-release-notes.md
+            dist/firmware-assets.sha256
           fail_on_unmatched_files: true

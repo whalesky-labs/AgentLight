@@ -3,11 +3,12 @@
 ## 版本信息
 
 - 版本号：`{{VERSION}}`
+- 构建通道：`{{BUILD_CHANNEL}}`
 - 构建环境：`{{ENVIRONMENT}}`
 - Git 提交：`{{GIT_SHA}}`
 - 构建时间：`{{BUILD_TIME}}`
-- 固件包：`{{ARTIFACT_NAME}}`
-- 校验文件：`firmware-package.sha256`
+- 核心固件资产：`{{ARTIFACT_NAME}}`
+- 校验文件：`firmware-assets.sha256`
 
 ## 本次发布
 
@@ -18,8 +19,8 @@
 
 ## 烧录提示
 
-1. 下载本次 Release 中的固件包。
-2. 解压后确认包含 `firmware.bin`、`bootloader.bin`、`partitions.bin` 和 `manifest.json`。
+1. 下载本次 Release 中的 `firmware.bin`、`bootloader.bin`、`partitions.bin` 和 `manifest.json`。
+2. 可用 `firmware-assets.sha256` 校验下载资产。
 3. 使用 PlatformIO、esptool 或后续提供的烧录脚本写入 ESP32-C3 SuperMini。
 
 ## 注意事项

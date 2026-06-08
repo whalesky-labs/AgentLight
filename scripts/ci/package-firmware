@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create an AgentLight firmware release package from PlatformIO outputs."""
+"""Prepare AgentLight firmware release assets from PlatformIO outputs."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ import json
 import os
 import shutil
 import subprocess
-import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,6 +30,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Package AgentLight firmware outputs.")
     parser.add_argument("--version", required=True)
     parser.add_argument("--environment", default="esp32-c3-supermini")
+    parser.add_argument("--build-channel", choices=["stable", "preview"], default="preview")
     parser.add_argument("--build-dir", default=".pio/build/esp32-c3-supermini")
     parser.add_argument("--dist-dir", default="dist")
     return parser.parse_args()
@@ -62,21 +62,15 @@ def main() -> int:
     args = parse_args()
     build_dir = Path(args.build_dir)
     dist_dir = Path(args.dist_dir)
-    package_root = dist_dir / f"agentlight-firmware-{args.version}"
-    artifact_name = f"agentlight-firmware-{args.version}.zip"
-    artifact_path = dist_dir / artifact_name
 
     dist_dir.mkdir(parents=True, exist_ok=True)
-    if package_root.exists():
-        shutil.rmtree(package_root)
-    package_root.mkdir(parents=True)
 
     manifest_files = {}
     for label, filename in REQUIRED_BINARIES.items():
         source = build_dir / filename
         if not source.exists():
             raise SystemExit(f"Missing PlatformIO output: {source}")
-        target = package_root / filename
+        target = dist_dir / filename
         shutil.copy2(source, target)
         manifest_files[label] = {
             "file": filename,
@@ -91,14 +85,13 @@ def main() -> int:
         "project": "AgentLight",
         "version": args.version,
         "environment": args.environment,
+        "buildChannel": args.build_channel,
         "buildTime": build_time,
         "gitSha": git_sha,
-        "artifact": {
-            "file": artifact_name,
-        },
         "files": manifest_files,
     }
-    (package_root / "manifest.json").write_text(
+    manifest_path = dist_dir / "manifest.json"
+    manifest_path.write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
@@ -110,24 +103,28 @@ def main() -> int:
         {
             "VERSION": args.version,
             "ENVIRONMENT": args.environment,
+            "BUILD_CHANNEL": args.build_channel,
             "GIT_SHA": git_sha,
             "BUILD_TIME": build_time,
-            "ARTIFACT_NAME": artifact_name,
+            "ARTIFACT_NAME": "firmware.bin",
         },
     )
-    shutil.copy2(notes_path, package_root / "RELEASE_NOTES.md")
 
-    if artifact_path.exists():
-        artifact_path.unlink()
-    with zipfile.ZipFile(artifact_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for path in sorted(package_root.rglob("*")):
-            archive.write(path, path.relative_to(package_root))
+    checksum_path = dist_dir / "firmware-assets.sha256"
+    checksum_files = [
+        dist_dir / "firmware.bin",
+        dist_dir / "bootloader.bin",
+        dist_dir / "partitions.bin",
+        manifest_path,
+        notes_path,
+    ]
+    checksum_path.write_text(
+        "".join(f"{file_sha256(path)}  {path.name}\n" for path in checksum_files),
+        encoding="utf-8",
+    )
 
-    artifact_sha256 = file_sha256(artifact_path)
-    checksum_path = dist_dir / "firmware-package.sha256"
-    checksum_path.write_text(f"{artifact_sha256}  {artifact_name}\n", encoding="utf-8")
-
-    print(f"artifact={artifact_path}")
+    print(f"asset_dir={dist_dir}")
+    print(f"manifest={manifest_path}")
     print(f"notes={notes_path}")
     print(f"checksum={checksum_path}")
     return 0
