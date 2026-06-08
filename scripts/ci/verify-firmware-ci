@@ -15,7 +15,7 @@ printf 'partitions' > "${build_dir}/partitions.bin"
 test "$(scripts/ci/resolve-firmware-version --version 1.2.3)" = "v1.2.3"
 test "$(scripts/ci/resolve-firmware-version --ref refs/tags/v2.0.0)" = "v2.0.0"
 
-metadata="$(GITHUB_RUN_NUMBER=9 scripts/ci/prepare-firmware-release --event-name workflow_dispatch --version v3.0.0 --publish-release true --build-channel preview)"
+metadata="$(GITHUB_RUN_NUMBER=9 scripts/ci/prepare-firmware-release --event-name workflow_dispatch --version v3.0.0 --publish-release true --build-channel 预览构建)"
 printf '%s\n' "$metadata" | grep -Fq 'version=v3.0.0'
 printf '%s\n' "$metadata" | grep -Fq 'build_channel=preview'
 printf '%s\n' "$metadata" | grep -Fq 'should_publish=true'
@@ -23,7 +23,7 @@ printf '%s\n' "$metadata" | grep -Fq 'is_prerelease=true'
 printf '%s\n' "$metadata" | grep -Fq 'tag_name=v3.0.0'
 printf '%s\n' "$metadata" | grep -Fq 'release_name=AgentLight Firmware v3.0.0 Preview'
 
-metadata="$(scripts/ci/prepare-firmware-release --event-name push --ref refs/tags/v4.0.0)"
+metadata="$(scripts/ci/prepare-firmware-release --event-name push --ref refs/tags/v4.0.0 --build-channel 正式构建)"
 printf '%s\n' "$metadata" | grep -Fq 'build_channel=stable'
 printf '%s\n' "$metadata" | grep -Fq 'is_prerelease=false'
 

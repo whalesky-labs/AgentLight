@@ -28,15 +28,31 @@ def truthy(value: str) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+def normalize_build_channel(value: str, is_tag: bool) -> str:
+    normalized = value.strip().lower()
+    if not normalized:
+        return "stable" if is_tag else "preview"
+
+    mapping = {
+        "stable": "stable",
+        "正式构建": "stable",
+        "正式": "stable",
+        "release": "stable",
+        "preview": "preview",
+        "预览构建": "preview",
+        "预览": "preview",
+        "prerelease": "preview",
+    }
+    if normalized not in mapping:
+        raise SystemExit(f"Invalid build channel: {value}")
+    return mapping[normalized]
+
+
 def main() -> int:
     args = parse_args()
     version = run_resolver(args.version, args.ref)
     is_tag = args.ref.startswith("refs/tags/v")
-    build_channel = args.build_channel.strip().lower()
-    if not build_channel:
-        build_channel = "stable" if is_tag else "preview"
-    if build_channel not in {"stable", "preview"}:
-        raise SystemExit(f"Invalid build channel: {args.build_channel}")
+    build_channel = normalize_build_channel(args.build_channel, is_tag)
 
     manual_publish = args.event_name == "workflow_dispatch" and truthy(args.publish_release)
     should_publish = is_tag or manual_publish

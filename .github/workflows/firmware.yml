@@ -18,11 +18,11 @@ on:
       build_channel:
         description: "固件构建通道"
         required: false
-        default: preview
+        default: 预览构建
         type: choice
         options:
-          - stable
-          - preview
+          - 正式构建
+          - 预览构建
       publish_release:
         description: "是否创建 GitHub Release"
         required: false
