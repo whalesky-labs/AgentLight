@@ -11,6 +11,7 @@
 - 支持红 / 黄 / 绿常亮、闪烁、呼吸状态命令。
 - 支持多 AI Agent 状态事件归一化与后台 Agent 服务。
 - 支持 CI 正式构建和预览构建，并将固件资产直接发布到 GitHub Releases。
+- 使用 4MB Flash 单 App 分区表，避免 USB、BLE、Wi-Fi 三通道固件超过默认 App 分区。
 
 ### 说明
 

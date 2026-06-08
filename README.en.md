@@ -378,6 +378,10 @@ zip package:
 - `firmware-release-notes.md`
 - `firmware-assets.sha256`
 
+The firmware uses `partitions/agentlight_4mb_no_ota.csv` for ESP32-C3
+SuperMini boards with 4MB flash. The single App partition is 3MB so the
+combined USB, BLE, and Wi-Fi firmware fits without removing control channels.
+
 Release notes are maintained in [CHANGELOG.md](./CHANGELOG.md). CI first reads
 the section matching the current version; if no matching section exists, it uses
 the `Unreleased` section and appends the build channel, environment, Git commit,

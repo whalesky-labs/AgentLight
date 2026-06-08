@@ -12,6 +12,11 @@ printf 'firmware' > "${build_dir}/firmware.bin"
 printf 'bootloader' > "${build_dir}/bootloader.bin"
 printf 'partitions' > "${build_dir}/partitions.bin"
 
+test -f partitions/agentlight_4mb_no_ota.csv
+grep -Fq 'board_build.flash_size = 4MB' platformio.ini
+grep -Fq 'board_build.partitions = partitions/agentlight_4mb_no_ota.csv' platformio.ini
+grep -Fq 'app0,     app,  factory, 0x10000,  0x300000,' partitions/agentlight_4mb_no_ota.csv
+
 test "$(env -u FIRMWARE_VERSION -u GITHUB_REF -u GITHUB_RUN_NUMBER scripts/ci/resolve-firmware-version --version 1.2.3)" = "v1.2.3"
 test "$(env -u FIRMWARE_VERSION -u GITHUB_REF -u GITHUB_RUN_NUMBER scripts/ci/resolve-firmware-version --ref refs/tags/v2.0.0)" = "v2.0.0"
 

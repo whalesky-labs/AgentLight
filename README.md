@@ -355,6 +355,8 @@ CI 会生成并发布这些独立资产，不再额外打包 zip：
 - `firmware-release-notes.md`
 - `firmware-assets.sha256`
 
+固件使用 `partitions/agentlight_4mb_no_ota.csv` 分区表，面向 4MB Flash 的 ESP32-C3 SuperMini，单个 App 分区大小为 3MB，用于容纳 USB、BLE、Wi-Fi 三通道一体固件。
+
 `manifest.json` 包含版本、构建通道、Git 提交、SHA256 和烧录 offset。版本发布说明维护在 [CHANGELOG.md](./CHANGELOG.md)，CI 会优先读取当前版本号对应的章节；如果没有对应章节，则读取 `Unreleased` 章节，并自动追加构建通道、构建环境、Git 提交、构建时间和资产清单。推送 `v*` tag 或手动触发时勾选发布，会自动创建 GitHub Release 并把生成后的发布说明写入 Release body。
 
 ## 桥接层验证
