@@ -76,7 +76,27 @@ printf 'Checking service agent config...\n'
 scripts/agentlight-agent check-config --config config/agentlight-agent.example.json >/dev/null
 test "$(scripts/agentlight-agent platform get --config config/agentlight-agent.example.json)" = "codex"
 scripts/agentlight-agent platform list --config config/agentlight-agent.example.json | grep -Fq '* codex'
-scripts/multi-agent-monitor --config config/agent-monitors.example.json --platform codex --once --limit 1 >/dev/null
+monitor_tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$monitor_tmp_dir"' EXIT
+printf '{"payload":{"type":"task_complete"}}\n' > "$monitor_tmp_dir/codex-session.jsonl"
+cat > "$monitor_tmp_dir/agent-monitors.json" <<EOF
+{
+  "monitors": [
+    {
+      "name": "ci-codex-session-jsonl",
+      "agent": "codex",
+      "type": "file",
+      "glob": "$monitor_tmp_dir/codex-session.jsonl",
+      "format": "jsonl",
+      "from_start": true,
+      "rules": [
+        { "json_path": "payload.type", "equals": "task_complete", "event": "done" }
+      ]
+    }
+  ]
+}
+EOF
+scripts/multi-agent-monitor --config "$monitor_tmp_dir/agent-monitors.json" --platform codex --once --limit 1 >/dev/null
 test -f docs/agent-service.md
 test -f service/windows/install-service.ps1
 test -f service/windows/uninstall-service.ps1
