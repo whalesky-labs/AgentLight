@@ -26,8 +26,16 @@ DEFAULT_CONFIG = REPO_ROOT / "config" / "agentlight-agent.example.json"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the AgentLight background agent.")
-    parser.add_argument("command", choices=["run", "check-config", "print-runtime"], nargs="?", default="run")
+    parser.add_argument(
+        "command",
+        choices=["run", "check-config", "print-runtime", "platform"],
+        nargs="?",
+        default="run",
+    )
+    parser.add_argument("platform_action", nargs="?", choices=["get", "list", "set"])
+    parser.add_argument("platform_value", nargs="?")
     parser.add_argument("--config", default=os.environ.get("AGENTLIGHT_AGENT_CONFIG", str(DEFAULT_CONFIG)))
+    parser.add_argument("--platform", default=os.environ.get("AGENTLIGHT_ACTIVE_PLATFORM", ""))
     parser.add_argument("--once", action="store_true", help="Run one monitor pass and exit. Intended for tests.")
     return parser.parse_args()
 
@@ -36,11 +44,26 @@ def load_config(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise SystemExit(f"Agent config not found: {path}")
     data = json.loads(path.read_text(encoding="utf-8"))
-    required = ["monitorConfig", "sendToHardware", "pollIntervalSeconds", "restartDelaySeconds", "environment"]
+    required = [
+        "activePlatform",
+        "multiSessionMode",
+        "monitorConfig",
+        "sendToHardware",
+        "pollIntervalSeconds",
+        "restartDelaySeconds",
+        "environment",
+    ]
     for key in required:
         if key not in data:
             raise SystemExit(f"Agent config missing required key: {key}")
+    if data["multiSessionMode"] != "latest-event-wins":
+        raise SystemExit("Only multiSessionMode=latest-event-wins is supported")
     return data
+
+
+def save_config(path: Path, config: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def resolve_path(value: str, base: Path) -> Path:
@@ -72,7 +95,7 @@ def log_line(file, message: str) -> None:
     file.flush()
 
 
-def build_monitor_command(config: dict[str, Any], config_dir: Path, once: bool) -> list[str]:
+def build_monitor_command(config: dict[str, Any], config_dir: Path, once: bool, platform_name: str) -> list[str]:
     monitor_config = resolve_path(str(config["monitorConfig"]), REPO_ROOT)
     if not monitor_config.exists():
         raise SystemExit(f"Monitor config not found: {monitor_config}")
@@ -83,6 +106,8 @@ def build_monitor_command(config: dict[str, Any], config_dir: Path, once: bool) 
         str(monitor_config),
         "--poll-interval",
         str(config.get("pollIntervalSeconds", 0.5)),
+        "--platform",
+        platform_name,
     ]
     if config.get("sendToHardware", True):
         command.append("--send")
@@ -100,12 +125,51 @@ def runtime_info(config_path: Path, config: dict[str, Any]) -> dict[str, str]:
         "repoRoot": str(REPO_ROOT),
         "config": str(config_path),
         "monitorConfig": str(monitor_config),
+        "activePlatform": str(config.get("activePlatform", "")),
+        "multiSessionMode": str(config.get("multiSessionMode", "")),
         "logFile": str(log_file),
         "system": platform.system(),
     }
 
 
-def run_agent(config_path: Path, config: dict[str, Any], once: bool) -> int:
+def configured_platforms(config: dict[str, Any]) -> list[str]:
+    monitor_config = resolve_path(str(config["monitorConfig"]), REPO_ROOT)
+    data = json.loads(monitor_config.read_text(encoding="utf-8"))
+    platforms = sorted({str(item["agent"]) for item in data.get("monitors", [])})
+    return platforms
+
+
+def resolve_active_platform(config: dict[str, Any], override: str) -> str:
+    platform_name = (override or str(config.get("activePlatform", ""))).strip()
+    if not platform_name:
+        raise SystemExit("Active platform is not configured")
+    return platform_name
+
+
+def handle_platform_command(config_path: Path, config: dict[str, Any], action: str | None, value: str | None) -> int:
+    action = action or "get"
+    if action == "get":
+        print(config.get("activePlatform", ""))
+        return 0
+    if action == "list":
+        for platform_name in configured_platforms(config):
+            marker = "*" if platform_name == config.get("activePlatform") else " "
+            print(f"{marker} {platform_name}")
+        return 0
+    if action == "set":
+        if not value:
+            raise SystemExit("platform set requires a platform name")
+        platforms = configured_platforms(config)
+        if value not in platforms:
+            raise SystemExit(f"Unknown platform: {value}. Available: {', '.join(platforms)}")
+        config["activePlatform"] = value
+        save_config(config_path, config)
+        print(f"activePlatform={value}")
+        return 0
+    raise SystemExit(f"Unknown platform action: {action}")
+
+
+def run_agent(config_path: Path, config: dict[str, Any], once: bool, platform_override: str) -> int:
     log_file = resolve_path(config.get("logFile") or str(default_log_file()), config_path.parent)
     env = os.environ.copy()
     env.update({str(key): str(value) for key, value in config.get("environment", {}).items()})
@@ -113,10 +177,14 @@ def run_agent(config_path: Path, config: dict[str, Any], once: bool) -> int:
     env["PYTHONUNBUFFERED"] = "1"
 
     restart_delay = float(config.get("restartDelaySeconds", 3))
-    command = build_monitor_command(config, config_path.parent, once)
+    active_platform = resolve_active_platform(config, platform_override)
+    command = build_monitor_command(config, config_path.parent, once, active_platform)
 
     with open_log(log_file) as log:
-        log_line(log, f"AgentLight agent starting command={command}")
+        log_line(
+            log,
+            f"AgentLight agent starting platform={active_platform} mode={config.get('multiSessionMode')} command={command}",
+        )
         while True:
             process = subprocess.Popen(
                 command,
@@ -149,7 +217,10 @@ def main() -> int:
         print(json.dumps(runtime_info(config_path, config), ensure_ascii=False, indent=2))
         return 0
 
-    return run_agent(config_path, config, args.once)
+    if args.command == "platform":
+        return handle_platform_command(config_path, config, args.platform_action, args.platform_value)
+
+    return run_agent(config_path, config, args.once, args.platform)
 
 
 if __name__ == "__main__":

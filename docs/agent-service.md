@@ -27,15 +27,32 @@ scripts/agentlight-agent run --config config/agentlight-agent.example.json
 ```bash
 scripts/agentlight-agent check-config --config config/agentlight-agent.example.json
 scripts/agentlight-agent print-runtime --config config/agentlight-agent.example.json
+scripts/agentlight-agent platform get --config config/agentlight-agent.example.json
+scripts/agentlight-agent platform list --config config/agentlight-agent.example.json
+scripts/agentlight-agent platform set codex --config config/agentlight-agent.example.json
 ```
 
 服务入口会启动：
 
 ```bash
-scripts/multi-agent-monitor --config <monitor-config> --send
+scripts/multi-agent-monitor --config <monitor-config> --platform <activePlatform> --send
 ```
 
 如果监听器退出，服务入口会按配置自动重启。
+
+## 平台与多会话策略
+
+服务一次只监听一个平台，由 `activePlatform` 指定。这样可以避免 Codex、Claude Code、Cursor 等多个平台同时抢占同一组红绿灯。
+
+同一平台内部允许多项目、多会话同时工作，但不做聚合、不做轮播、不固定单会话。当前策略是 `latest-event-wins`：
+
+```text
+A 会话 working  -> 灯显示 A 的工作状态
+B 会话 done     -> B 的事件到达后立即替换当前灯光
+C 会话 thinking -> C 的事件到达后立即替换当前灯光
+```
+
+也就是说，服务会记录并转发当前平台下所有会话事件，但灯光永远显示“最后发生状态变化的会话”。
 
 ## 配置
 
@@ -43,6 +60,8 @@ scripts/multi-agent-monitor --config <monitor-config> --send
 
 | 字段 | 说明 |
 | --- | --- |
+| `activePlatform` | 当前服务监听的平台，例如 `codex` |
+| `multiSessionMode` | 当前平台内多会话策略；现阶段固定为 `latest-event-wins` |
 | `monitorConfig` | 多 Agent 监听配置文件 |
 | `sendToHardware` | 是否把事件发送到硬件 |
 | `pollIntervalSeconds` | 文件监听轮询间隔 |

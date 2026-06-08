@@ -74,13 +74,19 @@ PY
 
 printf 'Checking service agent config...\n'
 scripts/agentlight-agent check-config --config config/agentlight-agent.example.json >/dev/null
+test "$(scripts/agentlight-agent platform get --config config/agentlight-agent.example.json)" = "codex"
+scripts/agentlight-agent platform list --config config/agentlight-agent.example.json | grep -Fq '* codex'
+scripts/multi-agent-monitor --config config/agent-monitors.example.json --platform codex --once --limit 1 >/dev/null
 test -f docs/agent-service.md
 test -f service/windows/install-service.ps1
 test -f service/windows/uninstall-service.ps1
 test -f service/macos/install-launch-agent.sh
 test -f service/macos/uninstall-launch-agent.sh
 grep -Fq 'whalesky-labs-AgentLight' config/agentlight-agent.example.json
+grep -Fq '"activePlatform": "codex"' config/agentlight-agent.example.json
+grep -Fq '"multiSessionMode": "latest-event-wins"' config/agentlight-agent.example.json
 grep -Fq 'whalesky-labs-AgentLight' docs/agent-service.md
+grep -Fq 'latest-event-wins' docs/agent-service.md
 grep -Fq 'whalesky-labs-AgentLight' service/windows/install-service.ps1
 grep -Fq 'whalesky-labs-AgentLight' service/windows/uninstall-service.ps1
 grep -Fq 'com.whalesky-labs.AgentLight.agent' service/macos/install-launch-agent.sh

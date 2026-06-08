@@ -48,6 +48,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--once", action="store_true", help="Process existing content once and exit.")
     parser.add_argument("--send", action="store_true", help="Forward normalized events to scripts/agentlight-event --send.")
+    parser.add_argument("--platform", default="", help="Only run monitors for this platform/agent.")
     parser.add_argument("--poll-interval", type=float, default=0.5, help="Polling interval for file monitors.")
     parser.add_argument("--limit", type=int, default=0, help="Maximum normalized events to print before exit.")
     return parser.parse_args()
@@ -119,7 +120,7 @@ def emit_event(agent: str, event: str, source: str, send: bool) -> None:
     result = subprocess.run(command, check=False, capture_output=True, text=True)
     output = result.stdout.strip() or result.stderr.strip()
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%S%z")
-    print(f"{timestamp} monitor={source} {output}", flush=True)
+    print(f"{timestamp} mode=latest-event-wins monitor={source} {output}", flush=True)
 
 
 def expand_files(pattern: str) -> list[Path]:
@@ -200,6 +201,11 @@ def main() -> int:
         return 1
 
     monitors = load_config(config_path)
+    if args.platform:
+        monitors = [monitor for monitor in monitors if monitor.agent == args.platform]
+        if not monitors:
+            print(f"No monitors configured for platform: {args.platform}", file=sys.stderr)
+            return 1
     file_monitors = [monitor for monitor in monitors if monitor.type == "file"]
     command_monitors = [monitor for monitor in monitors if monitor.type == "command"]
 

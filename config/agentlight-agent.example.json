@@ -1,8 +1,10 @@
 {
   "agentName": "whalesky-labs-AgentLight",
+  "activePlatform": "codex",
+  "multiSessionMode": "latest-event-wins",
   "monitorConfig": "config/agent-monitors.example.json",
   "sendToHardware": true,
-  "pollIntervalSeconds": 0.5,
+  "pollIntervalSeconds": 0.1,
   "restartDelaySeconds": 3,
   "logFile": "",
   "environment": {

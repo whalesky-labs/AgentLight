@@ -322,6 +322,14 @@ AgentLight/
 - `infrastructure` 承担硬件 IO、串口、BLE 和 Wi-Fi HTTP 适配
 - `main.cpp` 只负责对象装配和主循环调度
 
+服务运行策略：
+
+- 服务启动时只监听一个 `activePlatform`
+- 支持通过 `scripts/agentlight-agent platform set <platform>` 切换平台
+- 同一平台内支持多项目、多会话
+- 多会话不聚合、不轮播，采用 `latest-event-wins`
+- 哪个会话最后产生状态事件，灯光就显示哪个会话的状态
+
 ## 构建与烧录
 
 本项目使用 PlatformIO + Arduino framework。

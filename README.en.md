@@ -343,6 +343,14 @@ Layering rules:
 - `infrastructure` owns hardware IO, serial transport, BLE, and Wi-Fi HTTP adaptation
 - `main.cpp` only wires dependencies and schedules the main loop
 
+Service runtime strategy:
+
+- The service listens to one `activePlatform` at a time
+- Switch platforms with `scripts/agentlight-agent platform set <platform>`
+- Multiple projects and sessions are supported within the active platform
+- Multi-session behavior does not aggregate or rotate states; it uses `latest-event-wins`
+- The latest session event replaces the current light state immediately
+
 ## Build
 
 This project uses PlatformIO with the Arduino framework.
