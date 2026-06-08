@@ -368,6 +368,8 @@ CI 会生成并发布这些独立资产，不再额外打包 zip：
 
 `manifest.json` 包含版本、构建通道、Git 提交、SHA256 和烧录 offset。版本发布说明维护在 [CHANGELOG.md](./CHANGELOG.md)，CI 会优先读取当前版本号对应的章节；如果没有对应章节，则读取 `Unreleased` 章节，并自动追加构建通道、构建环境、Git 提交、构建时间和资产清单。推送 `v*` tag 或手动触发时勾选发布，会自动创建 GitHub Release 并把生成后的发布说明写入 Release body。
 
+预览构建不会默认创建 GitHub Release，但 CI 会把生成后的 `firmware-release-notes.md` 输出到构建日志和 GitHub Actions Summary，便于直接查看本次版本更新说明。
+
 ## 桥接层验证
 
 多 Agent 桥接层可以用内置脚本验证：

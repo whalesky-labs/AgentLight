@@ -400,6 +400,10 @@ Git commit, SHA256 values, and flash offsets. When a `v*` tag is pushed, or when
 manual release publishing is enabled, CI creates a GitHub Release and uses the
 generated notes as the release body.
 
+Preview builds do not create a GitHub Release by default, but CI prints the
+generated `firmware-release-notes.md` to the build log and GitHub Actions
+Summary so the version notes are visible during preview runs.
+
 ## Bridge Verification
 
 Verify the multi-agent bridge with:

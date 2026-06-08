@@ -32,6 +32,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   firmware:
     name: Build ESP32-C3 firmware
@@ -98,6 +101,15 @@ jobs:
             --build-number "$FIRMWARE_BUILD_NUMBER" \
             --environment "$PLATFORMIO_ENV" \
             --build-channel "${{ steps.release.outputs.build_channel }}"
+
+      - name: Show firmware release notes
+        run: |
+          cat dist/firmware-release-notes.md
+          {
+            echo "## 固件版本更新说明"
+            echo
+            cat dist/firmware-release-notes.md
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v5
