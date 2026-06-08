@@ -102,13 +102,13 @@ jobs:
             --environment "$PLATFORMIO_ENV" \
             --build-channel "${{ steps.release.outputs.build_channel }}"
 
-      - name: Show firmware release notes
+      - name: Show release notes
         run: |
-          cat dist/firmware-release-notes.md
+          cat dist/release-body.md
           {
             echo "## 固件版本更新说明"
             echo
-            cat dist/firmware-release-notes.md
+            cat dist/release-body.md
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload firmware artifact
@@ -120,7 +120,6 @@ jobs:
             dist/bootloader.bin
             dist/partitions.bin
             dist/manifest.json
-            dist/firmware-release-notes.md
             dist/firmware-assets.sha256
           if-no-files-found: error
 
@@ -132,12 +131,11 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: ${{ steps.release.outputs.release_name }}
           prerelease: ${{ steps.release.outputs.is_prerelease }}
-          body_path: dist/firmware-release-notes.md
+          body_path: dist/release-body.md
           files: |
             dist/firmware.bin
             dist/bootloader.bin
             dist/partitions.bin
             dist/manifest.json
-            dist/firmware-release-notes.md
             dist/firmware-assets.sha256
           fail_on_unmatched_files: true

@@ -169,7 +169,6 @@ def render_release_notes(output: Path, values: dict[str, str]) -> None:
 - `bootloader.bin`
 - `partitions.bin`
 - `manifest.json`
-- `firmware-release-notes.md`
 - `firmware-assets.sha256`
 
 ## 烧录提示
@@ -187,6 +186,7 @@ def main() -> int:
     dist_dir = Path(args.dist_dir)
 
     dist_dir.mkdir(parents=True, exist_ok=True)
+    (dist_dir / "firmware-release-notes.md").unlink(missing_ok=True)
 
     manifest_files = {}
     for label, filename in REQUIRED_BINARIES.items():
@@ -225,9 +225,9 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    notes_path = dist_dir / "firmware-release-notes.md"
+    release_body_path = dist_dir / "release-body.md"
     render_release_notes(
-        notes_path,
+        release_body_path,
         {
             "VERSION": args.version,
             "DISPLAY_VERSION": display_version,
@@ -246,7 +246,6 @@ def main() -> int:
         dist_dir / "bootloader.bin",
         dist_dir / "partitions.bin",
         manifest_path,
-        notes_path,
     ]
     checksum_path.write_text(
         "".join(f"{file_sha256(path)}  {path.name}\n" for path in checksum_files),
@@ -255,7 +254,7 @@ def main() -> int:
 
     print(f"asset_dir={dist_dir}")
     print(f"manifest={manifest_path}")
-    print(f"notes={notes_path}")
+    print(f"release_body={release_body_path}")
     print(f"checksum={checksum_path}")
     return 0
 

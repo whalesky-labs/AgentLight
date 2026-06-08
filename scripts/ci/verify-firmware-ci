@@ -15,8 +15,9 @@ printf 'partitions' > "${build_dir}/partitions.bin"
 grep -Fq 'board_build.flash_size = 4MB' platformio.ini
 grep -Fq 'board_build.partitions = huge_app.csv' platformio.ini
 grep -Fq 'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"' .github/workflows/firmware.yml
-grep -Fq 'Show firmware release notes' .github/workflows/firmware.yml
+grep -Fq 'Show release notes' .github/workflows/firmware.yml
 grep -Fq 'GITHUB_STEP_SUMMARY' .github/workflows/firmware.yml
+grep -Fq 'body_path: dist/release-body.md' .github/workflows/firmware.yml
 grep -Fq '## 中文' CHANGELOG.md
 grep -Fq '## English' CHANGELOG.md
 grep -Fq '### Unreleased' CHANGELOG.md
@@ -51,22 +52,27 @@ test -f "${dist_dir}/firmware.bin"
 test -f "${dist_dir}/bootloader.bin"
 test -f "${dist_dir}/partitions.bin"
 test -f "${dist_dir}/manifest.json"
-test -f "${dist_dir}/firmware-release-notes.md"
+test -f "${dist_dir}/release-body.md"
 test -f "${dist_dir}/firmware-assets.sha256"
+test ! -f "${dist_dir}/firmware-release-notes.md"
 grep -Fq 'firmware.bin' "${dist_dir}/firmware-assets.sha256"
 grep -Fq 'bootloader.bin' "${dist_dir}/firmware-assets.sha256"
 grep -Fq 'partitions.bin' "${dist_dir}/firmware-assets.sha256"
 grep -Fq 'manifest.json' "${dist_dir}/firmware-assets.sha256"
-grep -Fq '版本号：`v0.0.1`' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '展示版本：`0.0.1 (0)`' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '短版本：`0.0.1`' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '构建号：`0`' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '构建通道：`preview`' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '发布说明来源：`CHANGELOG.md` / `中文:v0.0.1` / `English:v0.0.1`' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '## 发布说明（中文）' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '## Release Notes (English)' "${dist_dir}/firmware-release-notes.md"
-grep -Fq '支持 CI 正式构建和预览构建' "${dist_dir}/firmware-release-notes.md"
-grep -Fq 'Support stable and preview CI builds' "${dist_dir}/firmware-release-notes.md"
+if grep -Fq 'release-body.md' "${dist_dir}/firmware-assets.sha256"; then
+    printf 'release-body.md must not be published as a firmware asset.\n' >&2
+    exit 1
+fi
+grep -Fq '版本号：`v0.0.1`' "${dist_dir}/release-body.md"
+grep -Fq '展示版本：`0.0.1 (0)`' "${dist_dir}/release-body.md"
+grep -Fq '短版本：`0.0.1`' "${dist_dir}/release-body.md"
+grep -Fq '构建号：`0`' "${dist_dir}/release-body.md"
+grep -Fq '构建通道：`preview`' "${dist_dir}/release-body.md"
+grep -Fq '发布说明来源：`CHANGELOG.md` / `中文:v0.0.1` / `English:v0.0.1`' "${dist_dir}/release-body.md"
+grep -Fq '## 发布说明（中文）' "${dist_dir}/release-body.md"
+grep -Fq '## Release Notes (English)' "${dist_dir}/release-body.md"
+grep -Fq '支持 CI 正式构建和预览构建' "${dist_dir}/release-body.md"
+grep -Fq 'Support stable and preview CI builds' "${dist_dir}/release-body.md"
 
 python3 - <<PY
 import json
