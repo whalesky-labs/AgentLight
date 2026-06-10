@@ -91,6 +91,16 @@ PING          -> PONG
 
 BLE 设备名：`WHALESKY-LABS-AGENTLIGHT`
 
+系统蓝牙列表展示名：`AGENTLIGHT`
+
+BLE 默认启用配对 / 绑定，配对码：
+
+```text
+521000
+```
+
+这是 ESP32-C3 的 BLE GATT 连接，不是经典蓝牙串口 SPP。固件默认启用标准 HID 配对外壳，主广播包使用 `AGENTLIGHT` 短名称、标准 Keyboard 外观和 HID 服务，让电脑和手机的系统蓝牙列表更容易展示并发起配对；扫描响应保留完整设备名 `WHALESKY-LABS-AGENTLIGHT`。HID 外壳只用于系统发现和配对，不会发送键盘按键；真正的灯光控制仍通过 AgentLight 自定义 RX / TX GATT 服务完成。首次读取 TX 特征、订阅通知或写入 RX 特征时会触发配对，配对成功后才能发送 `PING`、`STATUS`、`YELLOW_BLINK` 等命令。
+
 BLE 服务与特征：
 
 | 项目 | UUID |

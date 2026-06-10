@@ -39,6 +39,66 @@
 #define AGENTLIGHT_WIFI_AP_PASSWORD "agentlight"
 #endif
 
+#ifndef AGENTLIGHT_BLE_DEVICE_NAME
+#define AGENTLIGHT_BLE_DEVICE_NAME "WHALESKY-LABS-AGENTLIGHT"
+#endif
+
+#ifndef AGENTLIGHT_BLE_ADVERTISED_NAME
+#define AGENTLIGHT_BLE_ADVERTISED_NAME "AGENTLIGHT"
+#endif
+
+#ifndef AGENTLIGHT_BLE_SERVICE_UUID
+#define AGENTLIGHT_BLE_SERVICE_UUID "8f16d7a0-6c6d-4d68-8d64-6b4d2a86b601"
+#endif
+
+#ifndef AGENTLIGHT_BLE_RX_UUID
+#define AGENTLIGHT_BLE_RX_UUID "8f16d7a1-6c6d-4d68-8d64-6b4d2a86b601"
+#endif
+
+#ifndef AGENTLIGHT_BLE_TX_UUID
+#define AGENTLIGHT_BLE_TX_UUID "8f16d7a2-6c6d-4d68-8d64-6b4d2a86b601"
+#endif
+
+#ifndef AGENTLIGHT_BLE_APPEARANCE
+#define AGENTLIGHT_BLE_APPEARANCE 0x03C1
+#endif
+
+#ifndef AGENTLIGHT_BLE_ENABLE_HID_PAIRING_SHELL
+#define AGENTLIGHT_BLE_ENABLE_HID_PAIRING_SHELL 1
+#endif
+
+#ifndef AGENTLIGHT_BLE_MANUFACTURER_NAME
+#define AGENTLIGHT_BLE_MANUFACTURER_NAME "whalesky-labs"
+#endif
+
+#ifndef AGENTLIGHT_BLE_MODEL_NUMBER
+#define AGENTLIGHT_BLE_MODEL_NUMBER "AgentLight-ESP32-C3"
+#endif
+
+#ifndef AGENTLIGHT_BLE_BATTERY_LEVEL
+#define AGENTLIGHT_BLE_BATTERY_LEVEL 100
+#endif
+
+#ifndef AGENTLIGHT_BLE_VENDOR_ID
+#define AGENTLIGHT_BLE_VENDOR_ID 0x1209
+#endif
+
+#ifndef AGENTLIGHT_BLE_PRODUCT_ID
+#define AGENTLIGHT_BLE_PRODUCT_ID 0xA11E
+#endif
+
+#ifndef AGENTLIGHT_BLE_PRODUCT_VERSION
+#define AGENTLIGHT_BLE_PRODUCT_VERSION 0x0100
+#endif
+
+#ifndef AGENTLIGHT_BLE_REQUIRE_PAIRING
+#define AGENTLIGHT_BLE_REQUIRE_PAIRING 1
+#endif
+
+#ifndef AGENTLIGHT_BLE_PAIRING_PIN
+#define AGENTLIGHT_BLE_PAIRING_PIN 521000
+#endif
+
 namespace {
 
 agentlight::GpioLightDriver lightDriver(
@@ -51,6 +111,27 @@ agentlight::StatusLightService statusLight(lightDriver);
 agentlight::UsbCommandChannel usbChannel;
 agentlight::BleCommandChannel bleChannel;
 agentlight::WifiCommandChannel wifiChannel;
+agentlight::BleCommandChannelConfig bleConfig{
+    AGENTLIGHT_BLE_DEVICE_NAME,
+    AGENTLIGHT_BLE_ADVERTISED_NAME,
+    AGENTLIGHT_BLE_SERVICE_UUID,
+    AGENTLIGHT_BLE_RX_UUID,
+    AGENTLIGHT_BLE_TX_UUID,
+    AGENTLIGHT_BLE_APPEARANCE,
+    {
+        AGENTLIGHT_BLE_REQUIRE_PAIRING == 1,
+        AGENTLIGHT_BLE_PAIRING_PIN,
+    },
+    {
+        AGENTLIGHT_BLE_ENABLE_HID_PAIRING_SHELL == 1,
+        AGENTLIGHT_BLE_MANUFACTURER_NAME,
+        AGENTLIGHT_BLE_MODEL_NUMBER,
+        AGENTLIGHT_BLE_BATTERY_LEVEL,
+        AGENTLIGHT_BLE_VENDOR_ID,
+        AGENTLIGHT_BLE_PRODUCT_ID,
+        AGENTLIGHT_BLE_PRODUCT_VERSION,
+    },
+};
 
 String handleCommand(const String& command) {
   return statusLight.handleCommand(command);
@@ -66,8 +147,14 @@ void setup() {
   delay(300);
   Serial.println("AgentLight ready. Commands: GREEN YELLOW RED OFF PING STATUS HELP");
 
-  bleChannel.begin("WHALESKY-LABS-AGENTLIGHT", handleCommand);
+  bleChannel.begin(bleConfig, handleCommand);
   wifiChannel.begin(AGENTLIGHT_WIFI_AP_SSID, AGENTLIGHT_WIFI_AP_PASSWORD, handleCommand);
+  Serial.print("BLE pairing ");
+  Serial.println(bleConfig.security.requirePairing ? "required" : "disabled");
+  if (bleConfig.security.requirePairing) {
+    Serial.print("BLE pairing PIN: ");
+    Serial.println(bleConfig.security.pairingPin);
+  }
   Serial.print("Wi-Fi AP ready: ");
   Serial.println(AGENTLIGHT_WIFI_AP_SSID);
   Serial.println("Wi-Fi API: http://192.168.4.1/status");

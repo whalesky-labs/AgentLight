@@ -14,9 +14,13 @@
 - 使用 4MB Flash 单 App 分区表，避免 USB、BLE、Wi-Fi 三通道固件超过默认 App 分区。
 - 支持 `v1.<Year>.<DayOfYear>+<BuildNumber>` CalVer 版本规则，并在 CI 自动模式下递增构建号。
 - 在 CI 中启用 Node.js 24 Actions 运行时，并将预览构建的版本更新说明输出到 Actions Summary。
+- Bluetooth LE 通道默认启用配对 / 绑定，并通过集中配置管理设备名、展示名、GATT UUID、广播外观、配对开关和配对码。
+- Bluetooth LE 默认启用标准 HID 配对外壳，主广播包发布 `AGENTLIGHT` 短名称、Keyboard 外观和 HID 服务，提升电脑与手机系统蓝牙列表的可见性。
 
 ### 说明
 
 - 默认 Wi-Fi AP：`WHALESKY-LABS-AGENTLIGHT`
 - 默认 Wi-Fi 密码：`agentlight`
 - 默认 BLE 名称：`WHALESKY-LABS-AGENTLIGHT`
+- 默认系统蓝牙展示名：`AGENTLIGHT`
+- 默认 BLE 配对码：`521000`

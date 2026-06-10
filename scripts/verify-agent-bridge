@@ -92,6 +92,27 @@ grep -Fq 'Windows 后台服务' docs/user-guide.md
 grep -Fq 'macOS 后台服务' docs/user-guide.md
 grep -Fq '准备硬件' docs/user-guide.md
 grep -Fq '验证硬件' docs/user-guide.md
+grep -Fq 'BLE 配对码 | `521000`' docs/user-guide.md
+grep -Fq '使用 BLE 验证' docs/user-guide.md
+grep -Fq 'AGENTLIGHT_BLE_DEVICE_NAME=\"WHALESKY-LABS-AGENTLIGHT\"' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_SERVICE_UUID=\"8f16d7a0-6c6d-4d68-8d64-6b4d2a86b601\"' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_RX_UUID=\"8f16d7a1-6c6d-4d68-8d64-6b4d2a86b601\"' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_TX_UUID=\"8f16d7a2-6c6d-4d68-8d64-6b4d2a86b601\"' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_ADVERTISED_NAME=\"AGENTLIGHT\"' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_APPEARANCE=0x03C1' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_ENABLE_HID_PAIRING_SHELL=1' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_MODEL_NUMBER=\"AgentLight-ESP32-C3\"' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_REQUIRE_PAIRING=1' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_PAIRING_PIN=521000' platformio.ini
+grep -Fq '标准 HID 配对外壳' docs/user-guide.md
+grep -Fq '标准 HID 配对外壳' README.md
+grep -Fq 'standard HID pairing shell' README.en.md
+grep -Fq '系统蓝牙展示名 | `AGENTLIGHT`' docs/user-guide.md
+grep -Fq '主广播包使用 `AGENTLIGHT` 短名称' README.md
+grep -Fq 'System Bluetooth display name: `AGENTLIGHT`' README.en.md
+grep -Fq 'Keyboard appearance' README.en.md
+grep -Fq 'BLE 默认启用配对 / 绑定' README.md
+grep -Fq 'BLE pairing / bonding is enabled by default' README.en.md
 grep -Fq 'scripts/multi-agent-monitor --config <monitor-config> --platform <activePlatform> --send' docs/user-guide.md
 grep -Fq '重新启动监听器' docs/user-guide.md
 python3 - <<'PY'

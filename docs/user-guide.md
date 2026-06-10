@@ -60,6 +60,9 @@ pio device monitor
 | 配置 | 默认值 |
 | --- | --- |
 | BLE 设备名 | `WHALESKY-LABS-AGENTLIGHT` |
+| 系统蓝牙展示名 | `AGENTLIGHT` |
+| BLE 配对 | 默认启用 |
+| BLE 配对码 | `521000` |
 | Wi-Fi AP | `WHALESKY-LABS-AGENTLIGHT` |
 | Wi-Fi 密码 | `agentlight` |
 | HTTP 地址 | `http://192.168.4.1` |
@@ -99,6 +102,34 @@ STATUS
 ```
 
 每条命令以换行结尾。成功时固件会返回 `OK <STATE>` 或 `STATUS <STATE>`。
+
+### 使用 BLE 验证
+
+BLE 默认启用配对 / 绑定。ESP32-C3 使用的是 BLE GATT 连接，不是经典蓝牙串口 SPP；固件默认启用标准 HID 配对外壳，让电脑和手机的系统蓝牙列表可以按普通可配对外设发现设备。
+
+推荐先按系统蓝牙列表验证：
+
+1. 打开电脑或手机的系统蓝牙设置。
+2. 等待设备名 `AGENTLIGHT` 出现在可连接设备列表中。
+3. 点击连接或配对。
+4. 如果系统要求配对码，输入 `521000`。
+5. 配对完成后，使用 BLE GATT 客户端或桥接程序访问 AgentLight 服务并发送命令。
+
+说明：系统列表为了可见性使用 `AGENTLIGHT` 短名称；完整 BLE 设备名仍是 `WHALESKY-LABS-AGENTLIGHT`。标准 HID 配对外壳只用于发现和配对，不会发送键盘按键；灯光控制仍通过 AgentLight 自定义 RX / TX GATT 服务完成。
+
+需要验证命令通道时，使用 BLE GATT 客户端连接已配对设备：
+
+1. 搜索设备：`AGENTLIGHT` 或 `WHALESKY-LABS-AGENTLIGHT`
+2. 访问服务：`8f16d7a0-6c6d-4d68-8d64-6b4d2a86b601`
+3. 向 RX 特征写入文本命令，例如 `PING`、`STATUS`、`YELLOW_BLINK`
+4. 在 TX 特征读取或通知中确认返回 `PONG`、`STATUS <STATE>` 或 `OK <STATE>`
+
+特征 UUID：
+
+| 特征 | UUID | 说明 |
+| --- | --- | --- |
+| RX | `8f16d7a1-6c6d-4d68-8d64-6b4d2a86b601` | 写入命令 |
+| TX | `8f16d7a2-6c6d-4d68-8d64-6b4d2a86b601` | 读取 / 通知响应 |
 
 ### 使用桥接脚本验证
 
