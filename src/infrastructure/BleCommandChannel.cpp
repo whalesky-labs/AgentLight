@@ -21,42 +21,19 @@ namespace agentlight {
 namespace {
 
 constexpr uint8_t BLE_KEY_SIZE = 16;
-constexpr uint8_t HID_KEYBOARD_INPUT_REPORT_ID = 1;
-constexpr uint8_t HID_KEYBOARD_OUTPUT_REPORT_ID = 1;
+constexpr uint8_t HID_GENERIC_FEATURE_REPORT_ID = 1;
 
-uint8_t hidKeyboardReportMap[] = {
-    0x05, 0x01,        // Usage Page (Generic Desktop)
-    0x09, 0x06,        // Usage (Keyboard)
+uint8_t hidGenericReportMap[] = {
+    0x06, 0x00, 0xFF,  // Usage Page (Vendor Defined 0xFF00)
+    0x09, 0x01,        // Usage (Vendor Usage 1)
     0xA1, 0x01,        // Collection (Application)
-    0x85, HID_KEYBOARD_INPUT_REPORT_ID,
-    0x05, 0x07,        // Usage Page (Key Codes)
-    0x19, 0xE0,        // Usage Minimum (224)
-    0x29, 0xE7,        // Usage Maximum (231)
+    0x85, HID_GENERIC_FEATURE_REPORT_ID,
+    0x09, 0x01,        // Usage (Vendor Usage 1)
     0x15, 0x00,        // Logical Minimum (0)
-    0x25, 0x01,        // Logical Maximum (1)
-    0x75, 0x01,        // Report Size (1)
-    0x95, 0x08,        // Report Count (8)
-    0x81, 0x02,        // Input (Data, Variable, Absolute)
-    0x95, 0x01,        // Report Count (1)
+    0x26, 0xFF, 0x00,  // Logical Maximum (255)
     0x75, 0x08,        // Report Size (8)
-    0x81, 0x01,        // Input (Constant)
-    0x95, 0x05,        // Report Count (5)
-    0x75, 0x01,        // Report Size (1)
-    0x05, 0x08,        // Usage Page (LEDs)
-    0x19, 0x01,        // Usage Minimum (Num Lock)
-    0x29, 0x05,        // Usage Maximum (Kana)
-    0x91, 0x02,        // Output (Data, Variable, Absolute)
     0x95, 0x01,        // Report Count (1)
-    0x75, 0x03,        // Report Size (3)
-    0x91, 0x01,        // Output (Constant)
-    0x95, 0x06,        // Report Count (6)
-    0x75, 0x08,        // Report Size (8)
-    0x15, 0x00,        // Logical Minimum (0)
-    0x25, 0x65,        // Logical Maximum (101)
-    0x05, 0x07,        // Usage Page (Key Codes)
-    0x19, 0x00,        // Usage Minimum (0)
-    0x29, 0x65,        // Usage Maximum (101)
-    0x81, 0x00,        // Input (Data, Array)
+    0xB1, 0x02,        // Feature (Data, Variable, Absolute)
     0xC0,              // End Collection
 };
 
@@ -234,21 +211,11 @@ void BleCommandChannel::configureSystemProfile(BLEServer* server, const BleSyste
 
   systemHidDevice_->pnp(0x02, config.vendorId, config.productId, config.productVersion);
   systemHidDevice_->hidInfo(0x00, 0x00);
-  systemHidDevice_->reportMap(hidKeyboardReportMap, sizeof(hidKeyboardReportMap));
+  systemHidDevice_->reportMap(hidGenericReportMap, sizeof(hidGenericReportMap));
 
-  BLECharacteristic* inputReport = systemHidDevice_->inputReport(HID_KEYBOARD_INPUT_REPORT_ID);
-  uint8_t inputValue[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-  inputReport->setValue(inputValue, sizeof(inputValue));
-
-  BLECharacteristic* outputReport = systemHidDevice_->outputReport(HID_KEYBOARD_OUTPUT_REPORT_ID);
-  uint8_t outputValue = 0;
-  outputReport->setValue(&outputValue, 1);
-
-  BLECharacteristic* bootInput = systemHidDevice_->bootInput();
-  bootInput->setValue(inputValue, sizeof(inputValue));
-
-  BLECharacteristic* bootOutput = systemHidDevice_->bootOutput();
-  bootOutput->setValue(&outputValue, 1);
+  BLECharacteristic* featureReport = systemHidDevice_->featureReport(HID_GENERIC_FEATURE_REPORT_ID);
+  uint8_t featureValue = 0;
+  featureReport->setValue(&featureValue, 1);
 
   systemHidDevice_->startServices();
   const uint8_t batteryLevel = config.batteryLevel > 100 ? 100 : config.batteryLevel;

@@ -101,16 +101,16 @@ System Bluetooth display name: `AGENTLIGHT`
 BLE pairing / bonding is enabled by default. Pairing PIN:
 
 ```text
-521000
+123456
 ```
 
 This is an ESP32-C3 BLE GATT connection, not Bluetooth Classic SPP. The firmware
 enables a standard HID pairing shell by default. The primary advertisement uses
-the short name `AGENTLIGHT`, the standard Keyboard appearance, and the HID
+the short name `AGENTLIGHT`, the standard Generic HID appearance, and the HID
 service so desktop and mobile Bluetooth settings can discover and pair with the
 device more reliably; the scan response keeps the full device name
 `WHALESKY-LABS-AGENTLIGHT`. The HID shell is only for discovery and pairing. It
-does not send keyboard input. Actual light control remains on the AgentLight
+does not send input events. Actual light control remains on the AgentLight
 custom RX / TX GATT service. The first encrypted TX read, notification
 subscription, or RX write triggers pairing; after pairing succeeds, commands
 such as `PING`, `STATUS`, and `YELLOW_BLINK` can be sent.
@@ -130,7 +130,7 @@ The firmware starts a Wi-Fi AP by default:
 | Setting | Default |
 | --- | --- |
 | SSID | `WHALESKY-LABS-AGENTLIGHT` |
-| Password | `agentlight` |
+| Password | `12345678` |
 | Gateway | `192.168.4.1` |
 
 HTTP API:
