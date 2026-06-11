@@ -2,7 +2,7 @@
   <img src="https://avatars.githubusercontent.com/u/277389313?s=200&v=4" width="128" height="128" alt="AgentLight">
 </p>
 
-<h1 align="center">AgentLight</h1>
+<h1 align="center">牛马工作指示灯 · AgentLight</h1>
 
 <p align="center">
   ESP32-C3 traffic light firmware for AI task status.
