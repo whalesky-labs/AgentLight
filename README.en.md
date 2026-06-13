@@ -49,14 +49,15 @@ Default wiring:
 | --- | --- |
 | 3V3 | Traffic light board common `+` |
 | GND | Traffic light board `-` |
-| GPIO4 | `R1` pad on the original controller side |
-| GPIO5 | `R2` pad on the original controller side |
-| GPIO6 | `R3` pad on the original controller side |
+| GPIO4 | 220R -> red light control pad |
+| GPIO5 | 220R -> yellow light control pad |
+| GPIO6 | 220R -> green light control pad |
 
 The BS-768 board is driven as a common-anode board. The firmware defaults to
 `AGENTLIGHT_ACTIVE_LOW=1`, so pulling a GPIO low turns the corresponding light
-on. The board already has `R1/R2/R3` current-limiting resistors, so an extra
-220R resistor is usually not needed for this board.
+on. In this build, the original control and current-limiting components are
+removed and the board is used only as a lamp carrier, so each GPIO-to-light
+control line needs its own 220R resistor.
 
 ## Commands
 
@@ -338,10 +339,10 @@ The config supports:
 | Blink | Default 800ms cycle, 400ms on / 400ms off; `YELLOW_BLINK` uses a 400ms cycle, 200ms on / 200ms off |
 | Breathe | 2000ms cycle, brightness ramps up and then down |
 
-The breathing effect currently uses software PWM and does not require extra
-hardware. The BS-768 board already includes `R1/R2/R3` current-limiting
-resistors. If you wire bare LEDs instead, keep one current-limiting resistor in
-series for each channel.
+The breathing effect currently uses software PWM and does not require an extra
+control chip. In this build, the BS-768 board is used only as a lamp carrier
+after the original current-limiting parts are removed, so keep one 220R resistor
+in series between each GPIO and light control pad.
 
 ## Architecture
 
