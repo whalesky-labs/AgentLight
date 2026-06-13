@@ -421,7 +421,7 @@ CI 会生成并发布这些独立资产，不再额外打包 zip：
 
 固件使用 Arduino ESP32 内置的 `huge_app.csv` 分区方案，面向 4MB Flash 的 ESP32-C3 SuperMini，单个 App 分区大小为 3MB，用于容纳 USB、BLE、Wi-Fi 三通道一体固件。
 
-`manifest.json` 包含版本、构建通道、Git 提交、SHA256 和烧录 offset。发布资产按 `bootloader.bin` -> `0x0000`、`partitions.bin` -> `0x8000`、`boot_app0.bin` -> `0xe000`、`firmware.bin` -> `0x10000` 写入 ESP32-C3 SuperMini。版本发布说明维护在 [CHANGELOG.md](./CHANGELOG.md)，CI 会读取当前版本号对应的中文章节；如果没有对应章节，则读取 `Unreleased` 章节，并自动追加构建通道、构建环境、Git 提交、构建时间、烧录提示和资产清单。推送 `v*` tag 或手动触发时勾选发布，会自动创建 GitHub Release 并把生成后的发布说明写入 Release body。
+`manifest.json` 包含版本、构建通道、Git 提交、SHA256 和烧录 offset。发布资产按 `bootloader.bin` -> `0x0000`、`partitions.bin` -> `0x8000`、`boot_app0.bin` -> `0xe000`、`firmware.bin` -> `0x10000` 写入 ESP32-C3 SuperMini。版本发布说明维护在 [CHANGELOG.md](./CHANGELOG.md)，该文件按版本累积保留历史；CI 生成 Release body 时只读取当前版本号对应的中文章节，如果没有对应章节，则只读取顶部 `Unreleased` 章节，并自动追加构建通道、构建环境、Git 提交、构建时间、烧录提示和资产清单。推送 `v*` tag 或手动触发时勾选发布，会自动创建 GitHub Release 并把生成后的发布说明写入 Release body。
 
 预览构建不会默认创建 GitHub Release，但 CI 会把从 `CHANGELOG.md` 读取并生成的 Release body 输出到构建日志和 GitHub Actions Summary，便于直接查看本次版本更新说明；该 Release body 只作为 CI 临时内容，不作为固件资产发布。
 

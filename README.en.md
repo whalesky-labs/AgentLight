@@ -466,9 +466,10 @@ so the combined USB, BLE, and Wi-Fi firmware fits without removing control
 channels.
 
 Release notes are maintained in the Chinese [CHANGELOG.md](./CHANGELOG.md). CI
-reads the matching version section; if no matching section exists, it uses the
-`Unreleased` section and appends the build channel, environment, Git commit,
-build time, and asset list.
+keeps that file cumulative, but each Release body is generated from only one
+section: the matching version section, or the top `Unreleased` section when no
+matching version section exists. CI then appends the build channel, environment,
+Git commit, build time, and asset list.
 `manifest.json` includes the version, build channel, Git commit, SHA256 values,
 and flash offsets. Release assets are written to ESP32-C3 SuperMini as
 `bootloader.bin` -> `0x0000`, `partitions.bin` -> `0x8000`,
