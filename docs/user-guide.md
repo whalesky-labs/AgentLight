@@ -150,9 +150,11 @@ scripts/agentlight red-blink
 通过 USB 串口控制时：
 
 ```bash
-AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight status
-AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight yellow-blink
+AGENTLIGHT_TRANSPORT=usb scripts/agentlight status
+AGENTLIGHT_TRANSPORT=usb scripts/agentlight yellow-blink
 ```
+
+默认会自动发现 `/dev/cu.usbmodem*` 等常见 USB 串口。换 USB 口后 macOS 可能分配新的串口名，保持 `AGENTLIGHT_SERIAL_PORT` 为空即可自动适配；如果同时连接多块设备，再手动指定具体端口。
 
 如果设备地址不是默认值，可以设置：
 
@@ -173,7 +175,7 @@ export AGENTLIGHT_BASE_URL="http://192.168.4.1"
   "sendToHardware": true,
   "environment": {
     "AGENTLIGHT_TRANSPORT": "usb",
-    "AGENTLIGHT_SERIAL_PORT": "/dev/cu.usbmodem1101",
+    "AGENTLIGHT_SERIAL_PORT": "",
     "AGENTLIGHT_SERIAL_BAUD": "115200",
     "AGENTLIGHT_HOST": "192.168.4.1",
     "AGENTLIGHT_TIMEOUT": "2"

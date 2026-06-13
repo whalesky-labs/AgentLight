@@ -175,9 +175,11 @@ scripts/agentlight red-blink
 Use USB serial control:
 
 ```bash
-AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight status
-AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight yellow-blink
+AGENTLIGHT_TRANSPORT=usb scripts/agentlight status
+AGENTLIGHT_TRANSPORT=usb scripts/agentlight yellow-blink
 ```
+
+By default, the bridge auto-detects common USB serial ports such as `/dev/cu.usbmodem*`. If multiple devices are connected, set `AGENTLIGHT_SERIAL_PORT` to select one explicitly.
 
 Supported aliases:
 
@@ -194,7 +196,7 @@ Environment variables:
 | Variable | Default | Description |
 | --- | --- | --- |
 | `AGENTLIGHT_TRANSPORT` | `http` | Control channel, supports `http` / `usb` |
-| `AGENTLIGHT_SERIAL_PORT` | empty | USB serial port, for example `/dev/cu.usbmodem1101` |
+| `AGENTLIGHT_SERIAL_PORT` | empty | USB serial port; when empty, common USB serial ports are auto-detected |
 | `AGENTLIGHT_SERIAL_BAUD` | `115200` | USB serial baud rate |
 | `AGENTLIGHT_HOST` | `192.168.4.1` | Device HTTP host |
 | `AGENTLIGHT_BASE_URL` | empty | Full base URL, higher priority than host |

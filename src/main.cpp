@@ -138,8 +138,8 @@ String handleCommand(const String& command) {
 }
 
 void showStartupSelfTest() {
-  constexpr unsigned long sequenceDelayMs = 250;
-  constexpr unsigned long blinkDelayMs = 160;
+  constexpr unsigned long sequenceDelayMs = 600;
+  constexpr unsigned long blinkDelayMs = 300;
 
   const agentlight::LightPattern sequence[] = {
       {agentlight::LightState::Red, agentlight::LightEffect::Steady},

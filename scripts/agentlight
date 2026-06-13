@@ -43,7 +43,7 @@ States:
 
 Environment:
   AGENTLIGHT_TRANSPORT  http or usb, defaults to http
-  AGENTLIGHT_SERIAL_PORT USB serial port, for example /dev/cu.usbmodem1101
+  AGENTLIGHT_SERIAL_PORT USB serial port. If empty, auto-detects the first supported port.
   AGENTLIGHT_SERIAL_BAUD USB serial baud rate, defaults to 115200
   AGENTLIGHT_HOST       Defaults to 192.168.4.1
   AGENTLIGHT_BASE_URL   Overrides host, for example http://192.168.4.1
@@ -95,6 +95,23 @@ urlencode() {
       *) printf '%%%02X' "'$char" ;;
     esac
   done
+}
+
+detect_serial_port() {
+  local candidate
+
+  for candidate in \
+    /dev/cu.usbmodem* \
+    /dev/cu.wchusbserial* \
+    /dev/cu.SLAB_USBtoUART* \
+    /dev/cu.usbserial*; do
+    if [[ -e "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 host="${AGENTLIGHT_HOST:-$DEFAULT_HOST}"
@@ -163,8 +180,10 @@ command="$(normalize_state "$1")"
 
 if [[ "$transport" == "usb" ]]; then
   if [[ -z "$serial_port" ]]; then
-    printf 'AGENTLIGHT_SERIAL_PORT is required when AGENTLIGHT_TRANSPORT=usb\n' >&2
-    exit 2
+    if ! serial_port="$(detect_serial_port)"; then
+      printf 'AGENTLIGHT_SERIAL_PORT is required when AGENTLIGHT_TRANSPORT=usb and no USB serial port was detected\n' >&2
+      exit 2
+    fi
   fi
 
   python3 - "$serial_port" "$serial_baud" "$command" <<'PY'

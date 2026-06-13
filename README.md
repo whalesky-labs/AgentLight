@@ -157,9 +157,11 @@ scripts/agentlight red-blink
 使用 USB 串口控制：
 
 ```bash
-AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight status
-AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight yellow-blink
+AGENTLIGHT_TRANSPORT=usb scripts/agentlight status
+AGENTLIGHT_TRANSPORT=usb scripts/agentlight yellow-blink
 ```
+
+默认会自动发现 `/dev/cu.usbmodem*` 等常见 USB 串口。如果同时连接了多块设备，可以再设置 `AGENTLIGHT_SERIAL_PORT` 指定具体端口。
 
 脚本支持别名：
 
@@ -176,7 +178,7 @@ AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/age
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `AGENTLIGHT_TRANSPORT` | `http` | 控制通道，支持 `http` / `usb` |
-| `AGENTLIGHT_SERIAL_PORT` | 空 | USB 串口路径，例如 `/dev/cu.usbmodem1101` |
+| `AGENTLIGHT_SERIAL_PORT` | 空 | USB 串口路径；留空时自动发现常见 USB 串口 |
 | `AGENTLIGHT_SERIAL_BAUD` | `115200` | USB 串口波特率 |
 | `AGENTLIGHT_HOST` | `192.168.4.1` | 设备 HTTP 地址 |
 | `AGENTLIGHT_BASE_URL` | 空 | 完整基础 URL，优先级高于 host |
