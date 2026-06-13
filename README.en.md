@@ -41,20 +41,22 @@ The complete user guide is available in Chinese at [docs/user-guide.md](./docs/u
 ## Hardware
 
 - ESP32-C3 SuperMini
-- Toy red/yellow/green light
-- 220R current-limiting resistors
+- BS-768 toy red/yellow/green traffic light board
 
 Default wiring:
 
 | ESP32-C3 pin | Part |
 | --- | --- |
-| GPIO4 | 220R -> red LED positive |
-| GPIO5 | 220R -> yellow LED positive |
-| GPIO6 | 220R -> green LED positive |
-| GND | LED common negative |
+| 3V3 | Traffic light board common `+` |
+| GND | Traffic light board `-` |
+| GPIO4 | `R1` pad on the original controller side |
+| GPIO5 | `R2` pad on the original controller side |
+| GPIO6 | `R3` pad on the original controller side |
 
-If the toy light is common-anode, set `AGENTLIGHT_ACTIVE_LOW=1` in
-`platformio.ini` and wire the common positive to `3V3`.
+The BS-768 board is driven as a common-anode board. The firmware defaults to
+`AGENTLIGHT_ACTIVE_LOW=1`, so pulling a GPIO low turns the corresponding light
+on. The board already has `R1/R2/R3` current-limiting resistors, so an extra
+220R resistor is usually not needed for this board.
 
 ## Commands
 
@@ -165,6 +167,13 @@ scripts/agentlight green
 scripts/agentlight red-blink
 ```
 
+Use USB serial control:
+
+```bash
+AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight status
+AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight yellow-blink
+```
+
 Supported aliases:
 
 | Input | Command |
@@ -179,6 +188,9 @@ Environment variables:
 
 | Variable | Default | Description |
 | --- | --- | --- |
+| `AGENTLIGHT_TRANSPORT` | `http` | Control channel, supports `http` / `usb` |
+| `AGENTLIGHT_SERIAL_PORT` | empty | USB serial port, for example `/dev/cu.usbmodem1101` |
+| `AGENTLIGHT_SERIAL_BAUD` | `115200` | USB serial baud rate |
 | `AGENTLIGHT_HOST` | `192.168.4.1` | Device HTTP host |
 | `AGENTLIGHT_BASE_URL` | empty | Full base URL, higher priority than host |
 | `AGENTLIGHT_TIMEOUT` | `2` | curl timeout in seconds |
@@ -218,7 +230,7 @@ scripts/agentlight-gate error
 | `start` | `YELLOW_BLINK` |
 | `tool` | `YELLOW_BLINK` |
 | `thinking` | `YELLOW_BREATHE` |
-| `done` | `GREEN_BLINK` |
+| `done` | `GREEN_BLINK` -> `GREEN` |
 | `waiting` | `RED_BLINK` |
 | `error` | `RED` |
 
@@ -302,7 +314,7 @@ The config supports:
 | `OFF` | All off | Disconnected or disabled |
 | `GREEN` | Green steady | Idle / ready for a new task |
 | `GREEN_BREATHE` | Green breathing | Connected and standing by |
-| `GREEN_BLINK` | Green blinking | Task completed cue / heartbeat test |
+| `GREEN_BLINK` | Green blinking | Manual test / heartbeat test; completion events return to `GREEN` after a short cue |
 | `YELLOW` | Yellow steady | AI is executing a normal task |
 | `YELLOW_BREATHE` | Yellow breathing | AI is thinking or generating for longer |
 | `YELLOW_BLINK` | Yellow blinking | Tool call or command execution in progress |
@@ -319,8 +331,9 @@ The config supports:
 | Breathe | 2000ms cycle, brightness ramps up and then down |
 
 The breathing effect currently uses software PWM and does not require extra
-hardware. For toy lights or regular LEDs, keep a 220R resistor in series
-between the GPIO pin and the LED.
+hardware. The BS-768 board already includes `R1/R2/R3` current-limiting
+resistors. If you wire bare LEDs instead, keep one current-limiting resistor in
+series for each channel.
 
 ## Architecture
 

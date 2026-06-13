@@ -8,6 +8,9 @@
   "restartDelaySeconds": 3,
   "logFile": "",
   "environment": {
+    "AGENTLIGHT_TRANSPORT": "usb",
+    "AGENTLIGHT_SERIAL_PORT": "/dev/cu.usbmodem1101",
+    "AGENTLIGHT_SERIAL_BAUD": "115200",
     "AGENTLIGHT_HOST": "192.168.4.1",
     "AGENTLIGHT_TIMEOUT": "2"
   }

@@ -273,6 +273,9 @@ test -f service/macos/uninstall-launch-agent.sh
 grep -Fq 'whalesky-labs-AgentLight' config/agentlight-agent.example.json
 grep -Fq '"activePlatform": "codex"' config/agentlight-agent.example.json
 grep -Fq '"multiSessionMode": "latest-event-wins"' config/agentlight-agent.example.json
+grep -Fq '"AGENTLIGHT_TRANSPORT": "usb"' config/agentlight-agent.example.json
+grep -Fq '"AGENTLIGHT_SERIAL_PORT": "/dev/cu.usbmodem1101"' config/agentlight-agent.example.json
+grep -Fq 'AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight status' docs/user-guide.md
 grep -Fq 'whalesky-labs-AgentLight' docs/user-guide.md
 grep -Fq 'latest-event-wins' docs/user-guide.md
 grep -Fq 'whalesky-labs-AgentLight' service/windows/install-service.ps1
@@ -307,6 +310,39 @@ printf 'Checking event normalization...\n'
 for event in "${events[@]}"; do
   scripts/agentlight-event --agent codex --event "$event" >/dev/null
 done
+
+printf 'Checking event gate completion sequence...\n'
+gate_tmp_dir="$(mktemp -d)"
+cp scripts/agentlight-gate "$gate_tmp_dir/agentlight-gate"
+cat > "$gate_tmp_dir/agentlight" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$1" >> "${AGENTLIGHT_FAKE_COMMAND_LOG:?}"
+case "$1" in
+  green-blink)
+    printf 'OK GREEN_BLINK\n'
+    ;;
+  green)
+    printf 'OK GREEN\n'
+    ;;
+  *)
+    printf 'OK %s\n' "$1"
+    ;;
+esac
+EOF
+chmod +x "$gate_tmp_dir/agentlight"
+gate_command_log="$gate_tmp_dir/commands.log"
+gate_output="$(
+  AGENTLIGHT_STATE_DIR="$gate_tmp_dir/state" \
+  AGENTLIGHT_FAKE_COMMAND_LOG="$gate_command_log" \
+  AGENTLIGHT_DONE_CUE_MS=0 \
+  "$gate_tmp_dir/agentlight-gate" done
+)"
+test "$gate_output" = "OK GREEN_BLINK; OK GREEN"
+test "$(sed -n '1p' "$gate_command_log")" = "green-blink"
+test "$(sed -n '2p' "$gate_command_log")" = "green"
+test "$(wc -l < "$gate_command_log" | tr -d ' ')" = "2"
+rm -rf "$gate_tmp_dir"
 
 printf 'Checking documented hook directories...\n'
 for dir in \

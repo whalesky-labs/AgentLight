@@ -214,6 +214,7 @@ printf '%s agent=%s event=%s' "$timestamp" "$agent" "$event"
 if [[ "$send" == "1" ]]; then
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   response="$("${script_dir}/agentlight-gate" "$event")"
+  response="${response//$'\n'/; }"
   printf ' sent=true response=%s\n' "$response"
 else
   printf ' sent=false\n'

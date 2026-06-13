@@ -38,19 +38,19 @@ AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB
 ## 硬件
 
 - ESP32-C3 SuperMini
-- 玩具红 / 黄 / 绿灯
-- 220R 限流电阻
+- BS-768 玩具红 / 黄 / 绿灯小板
 
 默认接线：
 
 | ESP32-C3 引脚 | 连接 |
 | --- | --- |
-| GPIO4 | 220R -> 红灯正极 |
-| GPIO5 | 220R -> 黄灯正极 |
-| GPIO6 | 220R -> 绿灯正极 |
-| GND | 三个灯共用负极 |
+| 3V3 | 红绿灯小板公共 `+` |
+| GND | 红绿灯小板 `-` |
+| GPIO4 | `R1` 靠近原控制芯片的一侧 |
+| GPIO5 | `R2` 靠近原控制芯片的一侧 |
+| GPIO6 | `R3` 靠近原控制芯片的一侧 |
 
-如果玩具灯是共阳接法，把 [platformio.ini](./platformio.ini) 里的 `AGENTLIGHT_ACTIVE_LOW=1`，并把共用正极接到 `3V3`。
+BS-768 小板按共阳方式控制，固件默认使用 `AGENTLIGHT_ACTIVE_LOW=1`，也就是 GPIO 拉低时对应灯亮。小板上已有 `R1/R2/R3` 限流电阻，通常不需要再额外串 220R。
 
 ## 命令
 
@@ -149,6 +149,13 @@ scripts/agentlight green
 scripts/agentlight red-blink
 ```
 
+使用 USB 串口控制：
+
+```bash
+AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight status
+AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight yellow-blink
+```
+
 脚本支持别名：
 
 | 输入 | 实际命令 |
@@ -163,6 +170,9 @@ scripts/agentlight red-blink
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
+| `AGENTLIGHT_TRANSPORT` | `http` | 控制通道，支持 `http` / `usb` |
+| `AGENTLIGHT_SERIAL_PORT` | 空 | USB 串口路径，例如 `/dev/cu.usbmodem1101` |
+| `AGENTLIGHT_SERIAL_BAUD` | `115200` | USB 串口波特率 |
 | `AGENTLIGHT_HOST` | `192.168.4.1` | 设备 HTTP 地址 |
 | `AGENTLIGHT_BASE_URL` | 空 | 完整基础 URL，优先级高于 host |
 | `AGENTLIGHT_TIMEOUT` | `2` | curl 超时时间，单位秒 |
@@ -181,7 +191,7 @@ scripts/agentlight red-blink
 
 ## 事件 Gate
 
-`scripts/agentlight-gate` 用来承接 AI 工具生命周期事件，将事件映射为灯光状态，并在短时间窗口内抑制完全重复的事件，避免同一状态被连续重复发送。
+`scripts/agentlight-gate` 用来承接 AI 工具生命周期事件，将事件映射为灯光状态，并在短时间窗口内抑制完全重复的事件，避免同一状态被连续重复发送。完成事件会先显示短暂绿灯闪烁提示，再自动回到绿灯常亮。
 
 ```bash
 scripts/agentlight-gate start
@@ -197,7 +207,7 @@ scripts/agentlight-gate error
 | `start` | `YELLOW_BLINK` |
 | `tool` | `YELLOW_BLINK` |
 | `thinking` | `YELLOW_BREATHE` |
-| `done` | `GREEN_BLINK` |
+| `done` | `GREEN_BLINK` -> `GREEN` |
 | `waiting` | `RED_BLINK` |
 | `error` | `RED` |
 
@@ -270,7 +280,7 @@ scripts/multi-agent-monitor --config config/agent-monitors.example.json --send
 | `OFF` | 全灭 | 未连接 / 关闭 |
 | `GREEN` | 绿灯常亮 | 空闲，可开始新任务 |
 | `GREEN_BREATHE` | 绿灯呼吸 | 已连接，待命中 |
-| `GREEN_BLINK` | 绿灯闪烁 | 任务完成提示 / 心跳测试 |
+| `GREEN_BLINK` | 绿灯闪烁 | 手动测试 / 心跳测试；完成事件会在短暂提示后回到 `GREEN` |
 | `YELLOW` | 黄灯常亮 | AI 正在执行普通任务 |
 | `YELLOW_BREATHE` | 黄灯呼吸 | AI 正在长时间思考 / 生成 |
 | `YELLOW_BLINK` | 黄灯闪烁 | 工具调用 / 命令执行中 |
@@ -286,7 +296,7 @@ scripts/multi-agent-monitor --config config/agent-monitors.example.json --send
 | 闪烁 | 800ms 周期，亮 400ms / 灭 400ms |
 | 呼吸 | 2000ms 周期，亮度从低到高再回落 |
 
-当前呼吸效果使用软件 PWM 实现，不需要额外硬件。对于玩具灯或普通 LED，220R 电阻仍然需要串联在 GPIO 与 LED 之间。
+当前呼吸效果使用软件 PWM 实现，不需要额外硬件。BS-768 小板已带 `R1/R2/R3` 限流电阻；如果改接裸 LED，则每一路仍需要单独串联限流电阻。
 
 ## 架构
 

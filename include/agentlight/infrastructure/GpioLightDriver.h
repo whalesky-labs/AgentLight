@@ -26,6 +26,7 @@ class GpioLightDriver : public LightOutput {
   uint8_t pinFor(LightState state) const;
   void writeAllOff();
   void writeInactiveOff(uint8_t activePin);
+  void releasePwm(uint8_t pin);
   void writeOne(uint8_t pin, bool active);
   void writeOnePwm(uint8_t pin, uint8_t brightness);
 

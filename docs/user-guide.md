@@ -22,20 +22,21 @@
 | 物料 | 说明 |
 | --- | --- |
 | ESP32-C3 SuperMini | 当前固件目标开发板 |
-| 玩具红 / 黄 / 绿灯 | 也可以先用普通红黄绿 LED 验证 |
-| 220R 电阻 | 每一路灯都需要串联限流 |
+| BS-768 玩具红绿灯小板 | 使用小板自带 `R1/R2/R3` 限流电阻 |
+| 普通红黄绿 LED | 可选；如果不用 BS-768 小板，每一路需要单独串联限流电阻 |
 | USB 数据线 | 必须支持数据传输，不能只支持充电 |
 
-默认 GPIO：
+默认接线：
 
-| 灯 | ESP32-C3 GPIO | 连接方式 |
+| 连接点 | ESP32-C3 引脚 | 接法 |
 | --- | --- | --- |
-| 红灯 | GPIO4 | GPIO4 -> 220R -> 红灯正极 |
-| 黄灯 | GPIO5 | GPIO5 -> 220R -> 黄灯正极 |
-| 绿灯 | GPIO6 | GPIO6 -> 220R -> 绿灯正极 |
-| 共用负极 | GND | 三路灯负极接 GND |
+| 公共正极 | 3V3 | `3V3` -> 小板公共 `+` |
+| 公共负极 | GND | `GND` -> 小板 `-` |
+| 红灯控制端 | GPIO4 | `GPIO4` -> `R1` 靠近原控制芯片的一侧 |
+| 黄灯控制端 | GPIO5 | `GPIO5` -> `R2` 靠近原控制芯片的一侧 |
+| 绿灯控制端 | GPIO6 | `GPIO6` -> `R3` 靠近原控制芯片的一侧 |
 
-如果玩具灯是共阳接法，需要把共用正极接到 `3V3`，并在 [platformio.ini](../platformio.ini) 中把 `AGENTLIGHT_ACTIVE_LOW=1`。
+BS-768 小板按共阳方式控制，固件默认已经设置 `AGENTLIGHT_ACTIVE_LOW=1`。GPIO 拉低时对应灯亮，GPIO 拉高时对应灯灭。小板上已有 `R1/R2/R3` 限流电阻，通常不需要再额外串 220R。
 
 ## 构建并烧录固件
 
@@ -142,6 +143,13 @@ scripts/agentlight yellow-blink
 scripts/agentlight red-blink
 ```
 
+通过 USB 串口控制时：
+
+```bash
+AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight status
+AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight yellow-blink
+```
+
 如果设备地址不是默认值，可以设置：
 
 ```bash
@@ -160,6 +168,9 @@ export AGENTLIGHT_BASE_URL="http://192.168.4.1"
   "multiSessionMode": "latest-event-wins",
   "sendToHardware": true,
   "environment": {
+    "AGENTLIGHT_TRANSPORT": "usb",
+    "AGENTLIGHT_SERIAL_PORT": "/dev/cu.usbmodem1101",
+    "AGENTLIGHT_SERIAL_BAUD": "115200",
     "AGENTLIGHT_HOST": "192.168.4.1",
     "AGENTLIGHT_TIMEOUT": "2"
   }
@@ -298,7 +309,7 @@ scripts/agentlight-event --agent <agent> --event <event> --send
 | `start` | `YELLOW_BLINK` |
 | `tool` | `YELLOW_BLINK` |
 | `thinking` | `YELLOW_BREATHE` |
-| `done` | `GREEN_BLINK` |
+| `done` | `GREEN_BLINK` -> `GREEN` |
 | `waiting` | `RED_BLINK` |
 | `error` | `RED` |
 | `idle` | `GREEN` |
@@ -333,9 +344,9 @@ scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --event-command scr
 
 ### 灯不亮
 
-- 检查每一路灯是否串联 220R 电阻。
-- 检查 GPIO 是否对应 `GPIO4`、`GPIO5`、`GPIO6`。
-- 检查玩具灯是共阴还是共阳；共阳需要设置 `AGENTLIGHT_ACTIVE_LOW=1`。
+- 检查 `3V3` 是否接到小板公共 `+`，`GND` 是否接到小板 `-`。
+- 检查 GPIO 是否分别接到 `R1/R2/R3` 靠近原控制芯片的一侧。
+- 检查固件是否使用 `AGENTLIGHT_ACTIVE_LOW=1`。
 - 用 `GREEN`、`YELLOW_BLINK`、`RED_BLINK` 分别测试三路。
 
 ### 服务启动了但灯没有变化

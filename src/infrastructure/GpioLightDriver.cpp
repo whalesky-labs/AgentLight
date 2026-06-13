@@ -90,9 +90,15 @@ void GpioLightDriver::writeInactiveOff(uint8_t activePin) {
 }
 
 void GpioLightDriver::writeOne(uint8_t pin, bool active) {
+  releasePwm(pin);
   const uint8_t onLevel = activeLow_ ? LOW : HIGH;
   const uint8_t offLevel = activeLow_ ? HIGH : LOW;
   digitalWrite(pin, active ? onLevel : offLevel);
+}
+
+void GpioLightDriver::releasePwm(uint8_t pin) {
+  ledcDetachPin(pin);
+  pinMode(pin, OUTPUT);
 }
 
 void GpioLightDriver::writeOnePwm(uint8_t pin, uint8_t brightness) {

@@ -12,6 +12,8 @@ set -euo pipefail
 
 DEFAULT_HOST="192.168.4.1"
 DEFAULT_TIMEOUT_SECONDS="2"
+DEFAULT_TRANSPORT="http"
+DEFAULT_SERIAL_BAUD="115200"
 
 usage() {
   cat <<'EOF'
@@ -19,6 +21,7 @@ AgentLight command bridge
 
 Usage:
   scripts/agentlight <state>
+  scripts/agentlight --transport usb --serial-port <port> <state>
   scripts/agentlight --host <host> <state>
   scripts/agentlight --url <base-url> <state>
   scripts/agentlight status
@@ -36,6 +39,9 @@ States:
   red-breathe
 
 Environment:
+  AGENTLIGHT_TRANSPORT  http or usb, defaults to http
+  AGENTLIGHT_SERIAL_PORT USB serial port, for example /dev/cu.usbmodem1101
+  AGENTLIGHT_SERIAL_BAUD USB serial baud rate, defaults to 115200
   AGENTLIGHT_HOST       Defaults to 192.168.4.1
   AGENTLIGHT_BASE_URL   Overrides host, for example http://192.168.4.1
   AGENTLIGHT_TIMEOUT    Curl timeout in seconds, defaults to 2
@@ -91,9 +97,24 @@ urlencode() {
 host="${AGENTLIGHT_HOST:-$DEFAULT_HOST}"
 base_url="${AGENTLIGHT_BASE_URL:-}"
 timeout="${AGENTLIGHT_TIMEOUT:-$DEFAULT_TIMEOUT_SECONDS}"
+transport="${AGENTLIGHT_TRANSPORT:-$DEFAULT_TRANSPORT}"
+serial_port="${AGENTLIGHT_SERIAL_PORT:-}"
+serial_baud="${AGENTLIGHT_SERIAL_BAUD:-$DEFAULT_SERIAL_BAUD}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --transport)
+      transport="${2:-}"
+      shift 2
+      ;;
+    --serial-port)
+      serial_port="${2:-}"
+      shift 2
+      ;;
+    --serial-baud)
+      serial_baud="${2:-}"
+      shift 2
+      ;;
     --host)
       host="${2:-}"
       shift 2
@@ -136,6 +157,47 @@ fi
 base_url="${base_url%/}"
 
 command="$(normalize_state "$1")"
+
+if [[ "$transport" == "usb" ]]; then
+  if [[ -z "$serial_port" ]]; then
+    printf 'AGENTLIGHT_SERIAL_PORT is required when AGENTLIGHT_TRANSPORT=usb\n' >&2
+    exit 2
+  fi
+
+  python3 - "$serial_port" "$serial_baud" "$command" <<'PY'
+import sys
+import time
+
+import serial
+
+port, baud, command = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+expected_prefixes = ("OK ", "STATUS ")
+
+with serial.Serial(port, baud, timeout=0.5) as device:
+    time.sleep(0.1)
+    device.reset_input_buffer()
+    device.write((command + "\n").encode("utf-8"))
+    device.flush()
+
+    deadline = time.time() + 3
+    while time.time() < deadline:
+        line = device.readline().decode("utf-8", errors="replace").strip()
+        if not line:
+            continue
+        if line == "PONG" or line.startswith(expected_prefixes) or line.startswith("COMMANDS "):
+            print(line)
+            raise SystemExit(0)
+
+print("NO_RESPONSE", file=sys.stderr)
+raise SystemExit(1)
+PY
+  exit 0
+fi
+
+if [[ "$transport" != "http" ]]; then
+  printf 'Unknown AGENTLIGHT_TRANSPORT: %s\n' "$transport" >&2
+  exit 2
+fi
 
 if [[ "$command" == "STATUS" ]]; then
   curl --fail --silent --show-error --max-time "$timeout" "${base_url}/status"
