@@ -50,7 +50,7 @@ Environment:
   AGENTLIGHT_SERIAL_PORT USB serial port. If empty, auto-detects the first supported port.
   AGENTLIGHT_SERIAL_BAUD USB serial baud rate, defaults to 115200
   AGENTLIGHT_BLE_DEVICE_NAME BLE device name, defaults to WHALESKY-LABS-AGENTLIGHT
-  AGENTLIGHT_BLE_HELPER macOS BLE helper executable path.
+  AGENTLIGHT_BLE_HELPER BLE helper executable override. macOS uses the bundled helper by default.
   AGENTLIGHT_HOST       Defaults to 192.168.4.1
   AGENTLIGHT_BASE_URL   Overrides host, for example http://192.168.4.1
   AGENTLIGHT_TIMEOUT    Curl timeout in seconds, defaults to 2
@@ -247,9 +247,19 @@ PY
 fi
 
 if [[ "$transport" == "ble-system" ]]; then
+  if [[ -n "${AGENTLIGHT_BLE_HELPER:-}" ]]; then
+    helper="$AGENTLIGHT_BLE_HELPER"
+    if [[ ! -x "$helper" ]]; then
+      printf 'AgentLight Bluetooth Helper is not executable: %s\n' "$helper" >&2
+      exit 2
+    fi
+    "$helper" "$command"
+    exit 0
+  fi
+
   case "$(uname -s)" in
     Darwin)
-      helper="${AGENTLIGHT_BLE_HELPER:-${script_dir}/../dist/macos/AgentLightBluetoothHelper.app/Contents/MacOS/AgentLightBluetoothHelper}"
+      helper="${script_dir}/../dist/macos/AgentLightBluetoothHelper.app/Contents/MacOS/AgentLightBluetoothHelper"
       if [[ ! -x "$helper" ]]; then
         printf 'AgentLight Bluetooth Helper is not built. Run desktop/macos/build-bluetooth-helper.sh first.\n' >&2
         exit 2
