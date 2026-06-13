@@ -10,7 +10,9 @@
 #include <Arduino.h>
 
 #include "agentlight/application/StatusLightService.h"
+#include "agentlight/application/TransportModeController.h"
 #include "agentlight/infrastructure/BleCommandChannel.h"
+#include "agentlight/infrastructure/ButtonHoldInput.h"
 #include "agentlight/infrastructure/GpioLightDriver.h"
 #include "agentlight/infrastructure/UsbCommandChannel.h"
 #include "agentlight/infrastructure/WifiCommandChannel.h"
@@ -51,6 +53,10 @@
 #define AGENTLIGHT_BLE_SERVICE_UUID "8f16d7a0-6c6d-4d68-8d64-6b4d2a86b601"
 #endif
 
+#ifndef AGENTLIGHT_BLE_ADVERTISED_SERVICE_UUID
+#define AGENTLIGHT_BLE_ADVERTISED_SERVICE_UUID "1812"
+#endif
+
 #ifndef AGENTLIGHT_BLE_RX_UUID
 #define AGENTLIGHT_BLE_RX_UUID "8f16d7a1-6c6d-4d68-8d64-6b4d2a86b601"
 #endif
@@ -60,7 +66,7 @@
 #endif
 
 #ifndef AGENTLIGHT_BLE_APPEARANCE
-#define AGENTLIGHT_BLE_APPEARANCE 0x03C0
+#define AGENTLIGHT_BLE_APPEARANCE 0x03CA
 #endif
 
 #ifndef AGENTLIGHT_BLE_ENABLE_HID_PAIRING_SHELL
@@ -99,6 +105,26 @@
 #define AGENTLIGHT_BLE_PAIRING_PIN 123456
 #endif
 
+#ifndef AGENTLIGHT_BLE_MANUAL_RECONNECT_ADVERTISING
+#define AGENTLIGHT_BLE_MANUAL_RECONNECT_ADVERTISING 1
+#endif
+
+#ifndef AGENTLIGHT_BLE_MANUAL_RECONNECT_DELAY_MS
+#define AGENTLIGHT_BLE_MANUAL_RECONNECT_DELAY_MS 60000
+#endif
+
+#ifndef AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_PIN
+#define AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_PIN 9
+#endif
+
+#ifndef AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_ACTIVE_LOW
+#define AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_ACTIVE_LOW 1
+#endif
+
+#ifndef AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_HOLD_MS
+#define AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_HOLD_MS 2000
+#endif
+
 namespace {
 
 agentlight::GpioLightDriver lightDriver(
@@ -111,16 +137,26 @@ agentlight::StatusLightService statusLight(lightDriver);
 agentlight::UsbCommandChannel usbChannel;
 agentlight::BleCommandChannel bleChannel;
 agentlight::WifiCommandChannel wifiChannel;
+agentlight::ButtonHoldInput bleReconnectButton;
+agentlight::TransportModeController transportModeController;
+bool bleSuspensionRequested = false;
 agentlight::BleCommandChannelConfig bleConfig{
     AGENTLIGHT_BLE_DEVICE_NAME,
-    AGENTLIGHT_BLE_ADVERTISED_NAME,
     AGENTLIGHT_BLE_SERVICE_UUID,
     AGENTLIGHT_BLE_RX_UUID,
     AGENTLIGHT_BLE_TX_UUID,
-    AGENTLIGHT_BLE_APPEARANCE,
     {
         AGENTLIGHT_BLE_REQUIRE_PAIRING == 1,
         AGENTLIGHT_BLE_PAIRING_PIN,
+    },
+    {
+        AGENTLIGHT_BLE_ADVERTISED_NAME,
+        AGENTLIGHT_BLE_ADVERTISED_SERVICE_UUID,
+        AGENTLIGHT_BLE_APPEARANCE,
+        {
+            AGENTLIGHT_BLE_MANUAL_RECONNECT_ADVERTISING == 1,
+            AGENTLIGHT_BLE_MANUAL_RECONNECT_DELAY_MS,
+        },
     },
     {
         AGENTLIGHT_BLE_ENABLE_HID_PAIRING_SHELL == 1,
@@ -135,6 +171,43 @@ agentlight::BleCommandChannelConfig bleConfig{
 
 String handleCommand(const String& command) {
   return statusLight.handleCommand(command);
+}
+
+void enterUsbMode() {
+  bleSuspensionRequested = false;
+  bleChannel.suspend();
+  Serial.println("AgentLight transport: USB");
+}
+
+void enterBluetoothMode(uint32_t nowMs) {
+  bleSuspensionRequested = false;
+  bleChannel.openManualReconnectWindow(nowMs);
+  Serial.println("AgentLight transport: BLE");
+}
+
+void applyTransportModeAction(agentlight::TransportModeAction action, uint32_t nowMs) {
+  switch (action) {
+    case agentlight::TransportModeAction::EnterUsb:
+      enterUsbMode();
+      return;
+    case agentlight::TransportModeAction::EnterBluetooth:
+      enterBluetoothMode(nowMs);
+      return;
+    case agentlight::TransportModeAction::None:
+    default:
+      return;
+  }
+}
+
+void handleBleConnectionState(agentlight::BleConnectionState state) {
+  if (transportModeController.usbActive()) {
+    bleSuspensionRequested = true;
+    return;
+  }
+
+  if (state == agentlight::BleConnectionState::Disconnected) {
+    statusLight.handleCommand("OFF");
+  }
 }
 
 void showStartupSelfTest() {
@@ -167,11 +240,17 @@ void setup() {
   statusLight.begin({agentlight::LightState::Off, agentlight::LightEffect::Steady});
   showStartupSelfTest();
 
+  bleReconnectButton.begin({
+      AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_PIN,
+      AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_ACTIVE_LOW == 1,
+      AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_HOLD_MS,
+  });
+
   usbChannel.begin(115200);
   delay(300);
   Serial.println("AgentLight ready. Commands: GREEN YELLOW RED OFF PING STATUS HELP");
 
-  bleChannel.begin(bleConfig, handleCommand);
+  bleChannel.begin(bleConfig, handleCommand, handleBleConnectionState);
   wifiChannel.begin(AGENTLIGHT_WIFI_AP_SSID, AGENTLIGHT_WIFI_AP_PASSWORD, handleCommand);
   Serial.print("BLE pairing ");
   Serial.println(bleConfig.security.requirePairing ? "required" : "disabled");
@@ -182,11 +261,23 @@ void setup() {
   Serial.print("Wi-Fi AP ready: ");
   Serial.println(AGENTLIGHT_WIFI_AP_SSID);
   Serial.println("Wi-Fi API: http://192.168.4.1/status");
+  applyTransportModeAction(transportModeController.begin(usbChannel.hostConnected()), millis());
 }
 
 void loop() {
+  const uint32_t nowMs = millis();
+  applyTransportModeAction(transportModeController.update(usbChannel.hostConnected()), nowMs);
+  if (bleSuspensionRequested) {
+    bleChannel.suspend();
+    bleSuspensionRequested = false;
+  }
+
   usbChannel.poll(handleCommand);
+  if (transportModeController.bluetoothActive() && bleReconnectButton.poll(nowMs)) {
+    bleChannel.openManualReconnectWindow(nowMs);
+  }
+  bleChannel.poll(nowMs);
   wifiChannel.poll();
-  statusLight.tick(millis());
+  statusLight.tick(nowMs);
   delay(5);
 }

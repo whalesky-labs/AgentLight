@@ -13,16 +13,24 @@
 
 namespace agentlight {
 
-class UsbCommandChannel {
+struct ButtonHoldInputConfig {
+  uint8_t pin;
+  bool activeLow;
+  uint32_t holdMs;
+};
+
+class ButtonHoldInput {
  public:
-  void begin(unsigned long baud);
-  bool hostConnected() const;
-  bool poll(String (*handler)(const String& command));
+  void begin(const ButtonHoldInputConfig& config);
+  bool poll(uint32_t nowMs);
 
  private:
-  bool consume(char c, String (*handler)(const String& command));
+  bool pressed() const;
 
-  String buffer_;
+  ButtonHoldInputConfig config_{0, true, 0};
+  bool wasPressed_ = false;
+  bool emitted_ = false;
+  uint32_t pressedAtMs_ = 0;
 };
 
 }  // namespace agentlight
