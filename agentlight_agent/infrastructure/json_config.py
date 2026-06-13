@@ -13,7 +13,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from agentlight_agent.domain.models import AgentConfig, Monitor, MonitorFormat, MonitorType, MultiSessionMode, Rule
+from agentlight_agent.domain.models import (
+    AgentConfig,
+    Monitor,
+    MonitorFormat,
+    MonitorType,
+    MultiSessionMode,
+    Rule,
+)
 
 
 def load_agent_config(path: Path) -> AgentConfig:

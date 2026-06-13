@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>com.whalesky-labs.AgentLight.BluetoothHelper</string>
+  <key>CFBundleName</key>
+  <string>AgentLight Bluetooth Helper</string>
+  <key>CFBundleExecutable</key>
+  <string>AgentLightBluetoothHelper</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
+  <key>LSBackgroundOnly</key>
+  <true/>
+  <key>NSBluetoothAlwaysUsageDescription</key>
+  <string>AgentLight sends light commands to the ESP32-C3 status light after the user connects it in system Bluetooth settings.</string>
+</dict>
+</plist>

@@ -17,9 +17,17 @@ config_path="${config_dir}/agentlight-agent.json"
 log_dir="${HOME}/Library/Logs/whalesky-labs-AgentLight"
 plist_dir="${HOME}/Library/LaunchAgents"
 plist_path="${plist_dir}/${label}.plist"
-python_path="${PYTHON_PATH:-$(command -v python3)}"
+venv_dir="${repo_root}/.venv-agent"
+python_path="${PYTHON_PATH:-${venv_dir}/bin/python3}"
 
 mkdir -p "$config_dir" "$log_dir" "$plist_dir"
+
+if [[ ! -x "$python_path" ]]; then
+  "$(command -v python3)" -m venv "$venv_dir"
+  "$python_path" -m pip install --upgrade pip
+fi
+"$python_path" -m pip install -r "${repo_root}/requirements.txt"
+"${repo_root}/desktop/macos/build-bluetooth-helper.sh" >/dev/null
 
 if [[ ! -f "$config_path" ]]; then
   cp "${repo_root}/config/agentlight-agent.example.json" "$config_path"

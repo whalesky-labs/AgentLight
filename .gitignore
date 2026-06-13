@@ -9,6 +9,7 @@ dist/
 # Local editor and tooling state
 .vscode/
 .idea/
+.venv-agent/
 __pycache__/
 *.pyc
 *.swp

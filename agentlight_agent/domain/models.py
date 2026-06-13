@@ -58,4 +58,3 @@ class AgentConfig:
     restart_delay_seconds: float
     log_file: str
     environment: dict[str, str]
-

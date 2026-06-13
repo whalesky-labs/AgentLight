@@ -85,9 +85,8 @@ class RuntimeService:
         env["AGENTLIGHT_AGENT_CONFIG"] = str(config_path)
         env["PYTHONUNBUFFERED"] = "1"
 
-        command = self.build_monitor_command(config, once=once, active_platform=active_platform)
-
         with log_file.open("a", encoding="utf-8", buffering=1) as log:
+            command = self.build_monitor_command(config, once=once, active_platform=active_platform)
             self._log_line(
                 log,
                 f"AgentLight agent starting platform={active_platform} "
@@ -114,4 +113,3 @@ class RuntimeService:
         timestamp = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
         file.write(f"{timestamp} {message}\n")
         file.flush()
-

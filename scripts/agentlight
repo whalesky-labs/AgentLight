@@ -10,9 +10,11 @@
 
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 DEFAULT_HOST="192.168.4.1"
 DEFAULT_TIMEOUT_SECONDS="2"
-DEFAULT_TRANSPORT="http"
+DEFAULT_TRANSPORT="auto"
 DEFAULT_SERIAL_BAUD="115200"
 
 usage() {
@@ -21,7 +23,9 @@ AgentLight command bridge
 
 Usage:
   scripts/agentlight <state>
+  scripts/agentlight --transport auto <state>
   scripts/agentlight --transport usb --serial-port <port> <state>
+  scripts/agentlight --transport ble-system <state>
   scripts/agentlight --host <host> <state>
   scripts/agentlight --url <base-url> <state>
   scripts/agentlight status
@@ -42,9 +46,11 @@ States:
   all-breathe
 
 Environment:
-  AGENTLIGHT_TRANSPORT  http or usb, defaults to http
+  AGENTLIGHT_TRANSPORT  auto, usb, ble-system, or http; defaults to auto
   AGENTLIGHT_SERIAL_PORT USB serial port. If empty, auto-detects the first supported port.
   AGENTLIGHT_SERIAL_BAUD USB serial baud rate, defaults to 115200
+  AGENTLIGHT_BLE_DEVICE_NAME BLE device name, defaults to WHALESKY-LABS-AGENTLIGHT
+  AGENTLIGHT_BLE_HELPER macOS BLE helper executable path.
   AGENTLIGHT_HOST       Defaults to 192.168.4.1
   AGENTLIGHT_BASE_URL   Overrides host, for example http://192.168.4.1
   AGENTLIGHT_TIMEOUT    Curl timeout in seconds, defaults to 2
@@ -114,6 +120,26 @@ detect_serial_port() {
   return 1
 }
 
+serial_port_available() {
+  local port="$1"
+
+  [[ -n "$port" && -e "$port" ]]
+}
+
+resolve_auto_transport() {
+  if serial_port_available "$serial_port"; then
+    transport="usb"
+    return
+  fi
+
+  if [[ -z "$serial_port" ]] && serial_port="$(detect_serial_port)"; then
+    transport="usb"
+    return
+  fi
+
+  transport="ble-system"
+}
+
 host="${AGENTLIGHT_HOST:-$DEFAULT_HOST}"
 base_url="${AGENTLIGHT_BASE_URL:-}"
 timeout="${AGENTLIGHT_TIMEOUT:-$DEFAULT_TIMEOUT_SECONDS}"
@@ -178,6 +204,10 @@ base_url="${base_url%/}"
 
 command="$(normalize_state "$1")"
 
+if [[ "$transport" == "auto" ]]; then
+  resolve_auto_transport
+fi
+
 if [[ "$transport" == "usb" ]]; then
   if [[ -z "$serial_port" ]]; then
     if ! serial_port="$(detect_serial_port)"; then
@@ -214,6 +244,24 @@ print("NO_RESPONSE", file=sys.stderr)
 raise SystemExit(1)
 PY
   exit 0
+fi
+
+if [[ "$transport" == "ble-system" ]]; then
+  case "$(uname -s)" in
+    Darwin)
+      helper="${AGENTLIGHT_BLE_HELPER:-${script_dir}/../dist/macos/AgentLightBluetoothHelper.app/Contents/MacOS/AgentLightBluetoothHelper}"
+      if [[ ! -x "$helper" ]]; then
+        printf 'AgentLight Bluetooth Helper is not built. Run desktop/macos/build-bluetooth-helper.sh first.\n' >&2
+        exit 2
+      fi
+      "$helper" "$command"
+      exit 0
+      ;;
+    *)
+      printf 'AGENTLIGHT_TRANSPORT=ble-system is not supported on this operating system yet\n' >&2
+      exit 2
+      ;;
+  esac
 fi
 
 if [[ "$transport" != "http" ]]; then

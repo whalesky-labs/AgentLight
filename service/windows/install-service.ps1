@@ -37,6 +37,9 @@ $agentScript = Join-Path $RepoRoot "scripts\agentlight-agent"
 $configTemplate = Join-Path $RepoRoot "config\agentlight-agent.example.json"
 $programData = Join-Path $env:ProgramData "whalesky-labs-AgentLight"
 $logDir = Join-Path $programData "logs"
+$venvDir = Join-Path $RepoRoot ".venv-agent"
+$venvPython = Join-Path $venvDir "Scripts\python.exe"
+$requirements = Join-Path $RepoRoot "requirements.txt"
 
 New-Item -ItemType Directory -Path $programData -Force | Out-Null
 New-Item -ItemType Directory -Path $logDir -Force | Out-Null
@@ -46,7 +49,15 @@ if (-not (Test-Path $ConfigPath)) {
 }
 
 $pythonCommand = (Get-Command $PythonPath).Source
-$binaryPath = "`"$pythonCommand`" `"$agentScript`" run --config `"$ConfigPath`""
+
+if (-not (Test-Path $venvPython)) {
+    & $pythonCommand -m venv $venvDir
+    & $venvPython -m pip install --upgrade pip
+}
+
+& $venvPython -m pip install -r $requirements
+
+$binaryPath = "`"$venvPython`" `"$agentScript`" run --config `"$ConfigPath`""
 
 if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
     sc.exe stop $ServiceName | Out-Null

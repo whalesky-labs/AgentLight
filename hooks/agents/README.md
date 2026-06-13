@@ -59,7 +59,7 @@ scripts/agentlight-event cursor done
 
 ## 平台说明
 
-完整兼容矩阵见 `docs/agent-platform-compatibility.md`。
+平台清单和支持方式以 `config/agent-platforms.json` 为准。
 
 | 平台 | 接入说明 |
 | --- | --- |

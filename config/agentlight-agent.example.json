@@ -8,7 +8,7 @@
   "restartDelaySeconds": 3,
   "logFile": "",
   "environment": {
-    "AGENTLIGHT_TRANSPORT": "usb",
+    "AGENTLIGHT_TRANSPORT": "auto",
     "AGENTLIGHT_SERIAL_PORT": "",
     "AGENTLIGHT_SERIAL_BAUD": "115200",
     "AGENTLIGHT_HOST": "192.168.4.1",

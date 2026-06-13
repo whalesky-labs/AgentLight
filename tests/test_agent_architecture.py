@@ -16,9 +16,10 @@ from pathlib import Path
 
 from agentlight_agent.application.config_service import PlatformService
 from agentlight_agent.application.monitor_service import MonitorService
+from agentlight_agent.application.runtime_service import RuntimeService
 from agentlight_agent.domain.matching import match_event
 from agentlight_agent.domain.models import MonitorFormat, MultiSessionMode
-from agentlight_agent.infrastructure.json_config import load_agent_config, load_monitors
+from agentlight_agent.infrastructure.json_config import load_agent_config, load_monitors, save_agent_config
 from agentlight_agent.infrastructure.monitor_runner import EventEmitter
 
 
@@ -139,6 +140,32 @@ class AgentArchitectureTest(unittest.TestCase):
         emitter = EventEmitter(command)
 
         self.assertEqual(emitter.event_command, str(command))
+
+    def test_runtime_info_does_not_expose_local_bluetooth_control_url(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            monitor_path = monitor_config(tmp_path / "monitors.json")
+            config_path = agent_config(tmp_path / "agent.json", monitor_path)
+            config = load_agent_config(config_path)
+
+            info = RuntimeService(Path.cwd()).runtime_info(config_path, config)
+
+            self.assertNotIn("controlPanel", info)
+
+    def test_save_agent_config_does_not_write_control_server_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            monitor_path = monitor_config(tmp_path / "monitors.json")
+            config_path = agent_config(tmp_path / "agent.json", monitor_path)
+            config = load_agent_config(config_path)
+            output_path = tmp_path / "saved.json"
+
+            save_agent_config(output_path, config, active_platform="gemini")
+            raw = json.loads(output_path.read_text(encoding="utf-8"))
+
+            self.assertEqual(raw["activePlatform"], "gemini")
+            self.assertNotIn("controlServer", raw)
+            self.assertNotIn("hardware", raw)
 
 
 if __name__ == "__main__":
