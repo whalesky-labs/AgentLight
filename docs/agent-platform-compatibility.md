@@ -4,7 +4,7 @@
 
 ## 总体原则
 
-- 固件只接收灯光命令：`GREEN`、`YELLOW_BLINK`、`RED_BLINK` 等。
+- 固件只接收灯光命令：`GREEN`、`YELLOW_BLINK`、`RED_BLINK`、`ALL` 等。
 - 桥接层把不同 AI 工具的生命周期事件归一化为：`prompt`、`start`、`thinking`、`tool`、`typing`、`done`、`waiting`、`error`、`idle`。
 - 已知可读的本地会话日志优先用监听器，例如 Codex session JSONL。
 - 已知可配置 Hook 的工具优先让 Hook 调用 `scripts/agentlight-event`。

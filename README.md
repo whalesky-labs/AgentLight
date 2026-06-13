@@ -75,6 +75,9 @@ BS-768 小板按共阳方式控制，固件默认使用 `AGENTLIGHT_ACTIVE_LOW=1
 | `RED` | 红灯常亮，黄灯 / 绿灯灭 |
 | `RED_BLINK` | 红灯闪烁 |
 | `RED_BREATHE` | 红灯呼吸 |
+| `ALL` | 红 / 黄 / 绿三路同时常亮，用于硬件自检 |
+| `ALL_BLINK` | 红 / 黄 / 绿三路同时闪烁 |
+| `ALL_BREATHE` | 红 / 黄 / 绿三路同时呼吸 |
 | `OFF` | 全部熄灭 |
 | `PING` | 返回 `PONG` |
 | `STATUS` | 返回当前灯光状态 |
@@ -293,7 +296,7 @@ scripts/multi-agent-monitor --config config/agent-monitors.example.json --send
 | 灯效 | 固件行为 |
 | --- | --- |
 | 常亮 | 目标颜色持续点亮，其他颜色熄灭 |
-| 闪烁 | 800ms 周期，亮 400ms / 灭 400ms |
+| 闪烁 | 默认 800ms 周期，亮 400ms / 灭 400ms；`YELLOW_BLINK` 为 400ms 周期，亮 200ms / 灭 200ms |
 | 呼吸 | 2000ms 周期，亮度从低到高再回落 |
 
 当前呼吸效果使用软件 PWM 实现，不需要额外硬件。BS-768 小板已带 `R1/R2/R3` 限流电阻；如果改接裸 LED，则每一路仍需要单独串联限流电阻。

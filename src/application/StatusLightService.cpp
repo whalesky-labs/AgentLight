@@ -35,7 +35,7 @@ String StatusLightService::handleCommand(const String& line) {
     case CommandType::Status:
       return String("STATUS ") + toText(currentPattern_);
     case CommandType::Help:
-      return "COMMANDS GREEN GREEN_BREATHE GREEN_BLINK YELLOW YELLOW_BREATHE YELLOW_BLINK RED RED_BLINK RED_BREATHE OFF PING STATUS HELP";
+      return "COMMANDS GREEN GREEN_BREATHE GREEN_BLINK YELLOW YELLOW_BREATHE YELLOW_BLINK RED RED_BLINK RED_BREATHE ALL ALL_BLINK ALL_BREATHE OFF PING STATUS HELP";
     case CommandType::Unknown:
     default:
       return String("ERR UNKNOWN_COMMAND ") + command.raw;

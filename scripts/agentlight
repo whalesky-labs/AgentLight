@@ -37,6 +37,9 @@ States:
   red
   red-blink
   red-breathe
+  all
+  all-blink
+  all-breathe
 
 Environment:
   AGENTLIGHT_TRANSPORT  http or usb, defaults to http
@@ -55,7 +58,7 @@ normalize_state() {
   value="$(printf '%s' "$value" | tr '[:lower:]' '[:upper:]')"
 
   case "$value" in
-    OFF|GREEN|GREEN_BREATHE|GREEN_BLINK|YELLOW|YELLOW_BREATHE|YELLOW_BLINK|RED|RED_BLINK|RED_BREATHE|PING|STATUS|HELP)
+    OFF|GREEN|GREEN_BREATHE|GREEN_BLINK|YELLOW|YELLOW_BREATHE|YELLOW_BLINK|RED|RED_BLINK|RED_BREATHE|ALL|ALL_BLINK|ALL_BREATHE|PING|STATUS|HELP)
       printf '%s\n' "$value"
       ;;
     BUSY|RUNNING|TOOL)

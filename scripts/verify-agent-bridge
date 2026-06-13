@@ -276,6 +276,10 @@ grep -Fq '"multiSessionMode": "latest-event-wins"' config/agentlight-agent.examp
 grep -Fq '"AGENTLIGHT_TRANSPORT": "usb"' config/agentlight-agent.example.json
 grep -Fq '"AGENTLIGHT_SERIAL_PORT": "/dev/cu.usbmodem1101"' config/agentlight-agent.example.json
 grep -Fq 'AGENTLIGHT_TRANSPORT=usb AGENTLIGHT_SERIAL_PORT=/dev/cu.usbmodem1101 scripts/agentlight status' docs/user-guide.md
+grep -Fq '`ALL` 会让红 / 黄 / 绿三路同时常亮' docs/user-guide.md
+grep -Fq '| `YELLOW_BLINK` | 400ms 周期，亮 200ms / 灭 200ms |' docs/user-guide.md
+grep -Fq '| `ALL` | 红 / 黄 / 绿三路同时常亮，用于硬件自检 |' README.md
+grep -Fq '| `ALL` | Red/yellow/green steady on for hardware self-test |' README.en.md
 grep -Fq 'whalesky-labs-AgentLight' docs/user-guide.md
 grep -Fq 'latest-event-wins' docs/user-guide.md
 grep -Fq 'whalesky-labs-AgentLight' service/windows/install-service.ps1

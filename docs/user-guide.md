@@ -81,6 +81,7 @@ curl "http://192.168.4.1/status"
 curl "http://192.168.4.1/command?cmd=GREEN"
 curl "http://192.168.4.1/command?cmd=YELLOW_BLINK"
 curl "http://192.168.4.1/command?cmd=RED_BLINK"
+curl "http://192.168.4.1/command?cmd=ALL"
 ```
 
 如果灯能按命令切换，说明硬件、固件和 Wi-Fi 控制通道已经可用。
@@ -99,10 +100,12 @@ pio device monitor
 GREEN
 YELLOW_BLINK
 RED_BLINK
+ALL
 STATUS
 ```
 
 每条命令以换行结尾。成功时固件会返回 `OK <STATE>` 或 `STATUS <STATE>`。
+`ALL` 会让红 / 黄 / 绿三路同时常亮，适合排查灯珠、飞线和焊点。
 
 ### 使用 BLE 验证
 
@@ -314,6 +317,15 @@ scripts/agentlight-event --agent <agent> --event <event> --send
 | `error` | `RED` |
 | `idle` | `GREEN` |
 
+灯效时序：
+
+| 灯效 | 固件行为 |
+| --- | --- |
+| 常亮 | 目标颜色持续点亮，其他颜色熄灭 |
+| 闪烁 | 默认 800ms 周期，亮 400ms / 灭 400ms |
+| `YELLOW_BLINK` | 400ms 周期，亮 200ms / 灭 200ms |
+| 呼吸 | 2000ms 周期，亮度从低到高再回落 |
+
 Codex 推荐先使用本地 session 监听：
 
 ```bash
@@ -348,6 +360,7 @@ scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --event-command scr
 - 检查 GPIO 是否分别接到 `R1/R2/R3` 靠近原控制芯片的一侧。
 - 检查固件是否使用 `AGENTLIGHT_ACTIVE_LOW=1`。
 - 用 `GREEN`、`YELLOW_BLINK`、`RED_BLINK` 分别测试三路。
+- 用 `ALL` 进行全亮自检，确认红 / 黄 / 绿三路线路都能同时点亮。
 
 ### 服务启动了但灯没有变化
 

@@ -31,6 +31,27 @@ void GpioLightDriver::setPattern(const LightPattern& pattern) {
 }
 
 void GpioLightDriver::tick(unsigned long nowMs) {
+  if (pattern_.state == LightState::All) {
+    switch (pattern_.effect) {
+      case LightEffect::Blink: {
+        const bool active = (nowMs % 800) < 400;
+        writeAll(active);
+        return;
+      }
+      case LightEffect::Breathe: {
+        const uint16_t phase = nowMs % 2000;
+        const uint16_t triangle = phase < 1000 ? phase : 2000 - phase;
+        const uint8_t brightness = static_cast<uint8_t>(20 + ((triangle * 235UL) / 1000));
+        writeAllPwm(brightness);
+        return;
+      }
+      case LightEffect::Steady:
+      default:
+        writeAll(true);
+        return;
+    }
+  }
+
   const uint8_t activePin = pinFor(pattern_.state);
   if (activePin == 0) {
     writeAllOff();
@@ -40,9 +61,11 @@ void GpioLightDriver::tick(unsigned long nowMs) {
   writeInactiveOff(activePin);
 
   switch (pattern_.effect) {
-    case LightEffect::Blink:
-      writeOne(activePin, (nowMs % 800) < 400);
+    case LightEffect::Blink: {
+      const unsigned long periodMs = pattern_.state == LightState::Yellow ? 400UL : 800UL;
+      writeOne(activePin, (nowMs % periodMs) < (periodMs / 2));
       return;
+    }
     case LightEffect::Breathe: {
       const uint16_t phase = nowMs % 2000;
       const uint16_t triangle = phase < 1000 ? phase : 2000 - phase;
@@ -65,6 +88,7 @@ uint8_t GpioLightDriver::pinFor(LightState state) const {
       return yellowPin_;
     case LightState::Green:
       return greenPin_;
+    case LightState::All:
     case LightState::Off:
     default:
       return 0;
@@ -72,9 +96,19 @@ uint8_t GpioLightDriver::pinFor(LightState state) const {
 }
 
 void GpioLightDriver::writeAllOff() {
-  writeOne(redPin_, false);
-  writeOne(yellowPin_, false);
-  writeOne(greenPin_, false);
+  writeAll(false);
+}
+
+void GpioLightDriver::writeAll(bool active) {
+  writeOne(redPin_, active);
+  writeOne(yellowPin_, active);
+  writeOne(greenPin_, active);
+}
+
+void GpioLightDriver::writeAllPwm(uint8_t brightness) {
+  writeOnePwm(redPin_, brightness);
+  writeOnePwm(yellowPin_, brightness);
+  writeOnePwm(greenPin_, brightness);
 }
 
 void GpioLightDriver::writeInactiveOff(uint8_t activePin) {

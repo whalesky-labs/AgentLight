@@ -18,6 +18,7 @@ enum class LightState {
   Red,
   Yellow,
   Green,
+  All,
 };
 
 enum class LightEffect {

@@ -30,6 +30,8 @@ const char* toText(LightState state) {
       return "YELLOW";
     case LightState::Red:
       return "RED";
+    case LightState::All:
+      return "ALL";
     case LightState::Off:
     default:
       return "OFF";
@@ -97,6 +99,18 @@ bool tryParseLightPattern(const String& value, LightPattern& pattern) {
   }
   if (normalized == "RED_BREATHE") {
     pattern = {LightState::Red, LightEffect::Breathe};
+    return true;
+  }
+  if (normalized == "ALL") {
+    pattern = {LightState::All, LightEffect::Steady};
+    return true;
+  }
+  if (normalized == "ALL_BLINK") {
+    pattern = {LightState::All, LightEffect::Blink};
+    return true;
+  }
+  if (normalized == "ALL_BREATHE") {
+    pattern = {LightState::All, LightEffect::Breathe};
     return true;
   }
   if (normalized == "OFF") {

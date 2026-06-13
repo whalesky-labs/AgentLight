@@ -82,6 +82,9 @@ The protocol is plain text, one command at a time:
 | `RED` | Red steady, yellow/green off |
 | `RED_BLINK` | Red blinking |
 | `RED_BREATHE` | Red breathing |
+| `ALL` | Red/yellow/green steady on for hardware self-test |
+| `ALL_BLINK` | Red/yellow/green blinking together |
+| `ALL_BREATHE` | Red/yellow/green breathing together |
 | `OFF` | All lights off |
 | `PING` | Responds `PONG` |
 | `STATUS` | Responds with the current light state |
@@ -327,7 +330,7 @@ The config supports:
 | Effect | Firmware behavior |
 | --- | --- |
 | Steady | Keeps the target color on and all other colors off |
-| Blink | 800ms cycle, 400ms on / 400ms off |
+| Blink | Default 800ms cycle, 400ms on / 400ms off; `YELLOW_BLINK` uses a 400ms cycle, 200ms on / 200ms off |
 | Breathe | 2000ms cycle, brightness ramps up and then down |
 
 The breathing effect currently uses software PWM and does not require extra
