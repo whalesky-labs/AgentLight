@@ -35,7 +35,6 @@ This file is part of AgentLight.
 
 - 项目使用 MIT License 开源，SPDX 标识为 `MIT`。
 - 正式协议原文维护在根目录 [LICENSE](../LICENSE)。
-- 中文优先的协议说明维护在 [docs/license.md](./license.md)。
 - 源码文件头中的 `@license` 必须指向 `https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE`。
 
 ## 架构边界

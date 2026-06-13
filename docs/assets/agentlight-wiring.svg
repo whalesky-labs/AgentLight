@@ -1,0 +1,307 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="880" viewBox="0 0 1600 880" role="img" aria-labelledby="title desc">
+  <title id="title">AgentLight wiring diagram</title>
+  <desc id="desc">ESP32-C3 SuperMini full pinout style wiring diagram for a modified BS-768 PCB. 3V3 and GND connect to the common pads. GPIO4, GPIO5, and GPIO6 connect through separate 220R resistors to the L1, L2, and L3 lamp control pads.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #fff; stroke: #d7dee8; stroke-width: 2; }
+      .label { font-family: Arial, Helvetica, sans-serif; font-weight: 700; fill: #111827; }
+      .muted { fill: #64748b; }
+      .small { font-size: 16px; }
+      .tiny { font-size: 13px; }
+      .medium { font-size: 22px; }
+      .large { font-size: 36px; }
+      .white { fill: #fff; }
+      .tag-power { fill: #ef233c; }
+      .tag-gnd { fill: #111827; }
+      .tag-gpio { fill: #5abd32; }
+      .tag-adc { fill: #ff957f; }
+      .tag-spi { fill: #7c5cf3; }
+      .tag-i2c { fill: #20b89c; }
+      .tag-uart { fill: #6b7280; }
+      .esp-board { fill: #111827; }
+      .esp-board-edge { fill: #020617; opacity: .3; }
+      .usb { fill: #cbd5e1; stroke: #94a3b8; stroke-width: 2; }
+      .pin { fill: #e0b63e; stroke: #9b7517; stroke-width: 2; }
+      .hole { fill: #fff; }
+      .trace-dark { fill: none; stroke: #0b0f18; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
+      .gear { fill: #f8fafc; }
+      .pcb { fill: #0d7b58; stroke: #07543d; stroke-width: 3; }
+      .pcb-text { fill: #d1fae5; }
+      .trace { fill: none; stroke: #20d0ba; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+      .trace-thin { fill: none; stroke: #20d0ba; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: .86; }
+      .copper { fill: #35d7cb; stroke: #0faaa0; stroke-width: 2; }
+      .solder { fill: #d9e2e6; stroke: #94a3b8; stroke-width: 2; }
+      .led { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2; }
+      .lamp-red { fill: #ef4444; stroke: #991b1b; stroke-width: 2; }
+      .lamp-yellow { fill: #facc15; stroke: #a16207; stroke-width: 2; }
+      .lamp-green { fill: #22c55e; stroke: #15803d; stroke-width: 2; }
+      .led-core { fill: #e5e7eb; }
+      .wire { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+      .wire-3v3 { stroke: #ef233c; }
+      .wire-gnd { stroke: #111827; }
+      .wire-red { stroke: #dc2626; }
+      .wire-yellow { stroke: #eab308; }
+      .wire-green { stroke: #16a34a; }
+      .wire-thin { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .guide { stroke: #9ca3af; }
+      .resistor { fill: #fff7ed; stroke: #c2410c; stroke-width: 2; }
+      .band { stroke: #7c2d12; stroke-width: 4; }
+      .callout { fill: #fff; stroke: #cbd5e1; stroke-width: 2; }
+      .note { fill: #0f172a; font-size: 18px; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1600" height="880"/>
+  <text class="label large" x="800" y="56" text-anchor="middle">AgentLight 接线图</text>
+  <text class="label medium muted" x="800" y="90" text-anchor="middle">ESP32-C3 SuperMini -> 改造后的 BS-768 灯板</text>
+  <rect class="panel" x="60" y="126" width="1480" height="650" rx="10"/>
+
+  <!-- ESP32-C3 SuperMini, drawn in the same full-pinout style as the reference image -->
+  <g id="esp32-supermini" transform="translate(360 160)">
+    <text class="label medium" x="180" y="-2" text-anchor="middle">ESP32-C3 SuperMini</text>
+    <rect class="usb" x="110" y="10" width="140" height="40" rx="4"/>
+    <rect class="esp-board-edge" x="70" y="50" width="220" height="440" rx="2"/>
+    <rect class="esp-board" x="62" y="50" width="220" height="440" rx="2"/>
+
+    <path class="trace-dark" d="M120 108 C140 108 140 138 164 138 H216"/>
+    <path class="trace-dark" d="M126 202 H222"/>
+    <path class="trace-dark" d="M132 360 C156 336 190 340 220 318"/>
+
+    <g transform="translate(180 250)">
+      <rect class="gear" x="-12" y="-70" width="24" height="140" rx="4"/>
+      <rect class="gear" x="-70" y="-12" width="140" height="24" rx="4"/>
+      <rect class="gear" x="-12" y="-70" width="24" height="140" rx="4" transform="rotate(45)"/>
+      <rect class="gear" x="-12" y="-70" width="24" height="140" rx="4" transform="rotate(-45)"/>
+      <circle cx="0" cy="0" r="46" fill="#f8fafc"/>
+      <circle cx="0" cy="0" r="18" fill="#111827"/>
+    </g>
+
+    <rect x="105" y="342" width="150" height="72" rx="3" fill="#f8fafc"/>
+    <text class="label medium" x="180" y="370" text-anchor="middle">ESP32-C3</text>
+    <text class="label medium" x="180" y="400" text-anchor="middle">Super Mini</text>
+
+    <!-- Left side function tags -->
+    <g class="label small">
+      <rect class="tag-power" x="-50" y="66" width="84" height="30" rx="2"/><text class="white" x="-8" y="88" text-anchor="middle">5V</text>
+      <rect class="tag-gnd" x="-50" y="114" width="84" height="30" rx="2"/><text class="white" x="-8" y="136" text-anchor="middle">GND</text>
+      <rect class="tag-power" x="-50" y="162" width="84" height="30" rx="2"/><text class="white" x="-8" y="184" text-anchor="middle">3V3</text>
+
+      <rect class="tag-spi" x="-250" y="216" width="82" height="30" rx="2"/><text class="white" x="-209" y="238" text-anchor="middle">SCK</text>
+      <rect class="tag-adc" x="-158" y="216" width="82" height="30" rx="2"/><text class="white" x="-117" y="238" text-anchor="middle">A4</text>
+      <rect class="tag-gpio" x="-66" y="216" width="100" height="30" rx="2"/><text class="white" x="-16" y="238" text-anchor="middle">GPIO4</text>
+
+      <rect class="tag-adc" x="-158" y="264" width="82" height="30" rx="2"/><text class="white" x="-117" y="286" text-anchor="middle">A3</text>
+      <rect class="tag-gpio" x="-66" y="264" width="100" height="30" rx="2"/><text class="white" x="-16" y="286" text-anchor="middle">GPIO3</text>
+
+      <rect class="tag-adc" x="-158" y="312" width="82" height="30" rx="2"/><text class="white" x="-117" y="334" text-anchor="middle">A2</text>
+      <rect class="tag-gpio" x="-66" y="312" width="100" height="30" rx="2"/><text class="white" x="-16" y="334" text-anchor="middle">GPIO2</text>
+
+      <rect class="tag-adc" x="-158" y="360" width="82" height="30" rx="2"/><text class="white" x="-117" y="382" text-anchor="middle">A1</text>
+      <rect class="tag-gpio" x="-66" y="360" width="100" height="30" rx="2"/><text class="white" x="-16" y="382" text-anchor="middle">GPIO1</text>
+
+      <rect class="tag-adc" x="-158" y="408" width="82" height="30" rx="2"/><text class="white" x="-117" y="430" text-anchor="middle">A0</text>
+      <rect class="tag-gpio" x="-66" y="408" width="100" height="30" rx="2"/><text class="white" x="-16" y="430" text-anchor="middle">GPIO0</text>
+    </g>
+
+    <!-- Right side function tags -->
+    <g class="label small">
+      <rect class="tag-gpio" x="342" y="66" width="100" height="30" rx="2"/><text class="white" x="392" y="88" text-anchor="middle">GPIO5</text>
+      <rect class="tag-adc" x="454" y="66" width="82" height="30" rx="2"/><text class="white" x="495" y="88" text-anchor="middle">A5</text>
+      <rect class="tag-spi" x="548" y="66" width="82" height="30" rx="2"/><text class="white" x="589" y="88" text-anchor="middle">MISO</text>
+
+      <rect class="tag-gpio" x="342" y="114" width="100" height="30" rx="2"/><text class="white" x="392" y="136" text-anchor="middle">GPIO6</text>
+      <rect class="tag-spi" x="548" y="114" width="82" height="30" rx="2"/><text class="white" x="589" y="136" text-anchor="middle">MOSI</text>
+
+      <rect class="tag-gpio" x="342" y="162" width="100" height="30" rx="2"/><text class="white" x="392" y="184" text-anchor="middle">GPIO7</text>
+      <rect class="tag-spi" x="548" y="162" width="82" height="30" rx="2"/><text class="white" x="589" y="184" text-anchor="middle">SS</text>
+
+      <rect class="tag-gpio" x="342" y="210" width="100" height="30" rx="2"/><text class="white" x="392" y="232" text-anchor="middle">GPIO8</text>
+      <rect class="tag-i2c" x="548" y="210" width="82" height="30" rx="2"/><text class="white" x="589" y="232" text-anchor="middle">SDA</text>
+
+      <rect class="tag-gpio" x="342" y="258" width="100" height="30" rx="2"/><text class="white" x="392" y="280" text-anchor="middle">GPIO9</text>
+      <rect class="tag-i2c" x="548" y="258" width="82" height="30" rx="2"/><text class="white" x="589" y="280" text-anchor="middle">SCL</text>
+
+      <rect class="tag-gpio" x="342" y="306" width="100" height="30" rx="2"/><text class="white" x="392" y="328" text-anchor="middle">GPIO10</text>
+      <rect class="tag-gpio" x="342" y="354" width="100" height="30" rx="2"/><text class="white" x="392" y="376" text-anchor="middle">GPIO20</text>
+      <rect class="tag-uart" x="548" y="354" width="82" height="30" rx="2"/><text class="white" x="589" y="376" text-anchor="middle">RX</text>
+      <rect class="tag-gpio" x="342" y="402" width="100" height="30" rx="2"/><text class="white" x="392" y="424" text-anchor="middle">GPIO21</text>
+      <rect class="tag-uart" x="548" y="402" width="82" height="30" rx="2"/><text class="white" x="589" y="424" text-anchor="middle">TX</text>
+    </g>
+
+    <!-- Numeric pin labels next to pads -->
+    <g class="label small">
+      <text class="white" x="96" y="87" text-anchor="middle">5V</text>
+      <text class="white" x="96" y="135" text-anchor="middle">G</text>
+      <text class="white" x="96" y="183" text-anchor="middle">3.3</text>
+      <text class="white" x="96" y="237" text-anchor="middle">4</text>
+      <text class="white" x="96" y="285" text-anchor="middle">3</text>
+      <text class="white" x="96" y="333" text-anchor="middle">2</text>
+      <text class="white" x="96" y="381" text-anchor="middle">1</text>
+      <text class="white" x="96" y="429" text-anchor="middle">0</text>
+
+      <text class="white" x="264" y="87" text-anchor="middle">5</text>
+      <text class="white" x="264" y="135" text-anchor="middle">6</text>
+      <text class="white" x="264" y="183" text-anchor="middle">7</text>
+      <text class="white" x="264" y="231" text-anchor="middle">8</text>
+      <text class="white" x="264" y="279" text-anchor="middle">9</text>
+      <text class="white" x="264" y="327" text-anchor="middle">10</text>
+      <text class="white" x="264" y="375" text-anchor="middle">20</text>
+      <text class="white" x="264" y="423" text-anchor="middle">21</text>
+    </g>
+
+    <!-- Pad rows -->
+    <g id="esp-pads">
+      <g transform="translate(48 68)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(48 116)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(48 164)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(48 218)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(48 266)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(48 314)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(48 362)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(48 410)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+
+      <g transform="translate(262 68)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(262 116)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(262 164)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(262 212)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(262 260)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(262 308)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(262 356)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+      <g transform="translate(262 404)"><rect class="pin" width="50" height="28" rx="7"/><circle class="hole" cx="15" cy="14" r="8"/><circle class="hole" cx="35" cy="14" r="8"/></g>
+    </g>
+  </g>
+
+  <!-- Modified BS-768 PCB -->
+  <g id="bs768" transform="translate(1260 146)">
+    <text class="label medium" x="92" y="12" text-anchor="middle">BS-768 实物接线面</text>
+    <path class="pcb" d="M36 20 L148 20 L178 54 L178 548 L148 582 L36 582 L6 548 L6 54 Z"/>
+    <text class="label medium" x="92" y="58" text-anchor="middle" fill="#d1fae5">BS-768</text>
+
+    <!-- Traces and real-board visual landmarks -->
+    <path class="trace" d="M44 94 H120 L154 130 V232 L130 258 V342 L158 372 V522"/>
+    <path class="trace" d="M40 526 V146 L70 120"/>
+    <path class="trace-thin" d="M86 212 V278 L62 306 V356 L104 386"/>
+    <path class="trace-thin" d="M78 324 H118 V432"/>
+    <path class="trace-thin" d="M124 220 H154"/>
+
+    <!-- L1 -->
+    <text class="label small" x="36" y="104" fill="#d1fae5">+</text>
+    <text class="label small" x="36" y="132" fill="#d1fae5">L1</text>
+    <rect class="copper" x="66" y="78" width="58" height="24" rx="3"/>
+    <rect class="copper" x="72" y="122" width="58" height="22" rx="3"/>
+    <rect class="lamp-red" x="90" y="100" width="28" height="44" rx="5"/>
+    <rect class="led-core" x="97" y="112" width="14" height="20" rx="3"/>
+
+    <!-- Modified solder points visible in the photo -->
+    <g>
+      <rect class="copper" x="56" y="204" width="58" height="32" rx="3"/>
+      <circle class="solder" cx="76" cy="220" r="13"/>
+      <rect class="copper" x="52" y="266" width="58" height="32" rx="3"/>
+      <circle class="solder" cx="76" cy="282" r="13"/>
+      <rect class="copper" x="52" y="338" width="58" height="32" rx="3"/>
+      <circle class="solder" cx="76" cy="354" r="13"/>
+
+      <rect class="copper" x="126" y="186" width="30" height="120" rx="14" opacity=".45"/>
+      <circle class="solder" cx="140" cy="200" r="12"/>
+      <circle class="solder" cx="140" cy="230" r="12"/>
+      <circle class="solder" cx="140" cy="260" r="12"/>
+      <circle class="solder" cx="140" cy="290" r="12"/>
+    </g>
+
+    <!-- L2 -->
+    <text class="label small" x="104" y="336" fill="#d1fae5">+</text>
+    <text class="label small" x="126" y="366" fill="#d1fae5">L2</text>
+    <rect class="copper" x="76" y="364" width="54" height="22" rx="3"/>
+    <rect class="lamp-yellow" x="86" y="344" width="28" height="44" rx="5"/>
+    <rect class="led-core" x="93" y="356" width="14" height="20" rx="3"/>
+    <text class="label small" x="160" y="398" fill="#d1fae5">R2</text>
+    <g id="r2-pads">
+      <rect class="copper" x="132" y="372" width="28" height="42" rx="8" opacity=".65"/>
+      <circle class="solder" cx="146" cy="384" r="8"/>
+      <circle class="solder" cx="146" cy="404" r="8"/>
+    </g>
+
+    <!-- Lower area and L3 -->
+    <text class="label small" x="30" y="424" fill="#d1fae5">R1</text>
+    <rect class="led" x="40" y="390" width="20" height="34" rx="4" opacity=".65"/>
+    <text class="label small" x="42" y="360" fill="#d1fae5">-</text>
+
+    <g id="l3-driver" transform="translate(112 430)">
+      <rect x="-18" y="-12" width="36" height="44" rx="5" fill="#111827" stroke="#0f172a" stroke-width="2"/>
+      <g class="solder">
+        <rect x="-36" y="-8" width="18" height="10" rx="3"/>
+        <rect x="-36" y="5" width="18" height="10" rx="3"/>
+        <rect x="-36" y="18" width="18" height="10" rx="3"/>
+        <rect x="18" y="-8" width="18" height="10" rx="3"/>
+        <rect x="18" y="5" width="18" height="10" rx="3"/>
+        <rect x="18" y="18" width="18" height="10" rx="3"/>
+      </g>
+    </g>
+
+    <g id="l3-four-pads">
+      <rect class="copper" x="78" y="474" width="28" height="34" rx="8" opacity=".65"/>
+      <rect class="copper" x="124" y="474" width="28" height="34" rx="8" opacity=".65"/>
+      <circle class="solder" cx="92" cy="482" r="8"/>
+      <circle class="solder" cx="92" cy="500" r="8"/>
+      <circle class="solder" cx="138" cy="482" r="8"/>
+      <circle class="solder" cx="138" cy="500" r="8"/>
+      <text class="label small" x="92" y="520" text-anchor="middle" fill="#d1fae5">C1</text>
+      <text class="label small" x="138" y="520" text-anchor="middle" fill="#d1fae5">R3</text>
+    </g>
+
+    <rect class="copper" x="54" y="532" width="72" height="34" rx="5" opacity=".22"/>
+    <rect class="lamp-green" x="74" y="536" width="34" height="34" rx="5"/>
+    <rect class="led-core" x="83" y="546" width="16" height="14" rx="3"/>
+
+  </g>
+
+  <!-- Light control wiring only. Power wiring is added later. -->
+  <g id="light-wiring">
+    <path class="wire wire-3v3" d="M458 338 H390 V724 H1460 V406 H1400"/>
+
+    <path class="wire wire-red" d="M458 392 H850"/>
+    <path class="wire wire-red" d="M970 392 H1188 V568 H1300"/>
+
+    <path class="wire wire-yellow" d="M672 242 H686 V452 H850"/>
+    <path class="wire wire-yellow" d="M970 452 H1188 V550 H1406"/>
+
+    <path class="wire wire-green" d="M672 290 H712 V572 H850"/>
+    <path class="wire wire-green" d="M970 572 H1208 V646 H1398"/>
+  </g>
+
+  <g id="light-resistors" class="label small">
+    <g transform="translate(850 376)">
+      <rect class="resistor" width="120" height="32" rx="9"/>
+      <line class="band" x1="28" y1="5" x2="28" y2="27"/>
+      <line class="band" x1="60" y1="5" x2="60" y2="27"/>
+      <line class="band" x1="92" y1="5" x2="92" y2="27"/>
+      <text x="60" y="-9" text-anchor="middle">220R</text>
+    </g>
+    <g transform="translate(850 436)">
+      <rect class="resistor" width="120" height="32" rx="9"/>
+      <line class="band" x1="28" y1="5" x2="28" y2="27"/>
+      <line class="band" x1="60" y1="5" x2="60" y2="27"/>
+      <line class="band" x1="92" y1="5" x2="92" y2="27"/>
+      <text x="60" y="-9" text-anchor="middle">220R</text>
+    </g>
+    <g transform="translate(850 556)">
+      <rect class="resistor" width="120" height="32" rx="9"/>
+      <line class="band" x1="28" y1="5" x2="28" y2="27"/>
+      <line class="band" x1="60" y1="5" x2="60" y2="27"/>
+      <line class="band" x1="92" y1="5" x2="92" y2="27"/>
+      <text x="60" y="-9" text-anchor="middle">220R</text>
+    </g>
+  </g>
+
+  <g id="wiring-description">
+    <rect class="callout" x="190" y="792" width="1220" height="72" rx="8"/>
+    <text class="label small muted" x="800" y="823" text-anchor="middle">
+      灯光控制：GPIO4 -> 220R -> R1（红灯），GPIO5 -> 220R -> R2（黄灯），GPIO6 -> 220R -> R3（绿灯）
+    </text>
+    <text class="label small muted" x="800" y="848" text-anchor="middle">
+      电源：BS-768 右侧四连焊点第 3 个 -> ESP32-C3 3V3
+    </text>
+  </g>
+
+</svg>

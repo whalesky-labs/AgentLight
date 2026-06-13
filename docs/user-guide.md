@@ -28,6 +28,8 @@
 
 默认接线：
 
+![AgentLight 接线图](./assets/agentlight-wiring.svg)
+
 | 连接点 | ESP32-C3 引脚 | 接法 |
 | --- | --- | --- |
 | 公共正极 | 3V3 | `3V3` -> 小板公共 `+` |
@@ -37,6 +39,12 @@
 | 绿灯控制端 | GPIO6 | `GPIO6` -> 220R -> 绿灯控制脚 |
 
 BS-768 小板按共阳方式控制，固件默认已经设置 `AGENTLIGHT_ACTIVE_LOW=1`。GPIO 拉低时对应灯亮，GPIO 拉高时对应灯灭。当前小板只作为灯珠载板使用，原限流 / 控制元件已拆除，所以每一路 GPIO 到灯珠控制脚都必须串联 220R。
+
+实物参考：
+
+![BS-768 实物焊接面](./assets/a4762c4a6801d08b7ef337a724613d61.jpg)
+
+![AgentLight 外壳和 USB 连接状态](./assets/86d13f50b6218f5f8913e96335f69902.jpg)
 
 ## 构建并烧录固件
 
@@ -53,7 +61,7 @@ pio device monitor
 | 通道 | 用途 |
 | --- | --- |
 | USB Serial | 通过串口发送文本命令 |
-| Bluetooth LE | 通过 BLE RX 特征写入文本命令 |
+| Bluetooth LE | 系统蓝牙连接后通过 HID 命令报告发送文本命令；调试时也可写入 BLE RX 特征 |
 | Wi-Fi HTTP | 电脑连接设备 AP 后通过 HTTP API 发送命令 |
 
 默认固件配置：
@@ -61,7 +69,7 @@ pio device monitor
 | 配置 | 默认值 |
 | --- | --- |
 | BLE 设备名 | `WHALESKY-LABS-AGENTLIGHT` |
-| 系统蓝牙展示名 | `AGENTLIGHT` |
+| BLE 广播短名称 | `AGENTLIGHT` |
 | BLE 配对 | 默认启用 |
 | BLE 配对码 | `123456` |
 | Wi-Fi AP | `WHALESKY-LABS-AGENTLIGHT` |
@@ -110,24 +118,37 @@ STATUS
 
 ### 使用 BLE 验证
 
-BLE 默认启用配对 / 绑定。ESP32-C3 使用的是 BLE GATT 连接，不是经典蓝牙串口 SPP；固件默认启用标准 HID 配对外壳，让电脑和手机的系统蓝牙列表可以按普通可配对外设发现设备。
+BLE 默认启用配对 / 绑定。ESP32-C3 使用的是 BLE 连接，不是经典蓝牙串口 SPP，也不是键盘 / 鼠标 / 音频设备。
 
-推荐先按系统蓝牙列表验证：
+用户只通过电脑系统蓝牙连接或断开 AgentLight：
 
-1. 打开电脑或手机的系统蓝牙设置。
-2. 等待设备名 `AGENTLIGHT` 出现在可连接设备列表中。
+1. 打开电脑系统蓝牙设置。
+2. 找到设备 `AGENTLIGHT`。
 3. 点击连接或配对。
 4. 如果系统要求配对码，输入 `123456`。
-5. 配对完成后，使用 BLE GATT 客户端或桥接程序访问 AgentLight 服务并发送命令。
+5. 断开时也在系统蓝牙设置中操作。
 
-说明：系统列表为了可见性使用 `AGENTLIGHT` 短名称；完整 BLE 设备名仍是 `WHALESKY-LABS-AGENTLIGHT`。标准 HID 配对外壳只用于发现和配对，不会发送任何输入事件；灯光控制仍通过 AgentLight 自定义 RX / TX GATT 服务完成。
+说明：固件会发布标准 HID Presentation Remote 外观，让电脑系统蓝牙列表更稳定地展示设备。系统蓝牙命令通过 HID vendor feature report 发送到已连接设备；通用 BLE 调试客户端仍可使用 AgentLight 自定义 RX / TX GATT 服务。固件不会发送任何键盘或鼠标输入事件。
 
-需要验证命令通道时，使用 BLE GATT 客户端连接已配对设备：
+需要验证命令通道时，可以在系统蓝牙已经连接后使用桥接脚本：
 
-1. 搜索设备：`AGENTLIGHT` 或 `WHALESKY-LABS-AGENTLIGHT`
-2. 访问服务：`8f16d7a0-6c6d-4d68-8d64-6b4d2a86b601`
-3. 向 RX 特征写入文本命令，例如 `PING`、`STATUS`、`YELLOW_BLINK`
-4. 在 TX 特征读取或通知中确认返回 `PONG`、`STATUS <STATE>` 或 `OK <STATE>`
+```bash
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight status
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight yellow-blink
+```
+
+`ble-system` 只使用系统已经连接的 AgentLight 设备，并通过 HID vendor feature report 发送命令。没有连接时会返回 `SKIP BLE_NOT_CONNECTED`，不会主动扫描、连接或重连。
+
+BLE 生命周期验收标准：
+
+1. 系统蓝牙已连接时，`ble-system` 命令返回 `OK <STATE>` 或 `STATUS <STATE>`。
+2. 用户在系统蓝牙里手动断开后，固件立即进入 `OFF`。
+3. 断开后再次执行 `ble-system` 命令，应返回 `SKIP BLE_NOT_CONNECTED`，后台服务不得主动扫描、连接或重连。
+4. 固件不会在断开后自动恢复可连接广播。
+5. 长按 ESP32-C3 板载 `BOOT` 键 2 秒后，系统蓝牙列表应重新出现可连接入口，窗口持续 60 秒。
+6. 用户手动重新连接后，`ble-system` 命令恢复可用。
+7. USB 连接电脑时，固件进入 USB 模式，主动挂起 BLE 广播、断开已连接的 BLE 客户端，并拒收 BLE 命令。
+8. 拔掉 USB 后，固件进入蓝牙模式，并打开一次 60 秒手动连接窗口。
 
 特征 UUID：
 
@@ -138,7 +159,7 @@ BLE 默认启用配对 / 绑定。ESP32-C3 使用的是 BLE GATT 连接，不是
 
 ### 使用桥接脚本验证
 
-桥接脚本默认使用 Wi-Fi HTTP：
+桥接脚本默认使用自动通道选择：检测到 USB 串口时走 USB；没有 USB 串口时走系统蓝牙。固件侧也会根据 USB 主机连接状态在 USB 模式和蓝牙模式之间切换。
 
 ```bash
 scripts/agentlight status
@@ -156,6 +177,13 @@ AGENTLIGHT_TRANSPORT=usb scripts/agentlight yellow-blink
 
 默认会自动发现 `/dev/cu.usbmodem*` 等常见 USB 串口。换 USB 口后 macOS 可能分配新的串口名，保持 `AGENTLIGHT_SERIAL_PORT` 为空即可自动适配；如果同时连接多块设备，再手动指定具体端口。
 
+通过系统蓝牙控制时，先在电脑系统蓝牙里连接 `AGENTLIGHT`：
+
+```bash
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight status
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight yellow-blink
+```
+
 如果设备地址不是默认值，可以设置：
 
 ```bash
@@ -164,7 +192,7 @@ export AGENTLIGHT_BASE_URL="http://192.168.4.1"
 
 ## 启动电脑端后台服务
 
-电脑端后台服务负责监听 AI 工具状态，并把状态事件发送到硬件。
+电脑端后台服务负责监听 AI 工具状态，并把状态事件发送到硬件。用户连接或断开蓝牙时，只使用电脑系统蓝牙设置；后台服务不提供本地网页控制入口，也不会在用户断开后主动重新连接。
 
 默认配置文件是 [config/agentlight-agent.example.json](../config/agentlight-agent.example.json)：
 
@@ -174,7 +202,7 @@ export AGENTLIGHT_BASE_URL="http://192.168.4.1"
   "multiSessionMode": "latest-event-wins",
   "sendToHardware": true,
   "environment": {
-    "AGENTLIGHT_TRANSPORT": "usb",
+    "AGENTLIGHT_TRANSPORT": "auto",
     "AGENTLIGHT_SERIAL_PORT": "",
     "AGENTLIGHT_SERIAL_BAUD": "115200",
     "AGENTLIGHT_HOST": "192.168.4.1",
@@ -189,6 +217,9 @@ export AGENTLIGHT_BASE_URL="http://192.168.4.1"
 - 多会话策略固定为 `latest-event-wins`。
 - 同一平台内哪个会话最后产生状态事件，硬件灯就显示哪个会话的状态。
 - `sendToHardware=true` 时，事件会继续发送到硬件；测试监听时可以先改成 `false`。
+- 默认 `AGENTLIGHT_TRANSPORT=auto`：检测到 USB 串口时走 USB；拔掉 USB 后自动走系统蓝牙。
+- USB 连接电脑时，固件进入 USB 模式，主动挂起 BLE 广播、断开已连接的 BLE 客户端，并拒收 BLE 命令，避免系统蓝牙自动连接 / 断开干扰 USB 工作状态。
+- 需要走系统蓝牙时，先在系统蓝牙设置中连接 `AGENTLIGHT`；服务只向已连接设备发送 HID 命令报告，不接管蓝牙连接。断开后不会自动重连，灯光进入 `OFF`，固件关闭可连接广播。需要重新连接时，长按 ESP32-C3 板载 `BOOT` 键 2 秒，打开 60 秒手动连接窗口。
 - 服务入口会按当前平台配置启动 `scripts/multi-agent-monitor --config <monitor-config> --platform <activePlatform> --send`。
 - 如果监听器退出，后台服务会按配置等待后重新启动监听器。
 
@@ -199,7 +230,7 @@ export AGENTLIGHT_BASE_URL="http://192.168.4.1"
 ```bash
 scripts/agentlight-agent check-config --config config/agentlight-agent.example.json
 scripts/agentlight-agent print-runtime --config config/agentlight-agent.example.json
-scripts/agentlight-agent run --config config/agentlight-agent.example.json --once
+scripts/agentlight-agent run --config config/agentlight-agent.example.json
 ```
 
 如果只想看 Codex 状态能否被监听，不控制硬件，可以直接运行：
@@ -228,6 +259,8 @@ service/macos/install-launch-agent.sh
 ~/Library/Logs/whalesky-labs-AgentLight/
 ```
 
+安装脚本会创建项目专用 Python 环境并安装 `requirements.txt`，同时构建 macOS 蓝牙命令 helper。
+
 查看服务：
 
 ```bash
@@ -248,6 +281,7 @@ service/macos/uninstall-launch-agent.sh
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
+python -m pip install -r requirements.txt
 .\service\windows\install-service.ps1
 ```
 
@@ -348,7 +382,7 @@ scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --event-command scr
 - [hooks/agents/README.md](../hooks/agents/README.md)
 - [hooks/codex/README.md](../hooks/codex/README.md)
 - [hooks/cursor/README.md](../hooks/cursor/README.md)
-- [docs/agent-platform-compatibility.md](./agent-platform-compatibility.md)
+- [config/agent-platforms.json](../config/agent-platforms.json)
 
 ## 常见问题
 

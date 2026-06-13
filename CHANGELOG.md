@@ -15,7 +15,10 @@
 - 支持 `v1.<Year>.<DayOfYear>+<BuildNumber>` CalVer 版本规则，并在 CI 自动模式下递增构建号。
 - 在 CI 中启用 Node.js 24 Actions 运行时，并将预览构建的版本更新说明输出到 Actions Summary。
 - Bluetooth LE 通道默认启用配对 / 绑定，并通过集中配置管理设备名、展示名、GATT UUID、广播外观、配对开关和配对码。
-- Bluetooth LE 默认启用标准 HID 配对外壳，主广播包发布 `AGENTLIGHT` 短名称、通用 HID 外观和 HID 服务，提升电脑与手机系统蓝牙列表的可见性。
+- Bluetooth LE 默认使用系统蓝牙可见的 HID Presentation Remote 外观，用户通过电脑系统蓝牙连接或断开设备，灯光控制仍走 AgentLight 自定义 GATT 服务。
+- 固件根据 USB 主机连接状态在 USB 模式和蓝牙模式之间切换；USB 模式会挂起 BLE 广播、断开已连接 BLE 客户端并拒收 BLE 命令。
+- 桥接脚本默认使用 `auto` 通道：检测到 USB 串口时走 USB，没有 USB 串口时走系统蓝牙。
+- CI Release 资产补充 `boot_app0.bin`，发布说明同步写入四段烧录 offset，便于按 `manifest.json` 完整烧录 ESP32-C3 SuperMini。
 
 ### 说明
 

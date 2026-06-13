@@ -119,6 +119,7 @@ jobs:
             dist/firmware.bin
             dist/bootloader.bin
             dist/partitions.bin
+            dist/boot_app0.bin
             dist/manifest.json
             dist/firmware-assets.sha256
           if-no-files-found: error
@@ -136,6 +137,7 @@ jobs:
             dist/firmware.bin
             dist/bootloader.bin
             dist/partitions.bin
+            dist/boot_app0.bin
             dist/manifest.json
             dist/firmware-assets.sha256
           fail_on_unmatched_files: true

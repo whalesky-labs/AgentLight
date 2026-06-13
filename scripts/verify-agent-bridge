@@ -34,6 +34,7 @@ bash -n \
   scripts/agentlight-event \
   hooks/agents/generic-wrapper.sh \
   hooks/cursor/agent-light.sh \
+  desktop/macos/build-bluetooth-helper.sh \
   service/macos/install-launch-agent.sh \
   service/macos/uninstall-launch-agent.sh
 
@@ -41,11 +42,9 @@ printf 'Checking engineering standards...\n'
 test -f .editorconfig
 test -f docs/code-standards.md
 test -f LICENSE
-test -f docs/license.md
 test -f docs/user-guide.md
 grep -Fq '@license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE' docs/code-standards.md
 grep -Fq 'MIT License' LICENSE
-grep -Fq 'SPDX 标识为 `MIT`' docs/license.md
 grep -Fq 'docs/code-standards.md' README.md
 grep -Fq 'docs/code-standards.md' README.en.md
 if grep -Fq 'AGENTS.md' README.md README.en.md; then
@@ -64,8 +63,10 @@ if grep -R -n -E '小板上已有 `R1/R2/R3` 限流电阻|通常不需要再额�
     printf 'Public documentation must describe the current BS-768 board as lamp-only with external 220R resistors.\n' >&2
     exit 1
 fi
-grep -Fq 'docs/license.md' README.md
-grep -Fq 'docs/license.md' README.en.md
+if grep -R -n --exclude=verify-agent-bridge -E '127\.0\.0\.1:18080|本地控制面板|Local control panel|controlServer|AGENTLIGHT_CONTROL_URL|AGENTLIGHT_USE_CONTROL_SERVER' README.md README.en.md docs config scripts agentlight_agent 2>/dev/null; then
+    printf 'Public files must not expose a local URL control surface for Bluetooth connection management.\n' >&2
+    exit 1
+fi
 grep -Fq 'docs/user-guide.md' README.md
 grep -Fq 'docs/user-guide.md' README.en.md
 if grep -R -n -E 'agent-service|hooks/(antigravity|claude|codebuddy|copilot|gemini|hermes|kimi|kiro|openclaw|opencode|pi|qwen)/README' README.md README.en.md docs hooks config .github 2>/dev/null; then
@@ -103,27 +104,35 @@ grep -Fq '使用 BLE 验证' docs/user-guide.md
 grep -Fq 'AGENTLIGHT_BLE_DEVICE_NAME=\"WHALESKY-LABS-AGENTLIGHT\"' platformio.ini
 grep -Fq 'AGENTLIGHT_WIFI_AP_PASSWORD=\"12345678\"' platformio.ini
 grep -Fq 'AGENTLIGHT_BLE_SERVICE_UUID=\"8f16d7a0-6c6d-4d68-8d64-6b4d2a86b601\"' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_ADVERTISED_SERVICE_UUID=\"1812\"' platformio.ini
 grep -Fq 'AGENTLIGHT_BLE_RX_UUID=\"8f16d7a1-6c6d-4d68-8d64-6b4d2a86b601\"' platformio.ini
 grep -Fq 'AGENTLIGHT_BLE_TX_UUID=\"8f16d7a2-6c6d-4d68-8d64-6b4d2a86b601\"' platformio.ini
 grep -Fq 'AGENTLIGHT_BLE_ADVERTISED_NAME=\"AGENTLIGHT\"' platformio.ini
-grep -Fq 'AGENTLIGHT_BLE_APPEARANCE=0x03C0' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_APPEARANCE=0x03CA' platformio.ini
 grep -Fq 'AGENTLIGHT_BLE_ENABLE_HID_PAIRING_SHELL=1' platformio.ini
 grep -Fq 'AGENTLIGHT_BLE_MODEL_NUMBER=\"AgentLight-ESP32-C3\"' platformio.ini
 grep -Fq 'AGENTLIGHT_BLE_REQUIRE_PAIRING=1' platformio.ini
 grep -Fq 'AGENTLIGHT_BLE_PAIRING_PIN=123456' platformio.ini
-grep -Fq '标准 HID 配对外壳' docs/user-guide.md
-grep -Fq '标准 HID 配对外壳' README.md
-grep -Fq 'standard HID pairing shell' README.en.md
+grep -Fq 'AGENTLIGHT_BLE_MANUAL_RECONNECT_ADVERTISING=1' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_MANUAL_RECONNECT_DELAY_MS=60000' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_PIN=9' platformio.ini
+grep -Fq 'AGENTLIGHT_BLE_MANUAL_RECONNECT_BUTTON_HOLD_MS=2000' platformio.ini
 grep -Fq 'Wi-Fi 密码 | `12345678`' docs/user-guide.md
 grep -Fq '密码输入：`12345678`' docs/user-guide.md
 grep -Fq '| 密码 | `12345678` |' README.md
 grep -Fq '| Password | `12345678` |' README.en.md
-grep -Fq '系统蓝牙展示名 | `AGENTLIGHT`' docs/user-guide.md
-grep -Fq '主广播包使用 `AGENTLIGHT` 短名称' README.md
-grep -Fq 'System Bluetooth display name: `AGENTLIGHT`' README.en.md
-grep -Fq 'Generic HID appearance' README.en.md
+grep -Fq 'BLE 广播短名称 | `AGENTLIGHT`' docs/user-guide.md
+grep -Fq '用户通过电脑系统蓝牙连接或断开设备' README.md
+grep -Fq 'Users connect or disconnect AgentLight from the operating system Bluetooth settings' README.en.md
 grep -Fq 'BLE 默认启用配对 / 绑定' README.md
 grep -Fq 'BLE pairing / bonding is enabled by default' README.en.md
+grep -Fq 'AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight status' docs/user-guide.md
+grep -Fq 'AGENTLIGHT_TRANSPORT=auto' docs/user-guide.md
+grep -Fq '检测到 USB 串口时走 USB' docs/user-guide.md
+grep -Fq '固件侧也会根据 USB 主机连接状态在 USB 模式和蓝牙模式之间切换' docs/user-guide.md
+grep -Fq '主动挂起 BLE 广播、断开已连接的 BLE 客户端，并拒收 BLE 命令' docs/user-guide.md
+grep -Fq 'DEFAULT_TRANSPORT="auto"' scripts/agentlight
+grep -Fq 'resolve_auto_transport()' scripts/agentlight
 grep -Fq 'scripts/multi-agent-monitor --config <monitor-config> --platform <activePlatform> --send' docs/user-guide.md
 grep -Fq '重新启动监听器' docs/user-guide.md
 python3 - <<'PY'
@@ -148,6 +157,12 @@ required = [
     Path("scripts/ci/verify-firmware-ci"),
     Path("hooks/agents/generic-wrapper.sh"),
     Path("hooks/cursor/agent-light.sh"),
+    Path("desktop/macos/build-bluetooth-helper.sh"),
+    Path("desktop/macos/AgentLightBluetoothHelper.swift"),
+    Path("include/agentlight/infrastructure/BleConnectionLifecycle.h"),
+    Path("src/infrastructure/BleConnectionLifecycle.cpp"),
+    Path("include/agentlight/infrastructure/ButtonHoldInput.h"),
+    Path("src/infrastructure/ButtonHoldInput.cpp"),
     Path("service/macos/install-launch-agent.sh"),
     Path("service/macos/uninstall-launch-agent.sh"),
     Path("service/windows/install-service.ps1"),
@@ -279,8 +294,36 @@ test -f service/macos/uninstall-launch-agent.sh
 grep -Fq 'whalesky-labs-AgentLight' config/agentlight-agent.example.json
 grep -Fq '"activePlatform": "codex"' config/agentlight-agent.example.json
 grep -Fq '"multiSessionMode": "latest-event-wins"' config/agentlight-agent.example.json
-grep -Fq '"AGENTLIGHT_TRANSPORT": "usb"' config/agentlight-agent.example.json
+grep -Fq '"AGENTLIGHT_TRANSPORT": "auto"' config/agentlight-agent.example.json
 grep -Fq '"AGENTLIGHT_SERIAL_PORT": ""' config/agentlight-agent.example.json
+grep -Fq '.venv-agent' service/macos/install-launch-agent.sh
+grep -Fq 'desktop/macos/build-bluetooth-helper.sh' service/macos/install-launch-agent.sh
+grep -Fq 'NSBluetoothAlwaysUsageDescription' desktop/macos/AgentLightBluetoothHelper-Info.plist
+grep -Fq 'IOHIDDeviceSetReport' desktop/macos/AgentLightBluetoothHelper.swift
+grep -Fq 'ERROR HID_INVALID_RESPONSE' desktop/macos/AgentLightBluetoothHelper.swift
+grep -Fq 'SKIP BLE_NOT_CONNECTED' desktop/macos/AgentLightBluetoothHelper.swift
+grep -Fq 'AGENTLIGHT_TRANSPORT=ble-system' scripts/agentlight
+grep -Fq 'BleConnectionState::Disconnected' src/main.cpp
+grep -Fq 'statusLight.handleCommand("OFF")' src/main.cpp
+grep -Fq 'BleConnectionLifecycle lifecycle_' include/agentlight/infrastructure/BleCommandChannel.h
+grep -Fq 'lifecycle_.handleDisconnected(millis())' src/infrastructure/BleCommandChannel.cpp
+grep -Fq 'lifecycle_.openManualReconnectWindow(nowMs)' src/infrastructure/BleCommandChannel.cpp
+grep -Fq 'lifecycle_.closeManualReconnectWindow()' src/infrastructure/BleCommandChannel.cpp
+grep -Fq 'ButtonHoldInput bleReconnectButton' src/main.cpp
+grep -Fq 'TransportModeController transportModeController' src/main.cpp
+grep -Fq 'transportModeController.update(usbChannel.hostConnected())' src/main.cpp
+grep -Fq 'bleChannel.suspend()' src/main.cpp
+grep -Fq 'server_->disconnect(connectionId_)' src/infrastructure/BleCommandChannel.cpp
+grep -Fq 'SKIP BLE_SUSPENDED' src/infrastructure/BleCommandChannel.cpp
+grep -Fq 'BleAdvertisingAction::StopAdvertising' src/infrastructure/BleConnectionLifecycle.cpp
+grep -Fq 'BleAdvertisingAction::StartAdvertising' src/infrastructure/BleConnectionLifecycle.cpp
+grep -Fq 'BLEDevice::stopAdvertising()' src/infrastructure/BleCommandChannel.cpp
+grep -Fq 'BLEDevice::startAdvertising()' src/infrastructure/BleCommandChannel.cpp
+grep -Fq 'BLE 生命周期验收标准' docs/user-guide.md
+grep -Fq '不会主动扫描、连接或重连' docs/user-guide.md
+grep -Fq '长按 ESP32-C3 板载 `BOOT` 键 2 秒' docs/user-guide.md
+grep -Fq '窗口持续 60 秒' docs/user-guide.md
+grep -Fq '.venv-agent/' .gitignore
 grep -Fq 'AGENTLIGHT_TRANSPORT=usb scripts/agentlight status' docs/user-guide.md
 grep -Fq '保持 `AGENTLIGHT_SERIAL_PORT` 为空即可自动适配' docs/user-guide.md
 grep -Fq '`ALL` 会让红 / 黄 / 绿三路同时常亮' docs/user-guide.md
@@ -366,33 +409,33 @@ for dir in \
   test -f "$dir/README.md"
 done
 
-printf 'Checking compatibility matrix...\n'
-test -f docs/agent-platform-compatibility.md
+printf 'Checking platform registry...\n'
 python3 - <<'PY'
 import json
 from pathlib import Path
 
 registry = json.loads(Path("config/agent-platforms.json").read_text(encoding="utf-8"))
-matrix = Path("docs/agent-platform-compatibility.md").read_text(encoding="utf-8")
 readme = Path("README.md").read_text(encoding="utf-8")
 readme_en = Path("README.en.md").read_text(encoding="utf-8")
+agents_readme = Path("hooks/agents/README.md").read_text(encoding="utf-8")
 
-if "docs/agent-platform-compatibility.md" not in readme:
-    raise SystemExit("Chinese README does not link compatibility matrix")
-if "docs/agent-platform-compatibility.md" not in readme_en:
-    raise SystemExit("English README does not link compatibility matrix")
-if "config/agent-platforms.json" not in matrix:
-    raise SystemExit("compatibility matrix does not mention platform registry")
+for file_name, content in {
+    "README.md": readme,
+    "README.en.md": readme_en,
+    "hooks/agents/README.md": agents_readme,
+}.items():
+    if "config/agent-platforms.json" not in content:
+        raise SystemExit(f"{file_name} does not point to platform registry")
 
 for platform in registry["platforms"]:
     name = platform["name"]
-    if name not in matrix:
-        raise SystemExit(f"matrix missing platform: {name}")
-    if platform["supportMode"] not in matrix:
-        raise SystemExit(f"matrix missing support mode for {name}: {platform['supportMode']}")
+    if not platform["canonicalAgent"]:
+        raise SystemExit(f"platform missing canonical agent: {name}")
+    if not platform["supportMode"]:
+        raise SystemExit(f"platform missing support mode: {name}")
     for evidence in platform["evidence"]:
-        if evidence not in matrix:
-            raise SystemExit(f"matrix missing evidence for {name}: {evidence}")
+        if not Path(evidence).exists():
+            raise SystemExit(f"platform evidence does not exist for {name}: {evidence}")
 PY
 
 printf 'Checking multi-agent monitor config...\n'

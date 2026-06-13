@@ -24,14 +24,16 @@ from pathlib import Path
 
 
 REQUIRED_BINARIES = {
-    "firmware": "firmware.bin",
     "bootloader": "bootloader.bin",
     "partitions": "partitions.bin",
+    "bootApp0": "boot_app0.bin",
+    "firmware": "firmware.bin",
 }
 
 FLASH_OFFSETS = {
     "bootloader": "0x0000",
     "partitions": "0x8000",
+    "bootApp0": "0xe000",
     "firmware": "0x10000",
 }
 
@@ -45,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--environment", default="esp32-c3-supermini")
     parser.add_argument("--build-channel", choices=["stable", "preview"], default="preview")
     parser.add_argument("--build-dir", default=".pio/build/esp32-c3-supermini")
+    parser.add_argument("--boot-app0-path", default=os.environ.get("AGENTLIGHT_BOOT_APP0_PATH", ""))
     parser.add_argument("--dist-dir", default="dist")
     return parser.parse_args()
 
@@ -62,6 +65,43 @@ def git_output(*args: str) -> str:
         return subprocess.check_output(["git", *args], text=True).strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return ""
+
+
+def resolve_binary_source(
+    label: str,
+    filename: str,
+    build_dir: Path,
+    boot_app0_path: str,
+) -> Path:
+    candidates = [build_dir / filename]
+    if label == "bootApp0":
+        if boot_app0_path:
+            candidates.insert(0, Path(boot_app0_path))
+        packages_dir = os.environ.get("PLATFORMIO_PACKAGES_DIR")
+        if packages_dir:
+            candidates.append(
+                Path(packages_dir)
+                / "framework-arduinoespressif32"
+                / "tools"
+                / "partitions"
+                / filename
+            )
+        candidates.append(
+            Path.home()
+            / ".platformio"
+            / "packages"
+            / "framework-arduinoespressif32"
+            / "tools"
+            / "partitions"
+            / filename
+        )
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    searched = ", ".join(str(candidate) for candidate in candidates)
+    raise SystemExit(f"Missing PlatformIO output: {filename}. Searched: {searched}")
 
 
 def collect_changelog_headings(content: list[str]) -> list[tuple[int, int, str, str]]:
@@ -135,14 +175,16 @@ def render_release_notes(output: Path, values: dict[str, str]) -> None:
 - `firmware.bin`
 - `bootloader.bin`
 - `partitions.bin`
+- `boot_app0.bin`
 - `manifest.json`
 - `firmware-assets.sha256`
 
 ## 烧录提示
 
-1. 下载本次 Release 中的 `firmware.bin`、`bootloader.bin`、`partitions.bin` 和 `manifest.json`。
+1. 下载本次 Release 中的 `bootloader.bin`、`partitions.bin`、`boot_app0.bin`、`firmware.bin`、`manifest.json` 和 `firmware-assets.sha256`。
 2. 可用 `firmware-assets.sha256` 校验下载资产。
-3. 使用 PlatformIO、esptool 或后续提供的烧录脚本写入 ESP32-C3 SuperMini。
+3. 按 `manifest.json` 中的 offset 烧录：`bootloader.bin` -> `0x0000`，`partitions.bin` -> `0x8000`，`boot_app0.bin` -> `0xe000`，`firmware.bin` -> `0x10000`。
+4. 使用 PlatformIO 或 esptool 写入 ESP32-C3 SuperMini；烧录完成后重新上电，启动自检会依次点亮红灯、黄灯、绿灯，并三灯闪烁 3 次。
 """
     output.write_text(content, encoding="utf-8")
 
@@ -157,9 +199,7 @@ def main() -> int:
 
     manifest_files = {}
     for label, filename in REQUIRED_BINARIES.items():
-        source = build_dir / filename
-        if not source.exists():
-            raise SystemExit(f"Missing PlatformIO output: {source}")
+        source = resolve_binary_source(label, filename, build_dir, args.boot_app0_path)
         target = dist_dir / filename
         shutil.copy2(source, target)
         manifest_files[label] = {
@@ -209,9 +249,10 @@ def main() -> int:
 
     checksum_path = dist_dir / "firmware-assets.sha256"
     checksum_files = [
-        dist_dir / "firmware.bin",
         dist_dir / "bootloader.bin",
         dist_dir / "partitions.bin",
+        dist_dir / "boot_app0.bin",
+        dist_dir / "firmware.bin",
         manifest_path,
     ]
     checksum_path.write_text(

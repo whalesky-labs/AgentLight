@@ -31,7 +31,7 @@ AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB
 当前仓库包含两部分：
 
 - **ESP32-C3 固件**：负责接收命令并控制红 / 黄 / 绿灯
-- **无客户端桥接层**：通过 shell 脚本和 AI 工具 Hook 发送状态命令，不需要桌面 GUI App
+- **电脑端 Agent 服务**：监听 AI 工具状态，并把状态命令转发到当前配置的硬件通道
 
 完整使用说明见 [docs/user-guide.md](./docs/user-guide.md)，包含硬件接线、固件烧录、设备验证、后台服务启动和 AI 工具接入。
 
@@ -39,27 +39,19 @@ AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB
 
 - ESP32-C3 SuperMini
 - BS-768 玩具红 / 黄 / 绿灯小板
+- 每一路灯珠控制线单独串联 220R 电阻
 
-默认接线：
-
-| ESP32-C3 引脚 | 连接 |
-| --- | --- |
-| 3V3 | 红绿灯小板公共 `+` |
-| GND | 红绿灯小板 `-` |
-| GPIO4 | 220R -> 红灯控制脚 |
-| GPIO5 | 220R -> 黄灯控制脚 |
-| GPIO6 | 220R -> 绿灯控制脚 |
-
-BS-768 小板按共阳方式控制，固件默认使用 `AGENTLIGHT_ACTIVE_LOW=1`，也就是 GPIO 拉低时对应灯亮。当前使用方式是拆掉原板控制 / 限流元件后只保留灯珠和走线，所以 GPIO 到每一路灯珠控制脚都需要串联 220R 电阻。
+完整接线图、引脚表和实物焊接参考见 [用户指南](./docs/user-guide.md)。
 
 ## 命令
 
-通过 USB 串口发送一行命令、向 BLE RX 特征写入同样文本，或者通过 Wi-Fi HTTP API 发送命令。
+通过 USB 串口发送一行命令、向系统已连接的 BLE HID vendor report 写入命令，或者通过 Wi-Fi HTTP API 发送命令。通用 BLE 调试客户端也可以直接写入自定义 RX 特征。
 
 命令协议使用纯文本，一次发送一条命令：
 
 - USB 串口：以 `\n` 或 `\r\n` 结尾
-- BLE：向 RX 特征写入命令文本
+- 系统蓝牙：向 HID vendor feature report 写入命令文本
+- BLE GATT：向 RX 特征写入命令文本
 - Wi-Fi：访问 HTTP API
 - 命令不区分大小写，固件会统一转换为大写处理
 - 成功切换状态时返回 `OK <STATE>`
@@ -96,7 +88,7 @@ PING          -> PONG
 
 BLE 设备名：`WHALESKY-LABS-AGENTLIGHT`
 
-系统蓝牙列表展示名：`AGENTLIGHT`
+BLE 广播短名称：`AGENTLIGHT`
 
 BLE 默认启用配对 / 绑定，配对码：
 
@@ -104,7 +96,7 @@ BLE 默认启用配对 / 绑定，配对码：
 123456
 ```
 
-这是 ESP32-C3 的 BLE GATT 连接，不是经典蓝牙串口 SPP。固件默认启用标准 HID 配对外壳，主广播包使用 `AGENTLIGHT` 短名称、通用 HID 外观和 HID 服务，让电脑和手机的系统蓝牙列表更容易展示并发起配对；扫描响应保留完整设备名 `WHALESKY-LABS-AGENTLIGHT`。HID 外壳只用于系统发现和配对，不会发送任何输入事件；真正的灯光控制仍通过 AgentLight 自定义 RX / TX GATT 服务完成。首次读取 TX 特征、订阅通知或写入 RX 特征时会触发配对，配对成功后才能发送 `PING`、`STATUS`、`YELLOW_BLINK` 等命令。
+这是 ESP32-C3 的 BLE 连接，不是经典蓝牙串口 SPP，也不是键盘 / 鼠标 / 音频设备。用户通过电脑系统蓝牙连接或断开设备；后台服务不会提供本地网页来控制蓝牙连接，也不会在用户断开后主动重新连接。固件为了让系统蓝牙列表稳定展示设备，会发布标准 HID Presentation Remote 外观，并通过 HID vendor feature report 接收系统蓝牙命令；通用 BLE 调试客户端仍可使用 AgentLight 自定义 RX / TX GATT 服务。固件不发送任何键盘或鼠标输入事件。首次读取 TX 特征、订阅通知、写入 RX 特征或写入 HID 命令报告时会触发配对，配对成功后才能发送 `PING`、`STATUS`、`YELLOW_BLINK` 等命令。固件检测到 USB 主机连接时进入 USB 模式，会主动挂起 BLE 广播、断开已连接的 BLE 客户端，并拒收 BLE 命令，避免系统蓝牙自动连接影响灯光。没有 USB 主机时进入蓝牙模式；BLE 断开时固件会切换到 `OFF` 并关闭可连接广播，避免系统自动连回；需要重新连接时，长按 ESP32-C3 板载 `BOOT` 键 2 秒打开 60 秒手动连接窗口，再由用户在系统蓝牙里点击连接。
 
 BLE 服务与特征：
 
@@ -145,7 +137,7 @@ SSID 和密码可以在 [platformio.ini](./platformio.ini) 中通过 `AGENTLIGHT
 
 ## 脚本桥接
 
-第二阶段不做桌面客户端 App，而是通过 `scripts/agentlight` 直接向设备发送命令。默认使用 Wi-Fi HTTP。
+第二阶段不做桌面客户端 App，而是通过 `scripts/agentlight` 直接向设备发送命令。默认使用自动通道选择：检测到 USB 串口时走 USB；没有 USB 串口时走系统蓝牙。固件侧也会根据 USB 主机连接状态在 USB 模式和蓝牙模式之间切换。
 
 ```bash
 scripts/agentlight status
@@ -160,6 +152,15 @@ scripts/agentlight red-blink
 AGENTLIGHT_TRANSPORT=usb scripts/agentlight status
 AGENTLIGHT_TRANSPORT=usb scripts/agentlight yellow-blink
 ```
+
+使用系统蓝牙控制时，先在电脑系统蓝牙里连接 `AGENTLIGHT`，再发送命令：
+
+```bash
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight status
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight yellow-blink
+```
+
+`ble-system` 只使用系统已经连接的 BLE 设备，并通过 HID vendor feature report 发送命令；如果用户没有在系统蓝牙里连接设备，会返回 `SKIP BLE_NOT_CONNECTED`，不会主动扫描、连接或重连。蓝牙断开时固件进入 `OFF` 并关闭可连接广播；需要重新连接时，长按 ESP32-C3 板载 `BOOT` 键 2 秒打开 60 秒手动连接窗口。
 
 默认会自动发现 `/dev/cu.usbmodem*` 等常见 USB 串口。如果同时连接了多块设备，可以再设置 `AGENTLIGHT_SERIAL_PORT` 指定具体端口。
 
@@ -177,9 +178,10 @@ AGENTLIGHT_TRANSPORT=usb scripts/agentlight yellow-blink
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `AGENTLIGHT_TRANSPORT` | `http` | 控制通道，支持 `http` / `usb` |
+| `AGENTLIGHT_TRANSPORT` | `auto` | 控制通道，支持 `auto` / `usb` / `ble-system` / `http`；`auto` 为有 USB 时使用 USB、无 USB 时使用系统蓝牙 |
 | `AGENTLIGHT_SERIAL_PORT` | 空 | USB 串口路径；留空时自动发现常见 USB 串口 |
 | `AGENTLIGHT_SERIAL_BAUD` | `115200` | USB 串口波特率 |
+| `AGENTLIGHT_BLE_DEVICE_NAME` | `WHALESKY-LABS-AGENTLIGHT` | 系统蓝牙已连接设备名 |
 | `AGENTLIGHT_HOST` | `192.168.4.1` | 设备 HTTP 地址 |
 | `AGENTLIGHT_BASE_URL` | 空 | 完整基础 URL，优先级高于 host |
 | `AGENTLIGHT_TIMEOUT` | `2` | curl 超时时间，单位秒 |
@@ -195,6 +197,8 @@ AGENTLIGHT_TRANSPORT=usb scripts/agentlight yellow-blink
 | Linux | systemd user service |
 
 统一服务入口是 `scripts/agentlight-agent`，安装脚本位于 `service/windows` 和 `service/macos`。启动和排查步骤见 [docs/user-guide.md](./docs/user-guide.md)。
+
+用户连接或断开蓝牙时，只使用电脑系统蓝牙设置。后台服务只监听 AI 状态并发送灯光命令，不接管蓝牙连接管理。
 
 ## 事件 Gate
 
@@ -228,7 +232,7 @@ scripts/agentlight-gate error
 
 Claude Code、Gemini CLI、Qwen Code、opencode、Copilot CLI、Kimi、CodeBuddy、Kiro、Antigravity、OpenClaw、Hermes、Pi 等平台统一走多 Agent 入口或通用 wrapper，不再为每个平台维护重复模板文档。
 
-完整平台兼容矩阵见 [docs/agent-platform-compatibility.md](./docs/agent-platform-compatibility.md)。矩阵会区分“已实现监听器 / Hook 模板 / 通用 wrapper 接入”，避免把通用入口写成已经完成的原生集成。
+平台清单和支持方式以 [config/agent-platforms.json](./config/agent-platforms.json) 为准，接入说明集中维护在 [hooks/agents/README.md](./hooks/agents/README.md)。
 
 所有平台最终都调用同一个归一化入口：
 
@@ -411,12 +415,13 @@ CI 会生成并发布这些独立资产，不再额外打包 zip：
 - `firmware.bin`
 - `bootloader.bin`
 - `partitions.bin`
+- `boot_app0.bin`
 - `manifest.json`
 - `firmware-assets.sha256`
 
 固件使用 Arduino ESP32 内置的 `huge_app.csv` 分区方案，面向 4MB Flash 的 ESP32-C3 SuperMini，单个 App 分区大小为 3MB，用于容纳 USB、BLE、Wi-Fi 三通道一体固件。
 
-`manifest.json` 包含版本、构建通道、Git 提交、SHA256 和烧录 offset。版本发布说明维护在 [CHANGELOG.md](./CHANGELOG.md)，CI 会读取当前版本号对应的中文章节；如果没有对应章节，则读取 `Unreleased` 章节，并自动追加构建通道、构建环境、Git 提交、构建时间和资产清单。推送 `v*` tag 或手动触发时勾选发布，会自动创建 GitHub Release 并把生成后的发布说明写入 Release body。
+`manifest.json` 包含版本、构建通道、Git 提交、SHA256 和烧录 offset。发布资产按 `bootloader.bin` -> `0x0000`、`partitions.bin` -> `0x8000`、`boot_app0.bin` -> `0xe000`、`firmware.bin` -> `0x10000` 写入 ESP32-C3 SuperMini。版本发布说明维护在 [CHANGELOG.md](./CHANGELOG.md)，CI 会读取当前版本号对应的中文章节；如果没有对应章节，则读取 `Unreleased` 章节，并自动追加构建通道、构建环境、Git 提交、构建时间、烧录提示和资产清单。推送 `v*` tag 或手动触发时勾选发布，会自动创建 GitHub Release 并把生成后的发布说明写入 Release body。
 
 预览构建不会默认创建 GitHub Release，但 CI 会把从 `CHANGELOG.md` 读取并生成的 Release body 输出到构建日志和 GitHub Actions Summary，便于直接查看本次版本更新说明；该 Release body 只作为 CI 临时内容，不作为固件资产发布。
 
@@ -440,5 +445,3 @@ scripts/verify-agent-bridge
 ## 开源协议
 
 AgentLight 使用 [MIT License](./LICENSE) 开源，SPDX 标识为 `MIT`。
-
-中文优先的协议说明见 [docs/license.md](./docs/license.md)。协议原文以根目录 [LICENSE](./LICENSE) 为准。

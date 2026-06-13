@@ -34,7 +34,7 @@ toy traffic light.
 This repository contains two parts:
 
 - **ESP32-C3 firmware**: receives commands and controls the red/yellow/green lights
-- **No-GUI bridge layer**: sends state commands through shell scripts and AI tool hooks
+- **Desktop agent service**: monitors AI tool state and forwards state commands to the configured hardware channel
 
 The complete user guide is available in Chinese at [docs/user-guide.md](./docs/user-guide.md).
 
@@ -42,32 +42,23 @@ The complete user guide is available in Chinese at [docs/user-guide.md](./docs/u
 
 - ESP32-C3 SuperMini
 - BS-768 toy red/yellow/green traffic light board
+- one 220R resistor on each light control line
 
-Default wiring:
-
-| ESP32-C3 pin | Part |
-| --- | --- |
-| 3V3 | Traffic light board common `+` |
-| GND | Traffic light board `-` |
-| GPIO4 | 220R -> red light control pad |
-| GPIO5 | 220R -> yellow light control pad |
-| GPIO6 | 220R -> green light control pad |
-
-The BS-768 board is driven as a common-anode board. The firmware defaults to
-`AGENTLIGHT_ACTIVE_LOW=1`, so pulling a GPIO low turns the corresponding light
-on. In this build, the original control and current-limiting components are
-removed and the board is used only as a lamp carrier, so each GPIO-to-light
-control line needs its own 220R resistor.
+For the wiring diagram, pin table, and soldering reference photos, see the
+[Chinese user guide](./docs/user-guide.md).
 
 ## Commands
 
-Send one command per line over USB serial, write the same text to the BLE RX
-characteristic, or send commands through the Wi-Fi HTTP API.
+Send one command per line over USB serial, write the command to the HID vendor
+feature report of the already connected system Bluetooth device, or send
+commands through the Wi-Fi HTTP API. Generic BLE test clients can also write to
+the custom RX characteristic directly.
 
 The protocol is plain text, one command at a time:
 
 - USB serial: terminate each command with `\n` or `\r\n`
-- BLE: write the command text to the RX characteristic
+- System Bluetooth: write the command text to the HID vendor feature report
+- BLE GATT: write the command text to the RX characteristic
 - Wi-Fi: call the HTTP API
 - Commands are case-insensitive and normalized to uppercase by the firmware
 - Successful state changes return `OK <STATE>`
@@ -104,7 +95,7 @@ On power-up, the firmware runs a startup self-test: red, yellow, and green turn 
 
 BLE device name: `WHALESKY-LABS-AGENTLIGHT`
 
-System Bluetooth display name: `AGENTLIGHT`
+BLE advertised short name: `AGENTLIGHT`
 
 BLE pairing / bonding is enabled by default. Pairing PIN:
 
@@ -112,16 +103,7 @@ BLE pairing / bonding is enabled by default. Pairing PIN:
 123456
 ```
 
-This is an ESP32-C3 BLE GATT connection, not Bluetooth Classic SPP. The firmware
-enables a standard HID pairing shell by default. The primary advertisement uses
-the short name `AGENTLIGHT`, the standard Generic HID appearance, and the HID
-service so desktop and mobile Bluetooth settings can discover and pair with the
-device more reliably; the scan response keeps the full device name
-`WHALESKY-LABS-AGENTLIGHT`. The HID shell is only for discovery and pairing. It
-does not send input events. Actual light control remains on the AgentLight
-custom RX / TX GATT service. The first encrypted TX read, notification
-subscription, or RX write triggers pairing; after pairing succeeds, commands
-such as `PING`, `STATUS`, and `YELLOW_BLINK` can be sent.
+This is an ESP32-C3 BLE connection, not Bluetooth Classic SPP, keyboard, mouse, or audio. Users connect or disconnect AgentLight from the operating system Bluetooth settings. The background service does not expose a local web page for Bluetooth connection management, and it does not reconnect the device after the user disconnects it. The firmware advertises a standard HID Presentation Remote appearance so the operating system Bluetooth list can show it reliably, and system Bluetooth commands are sent through a HID vendor feature report. Generic BLE test clients can still use the AgentLight custom RX / TX GATT service. The firmware does not send keyboard or mouse input events. The first encrypted TX read, notification subscription, RX write, or HID command report write triggers pairing; after pairing succeeds, commands such as `PING`, `STATUS`, and `YELLOW_BLINK` can be sent. When a USB host is connected, the firmware enters USB mode, suspends BLE advertising, disconnects any BLE client, and rejects BLE commands so operating-system Bluetooth reconnection cannot affect the lights. Without a USB host, the firmware enters Bluetooth mode. When BLE disconnects, the firmware switches to `OFF` and closes connectable advertising to avoid operating-system auto-reconnection. To reconnect, hold the ESP32-C3 onboard `BOOT` button for 2 seconds to open a 60-second manual connection window, then connect from system Bluetooth settings.
 
 BLE service and characteristics:
 
@@ -164,7 +146,10 @@ The SSID and password can be changed in [platformio.ini](./platformio.ini) via
 ## Script Bridge
 
 Stage 2 does not require a desktop GUI app. Use `scripts/agentlight` to send
-commands directly to the device. Wi-Fi HTTP is the default transport.
+commands directly to the device. The default transport is automatic: USB serial
+is used when a USB port is present; otherwise the bridge uses system Bluetooth.
+The firmware also switches between USB mode and Bluetooth mode from the USB host
+connection state.
 
 ```bash
 scripts/agentlight status
@@ -179,6 +164,22 @@ Use USB serial control:
 AGENTLIGHT_TRANSPORT=usb scripts/agentlight status
 AGENTLIGHT_TRANSPORT=usb scripts/agentlight yellow-blink
 ```
+
+Use system Bluetooth control after connecting `AGENTLIGHT` in the operating
+system Bluetooth settings:
+
+```bash
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight status
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight yellow-blink
+```
+
+`ble-system` only uses an already connected system BLE device and sends commands
+through a HID vendor feature report. If the user has not connected AgentLight in
+Bluetooth settings, the bridge returns `SKIP BLE_NOT_CONNECTED` and does not
+scan, connect, or reconnect automatically. When BLE disconnects, the firmware
+enters `OFF` and closes connectable advertising. To reconnect, hold the
+ESP32-C3 onboard `BOOT` button for 2 seconds to open a 60-second manual
+connection window.
 
 By default, the bridge auto-detects common USB serial ports such as `/dev/cu.usbmodem*`. If multiple devices are connected, set `AGENTLIGHT_SERIAL_PORT` to select one explicitly.
 
@@ -196,9 +197,10 @@ Environment variables:
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `AGENTLIGHT_TRANSPORT` | `http` | Control channel, supports `http` / `usb` |
+| `AGENTLIGHT_TRANSPORT` | `auto` | Control channel, supports `auto` / `usb` / `ble-system` / `http`; `auto` uses USB when present and system Bluetooth when USB is absent |
 | `AGENTLIGHT_SERIAL_PORT` | empty | USB serial port; when empty, common USB serial ports are auto-detected |
 | `AGENTLIGHT_SERIAL_BAUD` | `115200` | USB serial baud rate |
+| `AGENTLIGHT_BLE_DEVICE_NAME` | `WHALESKY-LABS-AGENTLIGHT` | Already connected system Bluetooth device name |
 | `AGENTLIGHT_HOST` | `192.168.4.1` | Device HTTP host |
 | `AGENTLIGHT_BASE_URL` | empty | Full base URL, higher priority than host |
 | `AGENTLIGHT_TIMEOUT` | `2` | curl timeout in seconds |
@@ -217,6 +219,10 @@ desktop app:
 The shared service entrypoint is `scripts/agentlight-agent`, with install
 scripts under `service/windows` and `service/macos`. See
 [docs/user-guide.md](./docs/user-guide.md).
+
+Users connect or disconnect Bluetooth only from the operating system Bluetooth
+settings. The background service listens for AI status and sends light commands;
+it does not own Bluetooth connection management.
 
 ## Event Gate
 
@@ -255,10 +261,9 @@ Kiro, Antigravity, OpenClaw, Hermes, Pi, and similar platforms use the shared
 multi-agent entrypoint or generic wrapper. The project does not maintain one
 duplicated template document per generic platform.
 
-For the full platform compatibility matrix, see
-[docs/agent-platform-compatibility.md](./docs/agent-platform-compatibility.md).
-The matrix separates implemented monitors, hook templates, and generic wrapper
-routes so the project does not overstate native integrations.
+The platform list and support mode are defined in
+[config/agent-platforms.json](./config/agent-platforms.json), with integration
+instructions kept in [hooks/agents/README.md](./hooks/agents/README.md).
 
 All platforms eventually call the same normalized entrypoint:
 
@@ -451,6 +456,7 @@ zip package:
 - `firmware.bin`
 - `bootloader.bin`
 - `partitions.bin`
+- `boot_app0.bin`
 - `manifest.json`
 - `firmware-assets.sha256`
 
@@ -464,9 +470,11 @@ reads the matching version section; if no matching section exists, it uses the
 `Unreleased` section and appends the build channel, environment, Git commit,
 build time, and asset list.
 `manifest.json` includes the version, build channel, Git commit, SHA256 values,
-and flash offsets. When a `v*` tag is pushed, or when manual release publishing
-is enabled, CI creates a GitHub Release and uses the generated notes as the
-release body.
+and flash offsets. Release assets are written to ESP32-C3 SuperMini as
+`bootloader.bin` -> `0x0000`, `partitions.bin` -> `0x8000`,
+`boot_app0.bin` -> `0xe000`, and `firmware.bin` -> `0x10000`. When a `v*` tag
+is pushed, or when manual release publishing is enabled, CI creates a GitHub
+Release and uses the generated notes as the release body.
 
 Preview builds do not create a GitHub Release by default, but CI prints the
 Release body generated from `CHANGELOG.md` to the build log and GitHub Actions
@@ -493,5 +501,3 @@ It checks:
 ## License
 
 AgentLight is released under the [MIT License](./LICENSE), with SPDX identifier `MIT`.
-
-A Chinese license explanation is available in [docs/license.md](./docs/license.md). The repository root [LICENSE](./LICENSE) file is authoritative.
