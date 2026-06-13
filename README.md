@@ -92,6 +92,8 @@ STATUS        -> STATUS YELLOW_BLINK
 PING          -> PONG
 ```
 
+上电后固件会先执行启动自检：红灯、黄灯、绿灯依次点亮，然后三灯同时闪烁 3 次，表示初始化完成。
+
 BLE 设备名：`WHALESKY-LABS-AGENTLIGHT`
 
 系统蓝牙列表展示名：`AGENTLIGHT`
@@ -295,6 +297,7 @@ scripts/multi-agent-monitor --config config/agent-monitors.example.json --send
 
 | 灯效 | 固件行为 |
 | --- | --- |
+| 启动自检 | 上电后红灯、黄灯、绿灯依次点亮，再三灯同时闪烁 3 次 |
 | 常亮 | 目标颜色持续点亮，其他颜色熄灭 |
 | 闪烁 | 默认 800ms 周期，亮 400ms / 灭 400ms；`YELLOW_BLINK` 为 400ms 周期，亮 200ms / 灭 200ms |
 | 呼吸 | 2000ms 周期，亮度从低到高再回落 |

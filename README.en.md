@@ -99,6 +99,8 @@ STATUS        -> STATUS YELLOW_BLINK
 PING          -> PONG
 ```
 
+On power-up, the firmware runs a startup self-test: red, yellow, and green turn on in sequence, then all three lights blink together 3 times to indicate initialization is complete.
+
 BLE device name: `WHALESKY-LABS-AGENTLIGHT`
 
 System Bluetooth display name: `AGENTLIGHT`
@@ -329,6 +331,7 @@ The config supports:
 
 | Effect | Firmware behavior |
 | --- | --- |
+| Startup self-test | Red, yellow, and green turn on in sequence, then all three lights blink together 3 times |
 | Steady | Keeps the target color on and all other colors off |
 | Blink | Default 800ms cycle, 400ms on / 400ms off; `YELLOW_BLINK` uses a 400ms cycle, 200ms on / 200ms off |
 | Breathe | 2000ms cycle, brightness ramps up and then down |

@@ -137,11 +137,35 @@ String handleCommand(const String& command) {
   return statusLight.handleCommand(command);
 }
 
+void showStartupSelfTest() {
+  constexpr unsigned long sequenceDelayMs = 250;
+  constexpr unsigned long blinkDelayMs = 160;
+
+  const agentlight::LightPattern sequence[] = {
+      {agentlight::LightState::Red, agentlight::LightEffect::Steady},
+      {agentlight::LightState::Yellow, agentlight::LightEffect::Steady},
+      {agentlight::LightState::Green, agentlight::LightEffect::Steady},
+  };
+
+  for (const auto& pattern : sequence) {
+    statusLight.handleCommand(toText(pattern));
+    delay(sequenceDelayMs);
+  }
+
+  for (uint8_t index = 0; index < 3; ++index) {
+    statusLight.handleCommand("ALL");
+    delay(blinkDelayMs);
+    statusLight.handleCommand("OFF");
+    delay(blinkDelayMs);
+  }
+}
+
 }  // namespace
 
 void setup() {
   lightDriver.begin();
   statusLight.begin({agentlight::LightState::Off, agentlight::LightEffect::Steady});
+  showStartupSelfTest();
 
   usbChannel.begin(115200);
   delay(300);
