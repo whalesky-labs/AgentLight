@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+#
+# This file is part of AgentLight.
+#
+# @link     https://github.com/whalesky-labs/AgentLight
+# @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
+# @contact  root@imoi.cn
+# @license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE
+#
+
+"""Monitor Codex Desktop connection health logs."""
+
+from __future__ import annotations
+
+import argparse
+import glob
+import os
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from agentlight_agent.domain.codex_health import CodexHealthEvent, parse_codex_health_line
+
+
+DEFAULT_LOG_GLOB = "~/Library/Logs/com.openai.codex/**/*.log"
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Monitor Codex Desktop connection health and print events.")
+    parser.add_argument(
+        "--glob",
+        default=os.environ.get("CODEX_DESKTOP_LOG_GLOB", DEFAULT_LOG_GLOB),
+        help=f"Codex Desktop log glob. Defaults to {DEFAULT_LOG_GLOB}.",
+    )
+    parser.add_argument("--once", action="store_true", help="Process existing content and exit.")
+    parser.add_argument(
+        "--from-start",
+        action="store_true",
+        help="When tailing, read existing file content first instead of only new appended lines.",
+    )
+    parser.add_argument("--poll-interval", type=float, default=0.5, help="File polling interval in seconds.")
+    parser.add_argument("--limit", type=int, default=0, help="Maximum health events to print before exit.")
+    return parser.parse_args()
+
+
+def expand_paths(pattern: str) -> list[Path]:
+    paths = [Path(path) for path in glob.glob(os.path.expanduser(pattern), recursive=True)]
+    paths.sort(key=lambda path: path.stat().st_mtime if path.exists() else 0)
+    return paths
+
+
+def emit(event: CodexHealthEvent) -> None:
+    if event.status == "reconnecting":
+        print(f"health-waiting codex-health {event.detail}", flush=True)
+    elif event.status == "connected":
+        print(f"health-recovered codex-health {event.detail}", flush=True)
+
+
+def consume_line(line: str, *, state: dict[str, bool]) -> CodexHealthEvent | None:
+    event = parse_codex_health_line(line.strip(), was_reconnecting=state["reconnecting"])
+    if event is None:
+        return None
+    state["reconnecting"] = event.status == "reconnecting"
+    return event
+
+
+def run_once(paths: list[Path], limit: int) -> int:
+    count = 0
+    state = {"reconnecting": False}
+    for path in paths:
+        if not path.is_file():
+            continue
+        with path.open("r", encoding="utf-8", errors="replace") as file:
+            for line in file:
+                event = consume_line(line, state=state)
+                if event is None:
+                    continue
+                emit(event)
+                count += 1
+                if limit and count >= limit:
+                    return count
+    return count
+
+
+def run_tail(args: argparse.Namespace) -> int:
+    offsets: dict[Path, int] = {}
+    state = {"reconnecting": False}
+    count = 0
+
+    print("Codex health monitor started", flush=True)
+    try:
+        while True:
+            for path in expand_paths(args.glob):
+                if not path.is_file():
+                    continue
+                if path not in offsets:
+                    offsets[path] = 0 if args.from_start else path.stat().st_size
+                    print(f"Watching Codex health log: {path}", flush=True)
+                with path.open("r", encoding="utf-8", errors="replace") as file:
+                    file.seek(offsets[path])
+                    for line in file:
+                        event = consume_line(line, state=state)
+                        if event is None:
+                            continue
+                        emit(event)
+                        count += 1
+                        if args.limit and count >= args.limit:
+                            return count
+                    offsets[path] = file.tell()
+            time.sleep(args.poll_interval)
+    except KeyboardInterrupt:
+        print("Codex health monitor stopped", flush=True)
+        return count
+
+
+def main() -> int:
+    args = parse_args()
+    paths = expand_paths(args.glob)
+    if not paths:
+        print("No Codex Desktop log files found.", file=sys.stderr)
+        return 1
+    if args.once:
+        count = run_once(paths, args.limit)
+        if count == 0:
+            print("No Codex health events found.", file=sys.stderr)
+            return 1
+        return 0
+    run_tail(args)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

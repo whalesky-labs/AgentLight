@@ -44,6 +44,7 @@ class Monitor:
     rules: tuple[Rule, ...]
     glob: str = ""
     command: tuple[str, ...] = ()
+    once_command: tuple[str, ...] = ()
     from_start: bool = False
 
 

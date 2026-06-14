@@ -70,6 +70,9 @@ scripts/                         向后兼容入口
 - `scripts/agentlight-agent` 和 `scripts/multi-agent-monitor` 必须保持薄入口。
 - 平台切换策略固定从 `activePlatform` 读取。
 - 多会话策略固定为 `latest-event-wins`，不得引入聚合或轮播逻辑。
+- 连接健康状态必须独立于会话状态建模，例如 Codex Desktop 重连、断线、恢复连接，不得混入 session JSONL 生命周期规则。
+- 健康状态优先级高于会话状态；健康恢复后应回到最近一次会话状态。
+- 硬件下发必须通过独立调度器合并高频事件，监听循环不得同步等待硬件命令完成。
 - 新增平台时优先更新 `config/agent-platforms.json`、兼容性文档和验证脚本。
 
 ## 命名规范

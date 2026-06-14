@@ -13,12 +13,15 @@ CI 构建 GitHub Release 时只读取一个章节：优先读取当前版本号�
 - 电脑端后台服务默认使用 `auto` 通道：检测到 USB 串口时走 USB，没有 USB 串口时走系统蓝牙。
 - macOS 系统蓝牙桥接支持自动构建和后台服务安装流程，服务启动后即可按当前活动平台同步 AI 状态。
 - CI Release 资产补充 `boot_app0.bin`，发布说明同步写入四段烧录 offset，便于按 `manifest.json` 完整烧录 ESP32-C3 SuperMini。
+- Codex Desktop 增加独立连接健康监听，重连中会优先触发 `RED_BLINK`，连接恢复后回到最近一次会话状态。
 
 ### 修复
 
 - 修复切换 USB 口后串口路径变化导致后台服务仍指向旧设备的问题，USB 通道保持自动检测。
 - 修正 BS-768 灯板接线文档：当前灯板仅保留灯珠，每一路 GPIO 到灯珠控制脚都需要单独串联 220R。
 - 修复非 macOS CI Runner 中 `auto` 通道无法通过显式 BLE helper 验证的问题；真实环境未提供 BLE helper 时仍保持非 macOS 不支持系统蓝牙的错误边界。
+- 修复 Codex 高频会话事件下灯光状态延迟数秒的问题，后台监听器不再同步等待硬件响应，并由 latest-event-wins 调度器合并旧事件。
+- 修复 Codex Desktop “正在重新连接”未触发红灯闪烁的问题，将连接健康状态从普通 session 生命周期中独立出来。
 
 ## v1.2026.164+42
 

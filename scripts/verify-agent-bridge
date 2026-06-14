@@ -32,6 +32,7 @@ bash -n \
   scripts/agentlight \
   scripts/agentlight-gate \
   scripts/agentlight-event \
+  scripts/codex-health-monitor \
   hooks/agents/generic-wrapper.sh \
   hooks/cursor/agent-light.sh \
   desktop/macos/build-bluetooth-helper.sh \
@@ -135,6 +136,19 @@ grep -Fq 'DEFAULT_TRANSPORT="auto"' scripts/agentlight
 grep -Fq 'resolve_auto_transport()' scripts/agentlight
 grep -Fq 'scripts/multi-agent-monitor --config <monitor-config> --platform <activePlatform> --send' docs/user-guide.md
 grep -Fq '重新启动监听器' docs/user-guide.md
+grep -Fq '高频事件只保留最新待发送状态' docs/user-guide.md
+grep -Fq 'Codex Desktop 连接健康状态' docs/user-guide.md
+grep -Fq '硬件下发必须通过独立调度器合并高频事件' docs/code-standards.md
+grep -Fq '连接健康状态必须独立于会话状态建模' docs/code-standards.md
+grep -Fq 'class LatestEventDispatcher' agentlight_agent/infrastructure/event_dispatcher.py
+grep -Fq 'parse_codex_health_line' agentlight_agent/domain/codex_health.py
+grep -Fq 'self._emitter.emit_latest' agentlight_agent/infrastructure/monitor_runner.py
+grep -Fq 'sent=true status=' scripts/agentlight-event
+grep -Fq 'health-waiting' scripts/agentlight-event
+grep -Fq 'health-recovered' scripts/agentlight-event
+grep -Fq 'health-override' scripts/agentlight-gate
+grep -Fq 'codex-desktop-health' config/agent-monitors.example.json
+grep -Fq 'scripts/codex-health-monitor' config/agent-monitors.example.json
 python3 - <<'PY'
 from pathlib import Path
 
@@ -150,6 +164,7 @@ required = [
     Path("scripts/agentlight-gate"),
     Path("scripts/multi-agent-monitor"),
     Path("scripts/codex-session-monitor"),
+    Path("scripts/codex-health-monitor"),
     Path("scripts/verify-agent-bridge"),
     Path("scripts/ci/package-firmware"),
     Path("scripts/ci/prepare-firmware-release"),
@@ -221,6 +236,7 @@ python3 -m py_compile \
   scripts/codex-session-monitor \
   scripts/multi-agent-monitor \
   scripts/agentlight-agent \
+  scripts/codex-health-monitor \
   scripts/ci/resolve-firmware-version \
   scripts/ci/prepare-firmware-release \
   scripts/ci/package-firmware
@@ -269,6 +285,9 @@ scripts/agentlight-agent platform list --config config/agentlight-agent.example.
 monitor_tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$monitor_tmp_dir"' EXIT
 printf '{"payload":{"type":"task_complete"}}\n' > "$monitor_tmp_dir/codex-session.jsonl"
+cat > "$monitor_tmp_dir/codex-desktop.log" <<'EOF'
+2026-06-14T10:00:00.000Z info [AppServerConnection] app_server_connection.state_changed cause=transport_close connectionError=NetworkError next=connecting previous=connected reconnectAttempt=1 reconnectTimerScheduled=true
+EOF
 cat > "$monitor_tmp_dir/agent-monitors.json" <<EOF
 {
   "monitors": [
@@ -282,11 +301,24 @@ cat > "$monitor_tmp_dir/agent-monitors.json" <<EOF
       "rules": [
         { "json_path": "payload.type", "equals": "task_complete", "event": "done" }
       ]
+    },
+    {
+      "name": "ci-codex-health",
+      "agent": "codex",
+      "type": "command",
+      "command": ["scripts/codex-health-monitor", "--glob", "$monitor_tmp_dir/codex-desktop.log", "--from-start"],
+      "once_command": ["scripts/codex-health-monitor", "--glob", "$monitor_tmp_dir/codex-desktop.log", "--once", "--limit", "1"],
+      "format": "text",
+      "rules": [
+        { "contains": "health-waiting", "event": "health-waiting" },
+        { "contains": "health-recovered", "event": "health-recovered" }
+      ]
     }
   ]
 }
 EOF
 scripts/multi-agent-monitor --config "$monitor_tmp_dir/agent-monitors.json" --platform codex --once --limit 1 >/dev/null
+scripts/codex-health-monitor --glob "$monitor_tmp_dir/codex-desktop.log" --once --limit 1 | grep -Fq 'health-waiting'
 test -f service/windows/install-service.ps1
 test -f service/windows/uninstall-service.ps1
 test -f service/macos/install-launch-agent.sh
@@ -367,6 +399,8 @@ printf 'Checking event normalization...\n'
 for event in "${events[@]}"; do
   scripts/agentlight-event --agent codex --event "$event" >/dev/null
 done
+scripts/agentlight-event --agent codex --event reconnect >/dev/null
+scripts/agentlight-event --agent codex --event reconnected >/dev/null
 
 printf 'Checking event gate completion sequence...\n'
 gate_tmp_dir="$(mktemp -d)"
@@ -399,6 +433,48 @@ test "$gate_output" = "OK GREEN_BLINK; OK GREEN"
 test "$(sed -n '1p' "$gate_command_log")" = "green-blink"
 test "$(sed -n '2p' "$gate_command_log")" = "green"
 test "$(wc -l < "$gate_command_log" | tr -d ' ')" = "2"
+rm -rf "$gate_tmp_dir"
+
+printf 'Checking event gate health override...\n'
+gate_tmp_dir="$(mktemp -d)"
+cp scripts/agentlight-gate "$gate_tmp_dir/agentlight-gate"
+cat > "$gate_tmp_dir/agentlight" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$1" >> "${AGENTLIGHT_FAKE_COMMAND_LOG:?}"
+printf 'OK %s\n' "$1"
+EOF
+chmod +x "$gate_tmp_dir/agentlight"
+gate_command_log="$gate_tmp_dir/commands.log"
+AGENTLIGHT_STATE_DIR="$gate_tmp_dir/state" \
+AGENTLIGHT_FAKE_COMMAND_LOG="$gate_command_log" \
+  "$gate_tmp_dir/agentlight-gate" thinking >/dev/null
+AGENTLIGHT_STATE_DIR="$gate_tmp_dir/state" \
+AGENTLIGHT_FAKE_COMMAND_LOG="$gate_command_log" \
+  "$gate_tmp_dir/agentlight-gate" health-waiting >/dev/null
+override_output="$(
+  AGENTLIGHT_STATE_DIR="$gate_tmp_dir/state" \
+  AGENTLIGHT_FAKE_COMMAND_LOG="$gate_command_log" \
+    "$gate_tmp_dir/agentlight-gate" tool
+)"
+recovered_output="$(
+  AGENTLIGHT_STATE_DIR="$gate_tmp_dir/state" \
+  AGENTLIGHT_FAKE_COMMAND_LOG="$gate_command_log" \
+    "$gate_tmp_dir/agentlight-gate" health-recovered
+)"
+case "$override_output" in
+  "SKIP health-override event=tool state=yellow-blink active=health-waiting|"*)
+    ;;
+  *)
+    printf 'Unexpected health override output: %s\n' "$override_output" >&2
+    exit 1
+    ;;
+esac
+test "$recovered_output" = "OK yellow-blink"
+test "$(sed -n '1p' "$gate_command_log")" = "yellow-breathe"
+test "$(sed -n '2p' "$gate_command_log")" = "red-blink"
+test "$(sed -n '3p' "$gate_command_log")" = "yellow-blink"
+test "$(wc -l < "$gate_command_log" | tr -d ' ')" = "3"
 rm -rf "$gate_tmp_dir"
 
 printf 'Checking documented hook directories...\n'

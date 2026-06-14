@@ -32,6 +32,7 @@ AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB
 
 - **ESP32-C3 固件**：负责接收命令并控制红 / 黄 / 绿灯
 - **电脑端 Agent 服务**：监听 AI 工具状态，并把状态命令转发到当前配置的硬件通道
+- **Codex Desktop 连接健康监听**：单独观察本地重连日志，让“重连中”优先显示为红灯闪烁
 
 完整使用说明见 [docs/user-guide.md](./docs/user-guide.md)，包含硬件接线、固件烧录、设备验证、后台服务启动和 AI 工具接入。
 
@@ -221,6 +222,8 @@ scripts/agentlight-gate error
 | `done` | `GREEN_BLINK` -> `GREEN` |
 | `waiting` | `RED_BLINK` |
 | `error` | `RED` |
+| `health-waiting` | `RED_BLINK` |
+| `health-recovered` | 回到最近一次会话状态 |
 
 ## AI Hook 集成
 
@@ -258,6 +261,12 @@ Codex 也支持通过本地 session 文件进行只读监听。这个方式适�
 ```bash
 scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --from-start
 scripts/codex-session-monitor --once --limit 20
+```
+
+Codex Desktop 的连接健康状态单独监听，重连中会映射为 `RED_BLINK`，恢复后回到最近一次会话状态：
+
+```bash
+scripts/codex-health-monitor --once --limit 1
 ```
 
 监听器会把 Codex session JSONL 记录归一化为：
@@ -330,6 +339,7 @@ AgentLight/
 │   ├── agentlight-event        多 Agent 事件归一化入口
 │   ├── agentlight-agent        后台 Agent 服务兼容入口
 │   ├── codex-session-monitor   Codex session 文件状态监听器
+│   ├── codex-health-monitor    Codex Desktop 连接健康监听器
 │   └── multi-agent-monitor     多 Agent 配置化监听兼容入口
 ├── hooks/                      AI 工具 Hook 模板与接入说明
 ├── service/
@@ -365,6 +375,7 @@ AgentLight/
 - 同一平台内支持多项目、多会话
 - 多会话不聚合、不轮播，采用 `latest-event-wins`
 - 哪个会话最后产生状态事件，灯光就显示哪个会话的状态
+- 硬件下发由独立 worker 执行，高频事件只保留最新待发送状态，避免旧事件排队造成秒级延迟
 
 ## 构建与烧录
 

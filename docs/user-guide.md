@@ -216,6 +216,7 @@ export AGENTLIGHT_BASE_URL="http://192.168.4.1"
 - 服务启动时只监听一个 `activePlatform`。
 - 多会话策略固定为 `latest-event-wins`。
 - 同一平台内哪个会话最后产生状态事件，硬件灯就显示哪个会话的状态。
+- 硬件下发由独立 worker 执行；监听器不会等待灯光响应。高频事件只保留最新待发送状态，避免 Codex 连续输出时旧事件排队造成秒级延迟。
 - `sendToHardware=true` 时，事件会继续发送到硬件；测试监听时可以先改成 `false`。
 - 默认 `AGENTLIGHT_TRANSPORT=auto`：检测到 USB 串口时走 USB；拔掉 USB 后自动走系统蓝牙。
 - USB 连接电脑时，固件进入 USB 模式，主动挂起 BLE 广播、断开已连接的 BLE 客户端，并拒收 BLE 命令，避免系统蓝牙自动连接 / 断开干扰 USB 工作状态。
@@ -354,6 +355,23 @@ scripts/agentlight-event --agent <agent> --event <event> --send
 | `error` | `RED` |
 | `idle` | `GREEN` |
 
+### Codex Desktop 连接健康状态
+
+Codex Desktop 的任务会话状态来自本地 session JSONL，连接健康状态来自 Codex Desktop 本地日志。两者分开监听：
+
+- 会话状态：`start`、`thinking`、`tool`、`typing`、`done` 等，表示 AI 正在做什么。
+- 连接健康状态：`health-waiting`、`health-recovered`，表示 Codex Desktop 正在重连或已经恢复。
+
+当 Codex Desktop 出现“正在重新连接”这类状态时，后台服务会把健康状态映射为 `RED_BLINK`。健康状态优先级高于普通会话状态；重连期间普通会话事件只更新最近状态，不会覆盖红灯闪烁。连接恢复后，灯光会回到最近一次会话状态。
+
+单独验证连接健康监听：
+
+```bash
+scripts/codex-health-monitor --once --limit 1
+```
+
+后台服务默认通过 `config/agent-monitors.example.json` 同时监听 Codex session 和 Codex Desktop 连接健康日志。
+
 灯效时序：
 
 | 灯效 | 固件行为 |
@@ -412,6 +430,7 @@ scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --event-command scr
 - 确认 Codex 已经产生本地 session JSONL。
 - 先运行 `scripts/codex-session-monitor --once --limit 20` 看是否有输出。
 - 如果要限制到某个会话，确认 `CODEX_THREAD_ID` 是否正确。
+- 如果你看到的是“正在重新连接”但灯没有红闪，先运行 `scripts/codex-health-monitor --once --limit 1`，确认连接健康日志是否可见。
 
 ## 项目边界
 

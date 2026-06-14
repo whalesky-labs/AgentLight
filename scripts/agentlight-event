@@ -44,6 +44,8 @@ Events:
   waiting
   error
   idle
+  health-waiting
+  health-recovered
 
 Options:
   --send       Forward the normalized event to scripts/agentlight-gate.
@@ -138,6 +140,12 @@ normalize_event() {
     permission|permission-request|approval|confirm|confirmation|waiting|blocked|need-input)
       printf 'waiting\n'
       ;;
+    reconnect|reconnecting|connection-lost|connection-retry|health-waiting)
+      printf 'health-waiting\n'
+      ;;
+    connected|reconnected|connection-restored|health-recovered)
+      printf 'health-recovered\n'
+      ;;
     abort|aborted|turn-aborted|error|failed|failure)
       printf 'error\n'
       ;;
@@ -213,9 +221,13 @@ printf '%s agent=%s event=%s' "$timestamp" "$agent" "$event"
 
 if [[ "$send" == "1" ]]; then
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  response="$("${script_dir}/agentlight-gate" "$event")"
+  set +e
+  response="$("${script_dir}/agentlight-gate" "$event" 2>&1)"
+  status="$?"
+  set -e
   response="${response//$'\n'/; }"
-  printf ' sent=true response=%s\n' "$response"
+  printf ' sent=true status=%s response=%s\n' "$status" "$response"
+  exit "$status"
 else
   printf ' sent=false\n'
 fi

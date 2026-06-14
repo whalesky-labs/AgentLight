@@ -41,6 +41,23 @@ status=error
 | `event_msg.task_complete` | `success` |
 | `event_msg.turn_aborted` | `error` |
 
+## 连接健康监听器
+
+Codex Desktop 的“正在重新连接”不属于 session JSONL 生命周期事件。AgentLight 通过独立健康监听器读取 Codex Desktop 本地连接日志：
+
+```bash
+scripts/codex-health-monitor --once --limit 1
+```
+
+健康监听器输出统一事件：
+
+| 输出事件 | 含义 | 灯光状态 |
+| --- | --- | --- |
+| `health-waiting` | Codex Desktop 正在重连 | `RED_BLINK` |
+| `health-recovered` | Codex Desktop 连接恢复 | 回到最近一次会话状态 |
+
+后台服务默认通过 `config/agent-monitors.example.json` 同时启用 session 监听和连接健康监听。健康状态优先级高于普通会话状态。
+
 ## 直接命令
 
 ```bash

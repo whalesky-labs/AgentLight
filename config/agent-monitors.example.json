@@ -1,6 +1,18 @@
 {
   "monitors": [
     {
+      "name": "codex-desktop-health",
+      "agent": "codex",
+      "type": "command",
+      "command": ["scripts/codex-health-monitor"],
+      "once_command": ["scripts/codex-health-monitor", "--once", "--limit", "1"],
+      "format": "text",
+      "rules": [
+        { "contains": "health-waiting", "event": "health-waiting" },
+        { "contains": "health-recovered", "event": "health-recovered" }
+      ]
+    },
+    {
       "name": "codex-session-jsonl",
       "agent": "codex",
       "type": "file",

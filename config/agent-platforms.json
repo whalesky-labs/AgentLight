@@ -9,7 +9,9 @@
     "done",
     "waiting",
     "error",
-    "idle"
+    "idle",
+    "health-waiting",
+    "health-recovered"
   ],
   "platforms": [
     {
@@ -32,9 +34,9 @@
       "name": "Codex Desktop",
       "canonicalAgent": "codex",
       "aliases": ["codex-desktop"],
-      "supportMode": "session-jsonl-monitor-and-event-entrypoint",
-      "evidence": ["scripts/codex-session-monitor", "hooks/codex/README.md"],
-      "limitations": "Does not control Codex Desktop UI; only observes visible local Codex session records."
+      "supportMode": "session-jsonl-monitor-health-monitor-and-event-entrypoint",
+      "evidence": ["scripts/codex-session-monitor", "scripts/codex-health-monitor", "hooks/codex/README.md"],
+      "limitations": "Does not control Codex Desktop UI; observes local session records and connection health logs."
     },
     {
       "name": "GitHub Copilot CLI",

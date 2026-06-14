@@ -35,6 +35,7 @@ This repository contains two parts:
 
 - **ESP32-C3 firmware**: receives commands and controls the red/yellow/green lights
 - **Desktop agent service**: monitors AI tool state and forwards state commands to the configured hardware channel
+- **Codex Desktop health monitor**: observes local reconnect logs so reconnecting state can override task state with red blinking
 
 The complete user guide is available in Chinese at [docs/user-guide.md](./docs/user-guide.md).
 
@@ -296,6 +297,13 @@ scripts/codex-session-monitor --thread-id "$CODEX_THREAD_ID" --from-start
 scripts/codex-session-monitor --once --limit 20
 ```
 
+Codex Desktop connection health is monitored separately. Reconnecting maps to
+`RED_BLINK`; after recovery, the light returns to the latest session state:
+
+```bash
+scripts/codex-health-monitor --once --limit 1
+```
+
 The monitor normalizes Codex session JSONL records into:
 
 | Output status | Source examples |
@@ -369,6 +377,7 @@ AgentLight/
 │   ├── agentlight-event        Multi-agent event normalization entrypoint
 │   ├── agentlight-agent        Background agent service compatibility entrypoint
 │   ├── codex-session-monitor   Codex session file status monitor
+│   ├── codex-health-monitor    Codex Desktop connection health monitor
 │   └── multi-agent-monitor     Configurable monitor compatibility entrypoint
 ├── hooks/                      AI tool hook templates and integration notes
 ├── service/

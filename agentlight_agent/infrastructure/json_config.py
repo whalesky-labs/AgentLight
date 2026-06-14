@@ -132,6 +132,10 @@ def _parse_monitor(item: dict[str, Any]) -> Monitor:
     if command_raw and not isinstance(command_raw, list):
         raise ValueError(f"Monitor {item['name']} command must be a list")
     command = tuple(str(part) for part in command_raw)
+    once_command_raw = item.get("once_command", ())
+    if once_command_raw and not isinstance(once_command_raw, list):
+        raise ValueError(f"Monitor {item['name']} once_command must be a list")
+    once_command = tuple(str(part) for part in once_command_raw)
     return Monitor(
         name=str(item["name"]),
         agent=_required_string(item, "agent"),
@@ -139,6 +143,7 @@ def _parse_monitor(item: dict[str, Any]) -> Monitor:
         format=monitor_format,
         glob=str(item.get("glob", "")),
         command=command,
+        once_command=once_command,
         from_start=bool(item.get("from_start", False)),
         rules=rules,
     )
