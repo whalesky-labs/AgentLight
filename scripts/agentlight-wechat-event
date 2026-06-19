@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+#
+# This file is part of AgentLight.
+#
+# @link     https://github.com/whalesky-labs/AgentLight
+# @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
+# @contact  root@imoi.cn
+# @license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE
+#
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime
+
+
+SUPPORTED_EVENTS = {
+    "wechat-message",
+    "wechat-important",
+    "wechat-muted",
+    "wechat-cleared",
+    "wechat-offline",
+    "wechat-listener-error",
+}
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Emit one normalized WeChat event as JSONL.")
+    parser.add_argument("event", choices=sorted(SUPPORTED_EVENTS))
+    parser.add_argument("--platform", default=sys.platform)
+    parser.add_argument("--conversation", default="")
+    parser.add_argument("--sender", default="")
+    parser.add_argument("--summary", default="")
+    parser.add_argument("--confidence", default="unread-only")
+    parser.add_argument("--diagnostic", default="")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    payload = {
+        "source": "wechat",
+        "event": args.event,
+        "platform": args.platform,
+        "conversation": args.conversation,
+        "sender": args.sender,
+        "summary": args.summary,
+        "confidence": args.confidence,
+        "diagnostic": args.diagnostic,
+        "timestamp": datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
+    print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

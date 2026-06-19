@@ -10,14 +10,14 @@
 
 set -euo pipefail
 
-label="com.whalesky-labs.AgentLight.agent"
+label="com.whalesky-labs.AgentLight.wechat"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 config_dir="${HOME}/.whalesky-labs-AgentLight"
-config_path="${config_dir}/agentlight-agent.json"
+config_path="${config_dir}/wechat-agentlight.json"
 log_dir="${HOME}/Library/Logs/whalesky-labs-AgentLight"
 plist_dir="${HOME}/Library/LaunchAgents"
 plist_path="${plist_dir}/${label}.plist"
-venv_dir="${repo_root}/.venv-agent"
+venv_dir="${repo_root}/.venv-wechat"
 python_path="${PYTHON_PATH:-${venv_dir}/bin/python3}"
 
 mkdir -p "$config_dir" "$log_dir" "$plist_dir"
@@ -30,7 +30,7 @@ fi
 "${repo_root}/desktop/macos/build-bluetooth-helper.sh" >/dev/null
 
 if [[ ! -f "$config_path" ]]; then
-  cp "${repo_root}/config/agentlight-agent.example.json" "$config_path"
+  cp "${repo_root}/config/wechat-agentlight.example.json" "$config_path"
 fi
 
 cat > "$plist_path" <<PLIST
@@ -43,7 +43,7 @@ cat > "$plist_path" <<PLIST
   <key>ProgramArguments</key>
   <array>
     <string>${python_path}</string>
-    <string>${repo_root}/scripts/agentlight-agent</string>
+    <string>${repo_root}/scripts/agentlight-wechat</string>
     <string>run</string>
     <string>--config</string>
     <string>${config_path}</string>
@@ -60,7 +60,7 @@ cat > "$plist_path" <<PLIST
   <string>${log_dir}/launchagent.err.log</string>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>AGENTLIGHT_AGENT_CONFIG</key>
+    <key>AGENTLIGHT_WECHAT_CONFIG</key>
     <string>${config_path}</string>
   </dict>
 </dict>

@@ -55,25 +55,25 @@ src/main.cpp            对象装配和主循环调度
 - `infrastructure` 负责外部系统接入，但不承载业务策略。
 - `main.cpp` 只做装配，不写业务规则。
 
-### 桌面 Agent
+### 桌面微信服务
 
 ```text
-agentlight_agent/domain          监听器、规则、运行模式、配置模型
-agentlight_agent/application     平台选择、监听编排、服务运行用例
-agentlight_agent/infrastructure  JSON、路径、文件监听、子进程、事件发送
-agentlight_agent/interfaces      CLI 参数和输出
-scripts/                         向后兼容入口
+agentlight_wechat/domain          微信事件、规则、配置和灯效状态模型
+agentlight_wechat/application     微信监听编排、规则应用和硬件下发用例
+agentlight_wechat/infrastructure  JSON、路径、helper 子进程和硬件命令适配
+agentlight_wechat/interfaces      CLI 参数和输出
+scripts/                          薄入口
 ```
 
 约束：
 
-- `scripts/agentlight-agent` 和 `scripts/multi-agent-monitor` 必须保持薄入口。
-- 平台切换策略固定从 `activePlatform` 读取。
-- 多会话策略固定为 `latest-event-wins`，不得引入聚合或轮播逻辑。
-- 连接健康状态必须独立于会话状态建模，例如 Codex Desktop 重连、断线、恢复连接，不得混入 session JSONL 生命周期规则。
-- 健康状态优先级高于会话状态；健康恢复后应回到最近一次会话状态。
-- 硬件下发必须通过独立调度器合并高频事件，监听循环不得同步等待硬件命令完成。
-- 新增平台时优先更新 `config/agent-platforms.json`、兼容性文档和验证脚本。
+- `scripts/agentlight-wechat`、`scripts/agentlight-wechat-event` 和 `scripts/agentlight-wechat-gate` 必须保持薄入口。
+- macOS / Windows helper 只输出 JSONL 微信事件，不直接调用硬件。
+- 规则引擎只负责把微信事件分类为普通、重要或免打扰，不处理硬件 IO。
+- 灯效状态机负责状态转移和命令选择。
+- 硬件下发必须继续通过 `scripts/agentlight`。
+- 普通日志不得保存消息正文、发送人或会话名。
+- 不得引入微信进程注入、数据库解密或自动回复能力。
 
 ## 命名规范
 
@@ -88,17 +88,18 @@ scripts/                         向后兼容入口
 - JSON 配置必须通过显式类型校验后才能进入应用层。
 - 布尔值必须是真正的 JSON boolean，不允许 `"true"` 或 `"false"` 字符串。
 - 路径必须在基础设施层解析，不允许应用层拼接运行时路径。
-- 示例配置必须能被 `scripts/verify-agent-bridge` 验证。
+- 示例配置必须能被 `scripts/agentlight-wechat check-config` 加载。
 
 ## 测试规范
 
 必须覆盖：
 
 - 配置解析和类型校验
-- 平台选择
-- 多会话策略入口
-- 监听规则匹配
-- CLI 入口兼容
+- 微信事件解析
+- 规则匹配和优先级
+- 灯效状态机
+- CLI 入口
+- fake helper 到 fake hardware 的集成链路
 - CI 发布脚本关键路径
 
 优先使用标准库测试工具，避免为简单项目引入不必要依赖。
@@ -108,9 +109,8 @@ scripts/                         向后兼容入口
 常规变更至少运行：
 
 ```bash
-python3 -m py_compile $(find agentlight_agent tests -name '*.py' -print) scripts/agentlight-agent scripts/multi-agent-monitor scripts/codex-session-monitor scripts/ci/resolve-firmware-version scripts/ci/prepare-firmware-release scripts/ci/package-firmware
+python3 -m py_compile $(find agentlight_wechat tests -name '*.py' -print) scripts/agentlight-wechat scripts/agentlight-wechat-event scripts/agentlight-wechat-gate scripts/agentlight-wechat-fake-helper scripts/ci/resolve-firmware-version scripts/ci/prepare-firmware-release scripts/ci/package-firmware
 python3 -m unittest discover -s tests -p 'test_*.py'
-scripts/verify-agent-bridge
 scripts/ci/verify-firmware-ci
 git diff --check
 ```

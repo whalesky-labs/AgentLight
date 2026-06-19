@@ -12,7 +12,7 @@ param(
     [string]$DisplayName = "WhaleSky Labs AgentLight",
     [string]$PythonPath = "python",
     [string]$RepoRoot = "",
-    [string]$ConfigPath = "$env:ProgramData\whalesky-labs-AgentLight\agentlight-agent.json"
+    [string]$ConfigPath = "$env:APPDATA\whalesky-labs-AgentLight\wechat-agentlight.json"
 )
 
 $ErrorActionPreference = "Stop"
@@ -33,15 +33,15 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = Resolve-Path $RepoRoot
 }
 
-$agentScript = Join-Path $RepoRoot "scripts\agentlight-agent"
-$configTemplate = Join-Path $RepoRoot "config\agentlight-agent.example.json"
-$programData = Join-Path $env:ProgramData "whalesky-labs-AgentLight"
-$logDir = Join-Path $programData "logs"
-$venvDir = Join-Path $RepoRoot ".venv-agent"
+$agentScript = Join-Path $RepoRoot "scripts\agentlight-wechat"
+$configTemplate = Join-Path $RepoRoot "config\wechat-agentlight.example.json"
+$appData = Join-Path $env:APPDATA "whalesky-labs-AgentLight"
+$logDir = Join-Path $appData "logs"
+$venvDir = Join-Path $RepoRoot ".venv-wechat"
 $venvPython = Join-Path $venvDir "Scripts\python.exe"
 $requirements = Join-Path $RepoRoot "requirements.txt"
 
-New-Item -ItemType Directory -Path $programData -Force | Out-Null
+New-Item -ItemType Directory -Path $appData -Force | Out-Null
 New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 
 if (-not (Test-Path $ConfigPath)) {
@@ -66,7 +66,7 @@ if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
 }
 
 sc.exe create $ServiceName binPath= $binaryPath start= auto DisplayName= $DisplayName | Out-Null
-sc.exe description $ServiceName "WhaleSky Labs AgentLight background service for AI Agent status light synchronization." | Out-Null
+sc.exe description $ServiceName "WhaleSky Labs AgentLight background service for WeChat message light synchronization." | Out-Null
 sc.exe failure $ServiceName reset= 60 actions= restart/5000/restart/5000/restart/5000 | Out-Null
 
 Start-Service -Name $ServiceName

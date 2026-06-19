@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+#
+# This file is part of AgentLight.
+#
+# @link     https://github.com/whalesky-labs/AgentLight
+# @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
+# @contact  root@imoi.cn
+# @license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE
+#
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from agentlight_wechat.domain.events import WeChatEvent, WeChatEventType
+from agentlight_wechat.domain.light_state import WeChatLightStateMachine
+
+
+COMMANDS = {
+    WeChatEventType.MESSAGE: "yellow-blink",
+    WeChatEventType.IMPORTANT: "red-blink",
+    WeChatEventType.CLEARED: "green",
+    WeChatEventType.OFFLINE: "off",
+    WeChatEventType.LISTENER_ERROR: "red",
+}
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Map one WeChat event to an AgentLight command.")
+    parser.add_argument("event", choices=[event.value for event in WeChatEventType])
+    parser.add_argument("--send", action="store_true")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    event_type = WeChatEventType(args.event)
+    machine = WeChatLightStateMachine()
+    transition = machine.apply(WeChatEvent(event=event_type, platform=sys.platform))
+    command = transition.command or COMMANDS.get(event_type, "")
+    if not command:
+        print(f"SKIP event={event_type.value}")
+        return 0
+    if args.send:
+        script = Path(__file__).resolve().parent / "agentlight"
+        result = subprocess.run([str(script), command], check=False, capture_output=True, text=True, env=os.environ.copy())
+        output = result.stdout.strip() or result.stderr.strip()
+        print(output)
+        return result.returncode
+    print(command)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

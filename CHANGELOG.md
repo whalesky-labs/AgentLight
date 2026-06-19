@@ -8,20 +8,25 @@ CI 构建 GitHub Release 时只读取一个章节：优先读取当前版本号�
 
 ### 新增
 
+- 本分支改为个人微信桌面消息指示灯，业务层只保留微信消息监听、规则分类和灯效状态机。
+- 新增 `agentlight_wechat` 独立 Python 包，承接微信事件解析、规则匹配、灯效状态和硬件下发编排。
+- 新增 `scripts/agentlight-wechat`、`scripts/agentlight-wechat-event`、`scripts/agentlight-wechat-gate` 和 fake helper，用于运行、诊断和测试微信消息链路。
+- 新增 macOS Swift 微信观察 helper 和 Windows PowerShell 微信观察 helper，统一输出 JSONL 微信事件。
+- 新增 `config/wechat-agentlight.example.json` 微信专用配置。
 - 固件上电后执行启动自检：红灯、黄灯、绿灯依次点亮，再三灯同时闪烁 3 次。
 - 固件根据 USB 主机连接状态在 USB 模式和蓝牙模式之间自动切换；USB 模式会挂起 BLE 广播、断开已连接 BLE 客户端并拒收 BLE 命令。
 - 电脑端后台服务默认使用 `auto` 通道：检测到 USB 串口时走 USB，没有 USB 串口时走系统蓝牙。
-- macOS 系统蓝牙桥接支持自动构建和后台服务安装流程，服务启动后即可按当前活动平台同步 AI 状态。
 - CI Release 资产补充 `boot_app0.bin`，发布说明同步写入四段烧录 offset，便于按 `manifest.json` 完整烧录 ESP32-C3 SuperMini。
-- Codex Desktop 增加独立连接健康监听，重连中会优先触发 `RED_BLINK`，连接恢复后回到最近一次会话状态。
 
 ### 修复
 
 - 修复切换 USB 口后串口路径变化导致后台服务仍指向旧设备的问题，USB 通道保持自动检测。
 - 修正 BS-768 灯板接线文档：当前灯板仅保留灯珠，每一路 GPIO 到灯珠控制脚都需要单独串联 220R。
 - 修复非 macOS CI Runner 中 `auto` 通道无法通过显式 BLE helper 验证的问题；真实环境未提供 BLE helper 时仍保持非 macOS 不支持系统蓝牙的错误边界。
-- 修复 Codex 高频会话事件下灯光状态延迟数秒的问题，后台监听器不再同步等待硬件响应，并由 latest-event-wins 调度器合并旧事件。
-- 修复 Codex Desktop “正在重新连接”未触发红灯闪烁的问题，将连接健康状态从普通 session 生命周期中独立出来。
+
+### 移除
+
+- 移除原工具接入业务入口、配置、hooks、会话监听器和相关测试；该分支不再发布旧上游接入能力。
 
 ## v1.2026.164+42
 

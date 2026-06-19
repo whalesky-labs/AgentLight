@@ -1,0 +1,34 @@
+{
+  "source": "wechat",
+  "platform": "auto",
+  "sendToHardware": true,
+  "pollIntervalSeconds": 2,
+  "helperCommand": [],
+  "logFile": "",
+  "collection": {
+    "macosAccessibility": true,
+    "windowsUiAutomation": true
+  },
+  "clearPolicy": {
+    "mode": "timeout-or-unread-cleared",
+    "timeoutSeconds": 300
+  },
+  "rules": {
+    "importantContacts": [],
+    "importantGroups": [],
+    "keywords": [],
+    "mutedConversations": [],
+    "quietHours": []
+  },
+  "privacy": {
+    "storeMessageContent": false,
+    "logMatchedSummary": false
+  },
+  "hardware": {
+    "AGENTLIGHT_TRANSPORT": "auto",
+    "AGENTLIGHT_SERIAL_PORT": "",
+    "AGENTLIGHT_SERIAL_BAUD": "115200",
+    "AGENTLIGHT_HOST": "192.168.4.1",
+    "AGENTLIGHT_TIMEOUT": "2"
+  }
+}

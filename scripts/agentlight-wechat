@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+#
+# This file is part of AgentLight.
+#
+# @link     https://github.com/whalesky-labs/AgentLight
+# @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
+# @contact  root@imoi.cn
+# @license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE
+#
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from agentlight_wechat.interfaces.cli import main
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

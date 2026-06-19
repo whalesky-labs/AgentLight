@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-label="com.whalesky-labs.AgentLight.agent"
+label="com.whalesky-labs.AgentLight.wechat"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
 
 if [[ -f "$plist_path" ]]; then

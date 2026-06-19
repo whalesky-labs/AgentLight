@@ -49,6 +49,7 @@ Environment:
   AGENTLIGHT_TRANSPORT  auto, usb, ble-system, or http; defaults to auto
   AGENTLIGHT_SERIAL_PORT USB serial port. If empty, auto-detects the first supported port.
   AGENTLIGHT_SERIAL_BAUD USB serial baud rate, defaults to 115200
+  AGENTLIGHT_PYTHON     Python executable for USB serial mode, defaults to python3
   AGENTLIGHT_BLE_DEVICE_NAME BLE device name, defaults to WHALESKY-LABS-AGENTLIGHT
   AGENTLIGHT_BLE_HELPER BLE helper executable override. macOS uses the bundled helper by default.
   AGENTLIGHT_HOST       Defaults to 192.168.4.1
@@ -67,16 +68,22 @@ normalize_state() {
     OFF|GREEN|GREEN_BREATHE|GREEN_BLINK|YELLOW|YELLOW_BREATHE|YELLOW_BLINK|RED|RED_BLINK|RED_BREATHE|ALL|ALL_BLINK|ALL_BREATHE|PING|STATUS|HELP)
       printf '%s\n' "$value"
       ;;
-    BUSY|RUNNING|TOOL)
+    MESSAGE|UNREAD|NOTIFY)
       printf 'YELLOW_BLINK\n'
       ;;
-    THINKING|GENERATING)
-      printf 'YELLOW_BREATHE\n'
+    IMPORTANT|URGENT)
+      printf 'RED_BLINK\n'
       ;;
-    IDLE|READY|DONE|SUCCESS)
+    CLEARED|CLEAR)
       printf 'GREEN\n'
       ;;
-    WAITING|CONFIRM|CONFIRMATION|BLOCKED)
+    ONLINE)
+      printf 'YELLOW_BREATHE\n'
+      ;;
+    IDLE|READY)
+      printf 'GREEN\n'
+      ;;
+    WAITING)
       printf 'RED_BLINK\n'
       ;;
     ERROR|FAILED|FAILURE)
@@ -146,6 +153,7 @@ timeout="${AGENTLIGHT_TIMEOUT:-$DEFAULT_TIMEOUT_SECONDS}"
 transport="${AGENTLIGHT_TRANSPORT:-$DEFAULT_TRANSPORT}"
 serial_port="${AGENTLIGHT_SERIAL_PORT:-}"
 serial_baud="${AGENTLIGHT_SERIAL_BAUD:-$DEFAULT_SERIAL_BAUD}"
+python_bin="${AGENTLIGHT_PYTHON:-python3}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -216,7 +224,7 @@ if [[ "$transport" == "usb" ]]; then
     fi
   fi
 
-  python3 - "$serial_port" "$serial_baud" "$command" <<'PY'
+  "$python_bin" - "$serial_port" "$serial_baud" "$command" <<'PY'
 import sys
 import time
 

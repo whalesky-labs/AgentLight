@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+#
+# This file is part of AgentLight.
+#
+# @link     https://github.com/whalesky-labs/AgentLight
+# @document https://github.com/whalesky-labs/AgentLight/blob/main/README.md
+# @contact  root@imoi.cn
+# @license  https://github.com/whalesky-labs/AgentLight/blob/main/LICENSE
+#
+
+from __future__ import annotations
+
+import json
+import sys
+from datetime import datetime
+
+
+EVENT_ALIASES = {
+    "message": "wechat-message",
+    "important": "wechat-important",
+    "muted": "wechat-muted",
+    "cleared": "wechat-cleared",
+    "offline": "wechat-offline",
+    "error": "wechat-listener-error",
+}
+
+
+def emit(event: str) -> None:
+    payload = {
+        "source": "wechat",
+        "event": EVENT_ALIASES.get(event, event),
+        "platform": sys.platform,
+        "conversation": "测试会话" if event in {"message", "important"} else "",
+        "sender": "测试联系人" if event == "important" else "",
+        "summary": "这是一条本地测试微信事件" if event in {"message", "important"} else "",
+        "confidence": "visible-summary" if event in {"message", "important"} else "diagnostic",
+        "timestamp": datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
+    if payload["event"] == "wechat-listener-error":
+        payload["diagnostic"] = "fake helper listener error"
+    print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+
+
+def main() -> int:
+    events = sys.argv[1:] or ["message"]
+    for event in events:
+        emit(event)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
