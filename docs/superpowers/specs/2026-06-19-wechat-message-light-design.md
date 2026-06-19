@@ -2,7 +2,7 @@
 
 ## 目标
 
-本分支将 AgentLight 从 AI Agent 状态灯改为个人微信桌面消息指示灯。
+本分支的产品定位是个人微信桌面消息指示灯。
 
 系统支持 macOS 和 Windows 上的个人微信桌面客户端。电脑端服务在本机监听微信收到消息的可观察信号，将这些信号归一化为微信消息事件，应用用户本地规则，再通过现有 ESP32-C3 红 / 黄 / 绿灯硬件通道显示提醒状态。
 
@@ -16,15 +16,14 @@
 - 不改 ESP32-C3 固件命令协议，除非后续出现明确的硬件层需求。
 - 不在默认日志中保存消息正文、发送人或会话名。
 
-## 现有边界
+## 分支边界
 
-现有硬件和下发链路已经足够通用：
+`ai-wechat` 是独立微信功能分支，不承接原工具接入功能，也不保留原业务层并存逻辑。该分支只保留与硬件相关的通用能力：
 
 - ESP32-C3 固件接收 `GREEN`、`YELLOW_BLINK`、`RED_BLINK`、`OFF`、`STATUS` 等纯灯光命令。
 - `scripts/agentlight` 负责通过 USB Serial、系统蓝牙或 Wi-Fi HTTP 发送命令。
-- 现有 AI 逻辑负责观察上游事件、归一化事件、做去重和优先级处理，然后把灯效命令交给 `scripts/agentlight`。
 
-微信分支应保留硬件侧和 `scripts/agentlight`，替换上游事件源和业务事件语义。
+该分支应移除或停用原业务入口、原 hooks、原配置和原生命周期事件。微信业务层只包含微信监听、微信事件归一化、微信规则和微信灯效状态机。
 
 ## 总体架构
 
@@ -53,8 +52,6 @@ ESP32-C3 红黄绿灯
 
 平台监听 helper 只负责观察本机微信信号，不决定最终灯效。归一化器产出统一事件模型。规则引擎判断消息优先级。灯效状态机负责状态转移、重复抑制、超时回绿和最终硬件命令选择。
 
-## 平台采集策略
-
 ## GitHub 开源项目调研结论
 
 调研现有开源项目后，微信内容获取大致分为三类：UI 自动化、通知 / 辅助功能轮询、Hook / 插件 / 数据库访问。
@@ -76,6 +73,8 @@ ESP32-C3 红黄绿灯
 - Windows：把 UI Automation 从兜底提升为与通知监听并列的核心采集路径。通知监听适合新消息触发，UI Automation 适合读取当前未读状态和可见摘要。
 - macOS：保留 Swift helper，但必须先做能力探测。若当前微信版本无法通过 Accessibility 读取消息内容，则只提供未读角标 / 窗口状态 / 通知可见文本级提醒，不承诺联系人、群或关键词规则一定可用。
 - 跨平台：消息正文读取必须是可选能力。默认验收以“收到微信消息后变灯”为核心，重要联系人 / 群 / 关键词规则以平台实际可观察信息为前提。
+
+## 平台采集策略
 
 ### macOS
 
@@ -144,7 +143,7 @@ helper 约定：
 
 ## 统一事件模型
 
-微信事件不复用 AI 生命周期事件，例如 `prompt`、`tool`、`done`。
+微信事件使用独立语义，不引入 `prompt`、`tool`、`done` 等原上游生命周期事件。
 
 | 事件 | 含义 |
 | --- | --- |
@@ -255,7 +254,7 @@ helper 约定：
 
 ## 配置
 
-新增微信专用示例配置，和现有 AI agent 配置分开：
+新增微信专用配置。该分支不维护原上游配置。
 
 ```json
 {
@@ -303,7 +302,7 @@ helper 约定：
 
 ### Windows
 
-- 使用用户级后台 agent 或轻量托盘程序。
+- 使用用户级后台服务或轻量托盘程序。
 - Python 主进程启动 Windows helper。
 - Windows helper 负责通知权限请求、通知读取和 UI Automation 兜底。
 - 日志沿用现有 AgentLight Windows 用户日志目录风格。
@@ -313,19 +312,19 @@ helper 约定：
 建议组织：
 
 ```text
-agentlight_agent/
+agentlight_wechat/
   domain/
-    wechat_events.py
-    wechat_rules.py
-    wechat_light_state.py
+    events.py
+    rules.py
+    light_state.py
   application/
-    wechat_service.py
-    wechat_light_gate.py
+    service.py
+    light_gate.py
   infrastructure/
-    wechat_helper_runner.py
-    wechat_jsonl_parser.py
+    helper_runner.py
+    jsonl_parser.py
   interfaces/
-    wechat_cli.py
+    cli.py
 
 desktop/
   macos/
@@ -342,7 +341,7 @@ config/
   wechat-agentlight.example.json
 ```
 
-`scripts/agentlight` 继续作为唯一硬件出口。微信入口围绕 `wechat` 命名，不再暴露 AI agent 语义。
+`scripts/agentlight` 继续作为唯一硬件出口。微信入口围绕 `wechat` 命名，不暴露原上游业务语义。
 
 ## 隐私和日志
 
