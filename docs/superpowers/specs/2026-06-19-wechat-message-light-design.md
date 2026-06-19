@@ -25,6 +25,40 @@
 
 该分支应移除或停用原业务入口、原 hooks、原配置和原生命周期事件。微信业务层只包含微信监听、微信事件归一化、微信规则和微信灯效状态机。
 
+## 迁移清理范围
+
+实施时应把仓库业务面收敛为微信消息指示灯。保留硬件、固件、传输和发布脚本；删除或替换原工具接入相关文件。
+
+保留：
+
+- `src/` 和 `include/` 下的 ESP32-C3 固件代码。
+- `scripts/agentlight` 硬件命令下发入口。
+- USB、BLE、Wi-Fi HTTP 传输相关测试。
+- `desktop/macos/AgentLightBluetoothHelper.swift` 和蓝牙 helper 构建脚本。
+- 固件 CI 和 release 打包脚本。
+- 与硬件接线、烧录、传输验证有关的文档。
+
+替换为微信版本：
+
+- `agentlight_agent/` -> `agentlight_wechat/`。
+- `scripts/agentlight-agent` -> `scripts/agentlight-wechat`。
+- `scripts/agentlight-event` -> `scripts/agentlight-wechat-event`。
+- `scripts/agentlight-gate` -> `scripts/agentlight-wechat-gate`。
+- `config/agentlight-agent.example.json` -> `config/wechat-agentlight.example.json`。
+- macOS / Windows 服务安装脚本改为指向微信服务入口。
+
+删除或不再发布：
+
+- `scripts/multi-agent-monitor`。
+- `scripts/codex-session-monitor`。
+- `scripts/codex-health-monitor`。
+- `config/agent-monitors.example.json`。
+- `config/agent-platforms.json`。
+- `hooks/agents/`、`hooks/codex/`、`hooks/cursor/`。
+- 原工具接入相关 README 章节和测试。
+
+如果某个原文件包含可复用的通用代码，应搬到微信命名空间后再使用，不保留旧业务入口。
+
 ## 总体架构
 
 ```text
@@ -140,6 +174,34 @@ helper 约定：
 - 错误输出 `wechat-listener-error`，并带上可展示的原因。
 - 不负责调用硬件。
 - 默认不落盘保存敏感字段。
+
+## Helper 最小交付边界
+
+### macOS helper
+
+最低可交付能力：
+
+- 检测微信进程是否运行。
+- 检查并报告 Accessibility 权限。
+- 输出能力探测结果。
+- 在能观察到未读角标或可见未读状态时输出 `wechat-message`。
+- 在未读状态消失或超时策略触发时输出 `wechat-cleared`。
+- 无法读取联系人、群名或摘要时，仍能以 `confidence=unread-only` 降级工作。
+
+不把完整消息内容读取作为 macOS 第一版硬性条件。
+
+### Windows helper
+
+最低可交付能力：
+
+- 检测微信进程是否运行。
+- 检查并报告通知监听授权状态。
+- 检查 UI Automation 是否能读取微信主窗口。
+- 从 Toast 通知或 UI Automation 任一来源观察到新消息时输出 `wechat-message`。
+- 能观察到未读状态消失或超时策略触发时输出 `wechat-cleared`。
+- 当通知监听不可用时，UI Automation 能提供降级提醒或明确诊断。
+
+Windows helper 可以先用 UI Automation 实现可运行闭环，再补通知监听打包能力，但接口必须从一开始保持 JSONL 稳定。
 
 ## 统一事件模型
 
@@ -291,6 +353,12 @@ helper 约定：
 }
 ```
 
+配置文件落地路径：
+
+- 仓库示例：`config/wechat-agentlight.example.json`。
+- macOS 用户配置：`~/.whalesky-labs-AgentLight/wechat-agentlight.json`。
+- Windows 用户配置：`%APPDATA%\\whalesky-labs-AgentLight\\wechat-agentlight.json`。
+
 ## 服务形态
 
 ### macOS
@@ -382,6 +450,32 @@ scripts/agentlight-wechat once
 - 硬件命令通道是否可用。
 - 最近一次观察事件。
 - 当前灯效状态机状态。
+
+## 测试策略
+
+测试必须覆盖业务逻辑，不依赖真实微信账号即可验证核心链路。
+
+单元测试：
+
+- JSONL helper 输出解析。
+- 微信事件归一化。
+- 规则匹配和优先级。
+- 灯效状态机转移。
+- 清除策略和超时回绿。
+- 隐私日志不包含 `conversation`、`sender`、`summary`。
+
+集成测试：
+
+- 使用 fake helper 输出 `wechat-message`、`wechat-important`、`wechat-muted`、`wechat-cleared`、`wechat-offline`、`wechat-listener-error`。
+- 使用 fake hardware command runner 验证下发命令，而不是要求真实 ESP32-C3。
+- 验证 `scripts/agentlight-wechat once` 能消费一条 helper 事件并产生预期状态。
+- 验证 `doctor` 在权限缺失、微信未运行、helper 不可启动时输出明确诊断。
+
+手工验收：
+
+- macOS 真机打开微信，收到消息后灯变黄闪；权限撤销时 `doctor` 给出 Accessibility 诊断。
+- Windows 真机打开微信，收到消息后灯变黄闪；通知授权撤销或 UI Automation 不可用时 `doctor` 给出诊断。
+- 两个平台在不能读取联系人、群名或摘要时，普通未读提醒仍可工作。
 
 ## 验收标准
 
