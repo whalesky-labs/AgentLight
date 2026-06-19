@@ -55,6 +55,28 @@ ESP32-C3 红黄绿灯
 
 ## 平台采集策略
 
+## GitHub 开源项目调研结论
+
+调研现有开源项目后，微信内容获取大致分为三类：UI 自动化、通知 / 辅助功能轮询、Hook / 插件 / 数据库访问。
+
+可采纳的参考方向：
+
+- `cluic/wxauto` 面向 Windows 桌面微信，通过 UIAutomation 做微信自动化，可发送和接收消息。其文档中 `GetAllMessage()` 展示了读取当前聊天窗口消息的能力。这说明 Windows 端可以优先研究 UI Automation 的可观测能力，不必只依赖系统 Toast 通知。
+- `ginqi7/macos-wechat-cli` 使用 Swift 和 macOS Accessibility 做微信 CLI，支持列出会话、查看消息和发送消息。但项目已归档，并说明其 Accessibility 方案只适配微信 3.8，微信 4.x 不再满足该工具所需能力。这意味着 macOS 端不能假设 Accessibility 一定能读取完整消息内容。
+- `Cybing521/wechat-mcp` 面向 macOS 群聊消息监控，强调本地运行、无需重新登录、关键词和发送者过滤，并要求辅助功能权限。它的轮询、配置和本地隐私处理思路适合作为 AgentLight 微信监听器的参考，但不应把 MCP 层带入本项目。
+
+不作为默认路线的方向：
+
+- `WeChatFerry` 能开启接收消息、查询数据库、获取联系人、下载文件、发送消息等，但属于微信 Hook / 机器人路线。
+- `WeChatExtension-ForMac`、`macOS-QQ-WeChat-API` 等依赖 Mac 微信插件或本地插件服务，能获取聊天记录或发送消息。
+- 这些项目证明“能拿到消息内容”，但代价是侵入微信、依赖插件、涉及聊天记录读取或逆向风险。AgentLight 只做本机指示灯提醒，不应默认使用这些方案。
+
+采纳决策：
+
+- Windows：把 UI Automation 从兜底提升为与通知监听并列的核心采集路径。通知监听适合新消息触发，UI Automation 适合读取当前未读状态和可见摘要。
+- macOS：保留 Swift helper，但必须先做能力探测。若当前微信版本无法通过 Accessibility 读取消息内容，则只提供未读角标 / 窗口状态 / 通知可见文本级提醒，不承诺联系人、群或关键词规则一定可用。
+- 跨平台：消息正文读取必须是可选能力。默认验收以“收到微信消息后变灯”为核心，重要联系人 / 群 / 关键词规则以平台实际可观察信息为前提。
+
 ### macOS
 
 macOS 没有稳定的官方 API 用来读取其他 App 的全部系统通知。Apple UserNotifications 主要用于应用管理自己的本地或远程通知。因此 macOS 端不把“直接监听微信通知中心记录”作为核心依赖。
@@ -65,6 +87,7 @@ macOS 没有稳定的官方 API 用来读取其他 App 的全部系统通知。A
 - 观察微信进程是否运行。
 - 观察微信 Dock 角标、窗口标题、会话列表可访问元素、未读标识和可见摘要。
 - 在可访问信息足够时识别普通未读、重要联系人、重要群、关键词和疑似 @我。
+- 启动时输出当前微信版本下的能力探测结果，例如 `unread-only`、`visible-summary`、`conversation-title`、`message-content-unavailable`。
 
 辅助信号：
 
@@ -75,7 +98,7 @@ macOS 没有稳定的官方 API 用来读取其他 App 的全部系统通知。A
 
 - 首次运行必须检查 Accessibility 权限。
 - 权限缺失时输出明确诊断，不静默失败。
-- 如果微信版本或 UI 结构导致联系人、群名、摘要不可见，监听器仍应降级产出普通 `wechat-message`，并标记能力降级。
+- 如果微信版本或 UI 结构导致联系人、群名、摘要不可见，监听器仍应降级产出普通 `wechat-message`，并标记能力降级。macOS 端不能把完整消息内容读取作为硬性验收条件。
 
 ### Windows
 
@@ -87,17 +110,18 @@ Windows 端有官方通知监听能力，可以作为主路径。
 - 声明 `userNotificationListener` 能力。
 - 首次运行请求用户授权通知访问。
 - 通过 `UserNotificationListener` 读取微信 Toast 通知。
-
-兜底路径：
-
 - 使用 Windows UI Automation 观察微信进程、窗口、未读角标、会话列表和可访问文本。
-- 当通知权限未开启、通知记录为空或用户关闭微信通知时，使用 UI Automation 尽量识别未读状态。
+
+辅助策略：
+
+- 通知监听用于捕获新消息到达事件。
+- UI Automation 用于确认未读状态、读取当前可见会话摘要，以及在通知权限缺失时继续提供降级提醒。
 
 权限和诊断：
 
 - Windows 通知监听必须检查授权状态，因为用户可以随时撤销权限。
 - 如果通知监听需要应用包身份或 manifest 能力，应构建一个明确的 Windows helper，不假装普通脚本可以稳定访问。
-- UI Automation 只作为可配置兜底，因为微信 UI 结构可能随版本变化。
+- UI Automation 受微信 UI 结构影响，必须有版本诊断和能力降级。
 
 ## Helper 接口
 
@@ -364,7 +388,7 @@ scripts/agentlight-wechat once
 
 - macOS 微信收到普通桌面消息时，灯变为黄灯闪烁。
 - Windows 微信收到普通桌面消息时，灯变为黄灯闪烁。
-- 命中重要联系人、重要群、关键词或可见 @我 时，灯变为红灯闪烁。
+- 平台可观察到联系人、群名、摘要或 @我 信息时，命中重要联系人、重要群、关键词或可见 @我 后，灯变为红灯闪烁。
 - 重要提醒不会被后续普通消息降级。
 - 免打扰会话不改变当前灯效。
 - 根据配置的清除策略回到绿灯。
@@ -381,3 +405,13 @@ scripts/agentlight-wechat once
 - Apple AXUIElement.h: <https://developer.apple.com/documentation/applicationservices/axuielement_h>
 - Microsoft Notification Listener: <https://learn.microsoft.com/en-us/windows/apps/develop/notifications/app-notifications/notification-listener>
 - Microsoft UI Automation Overview: <https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-uiautomationoverview>
+
+## 开源参考
+
+- wxauto: <https://github.com/cluic/wxauto>
+- wxauto docs: <https://docs.wxauto.org/>
+- macos-wechat-cli: <https://github.com/ginqi7/macos-wechat-cli>
+- wechat-mcp: <https://github.com/Cybing521/wechat-mcp>
+- WeChatFerry: <https://github.com/lich0821/WeChatFerry>
+- WeChatExtension-ForMac: <https://github.com/MustangYM/WeChatExtension-ForMac>
+- macOS-QQ-WeChat-API: <https://github.com/VXenomac/macOS-QQ-WeChat-API>
