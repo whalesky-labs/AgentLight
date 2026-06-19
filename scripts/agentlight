@@ -75,7 +75,7 @@ normalize_state() {
       printf 'RED_BLINK\n'
       ;;
     CLEARED|CLEAR)
-      printf 'GREEN\n'
+      printf 'OFF\n'
       ;;
     ONLINE)
       printf 'YELLOW_BREATHE\n'

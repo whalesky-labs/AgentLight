@@ -55,7 +55,7 @@ class WeChatLightStateMachine:
                 command = "off"
         elif event.event == WeChatEventType.CLEARED:
             self._state = LightState.IDLE
-            command = "green"
+            command = "off"
         elif event.event == WeChatEventType.IMPORTANT:
             self._state = LightState.IMPORTANT
             command = "red-blink"

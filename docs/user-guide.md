@@ -141,11 +141,11 @@ scripts/agentlight-wechat run
 | `wechat-message` | 黄灯闪烁 |
 | `wechat-important` | 红灯闪烁 |
 | `wechat-muted` | 不改变当前灯效 |
-| `wechat-cleared` | 绿灯常亮 |
+| `wechat-cleared` | 全灭 |
 | `wechat-offline` | 全灭 |
 | `wechat-listener-error` | 红灯常亮 |
 
-默认清除策略是 `timeout-or-unread-cleared`，300 秒内如果监听器能观察到未读消失则回绿，否则超时回绿。
+默认清除策略是 `timeout-or-unread-cleared`，300 秒内如果监听器能观察到未读消失则熄灯，否则超时熄灯。
 
 ## macOS 微信监听
 

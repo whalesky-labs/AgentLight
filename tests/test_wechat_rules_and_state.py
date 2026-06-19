@@ -54,14 +54,14 @@ class WeChatRulesAndStateTest(unittest.TestCase):
         self.assertEqual(normal.state, LightState.IMPORTANT)
         self.assertEqual(normal.command, "")
 
-    def test_cleared_returns_green(self) -> None:
+    def test_cleared_turns_light_off(self) -> None:
         machine = WeChatLightStateMachine()
         machine.apply(WeChatEvent(event=WeChatEventType.MESSAGE, platform="windows"))
 
         transition = machine.apply(WeChatEvent(event=WeChatEventType.CLEARED, platform="windows"))
 
         self.assertEqual(transition.state, LightState.IDLE)
-        self.assertEqual(transition.command, "green")
+        self.assertEqual(transition.command, "off")
 
 
 if __name__ == "__main__":

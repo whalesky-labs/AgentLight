@@ -114,7 +114,7 @@ scripts/agentlight-wechat once --config /tmp/wechat-agentlight-test.json
 | `wechat-message` | `YELLOW_BLINK` |
 | `wechat-important` | `RED_BLINK` |
 | `wechat-muted` | 不改变灯效 |
-| `wechat-cleared` | `GREEN` |
+| `wechat-cleared` | `OFF` |
 | `wechat-offline` | `OFF` |
 | `wechat-listener-error` | `RED` |
 

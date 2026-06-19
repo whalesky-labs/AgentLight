@@ -44,7 +44,7 @@ Default event mapping:
 | `wechat-message` | `YELLOW_BLINK` |
 | `wechat-important` | `RED_BLINK` |
 | `wechat-muted` | unchanged |
-| `wechat-cleared` | `GREEN` |
+| `wechat-cleared` | `OFF` |
 | `wechat-offline` | `OFF` |
 | `wechat-listener-error` | `RED` |
 
