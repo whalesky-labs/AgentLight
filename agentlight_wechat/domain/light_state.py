@@ -157,7 +157,7 @@ class WeChatLightStateMachine:
 
 
 def _fingerprint(event: WeChatEvent) -> str:
-    parts = (event.event.value, event.conversation, event.sender, event.summary, event.confidence)
+    parts = (event.event.value, event.identifier, event.conversation, event.sender, event.summary, event.confidence)
     return "\x1f".join(parts)
 
 

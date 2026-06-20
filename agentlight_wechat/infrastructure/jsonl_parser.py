@@ -35,6 +35,7 @@ def parse_helper_line(line: str) -> WeChatEvent:
     event = WeChatEvent(
         event=event_type,
         platform=_string(raw, "platform", ""),
+        identifier=_string(raw, "identifier", ""),
         conversation=_string(raw, "conversation", ""),
         sender=_string(raw, "sender", ""),
         summary=_string(raw, "summary", ""),

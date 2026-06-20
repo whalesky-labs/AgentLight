@@ -30,6 +30,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Emit one normalized WeChat event as JSONL.")
     parser.add_argument("event", choices=sorted(SUPPORTED_EVENTS))
     parser.add_argument("--platform", default=sys.platform)
+    parser.add_argument("--identifier", default="")
     parser.add_argument("--conversation", default="")
     parser.add_argument("--sender", default="")
     parser.add_argument("--summary", default="")
@@ -44,6 +45,7 @@ def main() -> int:
         "source": "wechat",
         "event": args.event,
         "platform": args.platform,
+        "identifier": args.identifier,
         "conversation": args.conversation,
         "sender": args.sender,
         "summary": args.summary,

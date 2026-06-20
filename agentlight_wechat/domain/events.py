@@ -35,6 +35,7 @@ class WeChatEvent:
     event: WeChatEventType
     platform: str
     source: str = "wechat"
+    identifier: str = ""
     conversation: str = ""
     sender: str = ""
     summary: str = ""

@@ -62,6 +62,7 @@ class WeChatConfigAndEventTest(unittest.TestCase):
                     "source": "wechat",
                     "event": "wechat-message",
                     "platform": "macos",
+                    "identifier": "wxid_test_1",
                     "conversation": "秘密群",
                     "sender": "张三",
                     "summary": "银行卡密码",
@@ -73,6 +74,7 @@ class WeChatConfigAndEventTest(unittest.TestCase):
         )
 
         self.assertEqual(event.event, WeChatEventType.MESSAGE)
+        self.assertEqual(event.identifier, "wxid_test_1")
         self.assertEqual(event.conversation, "秘密群")
         self.assertNotIn("秘密群", " ".join(safe_log_fields(event).values()))
         self.assertNotIn("张三", " ".join(safe_log_fields(event).values()))

@@ -95,6 +95,34 @@ class WeChatRulesAndStateTest(unittest.TestCase):
 
         self.assertEqual(refreshed.command, "yellow-breathe")
 
+    def test_new_notification_identifier_reblinks_even_with_same_summary(self) -> None:
+        clock = FakeClock()
+        machine = WeChatLightStateMachine(blink_seconds=10, refresh_seconds=30, clock=clock)
+        first_event = WeChatEvent(
+            event=WeChatEventType.MESSAGE,
+            platform="macos",
+            identifier="wxid_test_100_1",
+            conversation="wxid_test",
+            summary="你收到了一条消息",
+            confidence="notification-center",
+        )
+        second_event = WeChatEvent(
+            event=WeChatEventType.MESSAGE,
+            platform="macos",
+            identifier="wxid_test_101_2",
+            conversation="wxid_test",
+            summary="你收到了一条消息",
+            confidence="notification-center",
+        )
+
+        first = machine.apply(first_event)
+        repeated = machine.apply(first_event)
+        second = machine.apply(second_event)
+
+        self.assertEqual(first.command, "yellow-blink")
+        self.assertEqual(repeated.command, "")
+        self.assertEqual(second.command, "yellow-blink")
+
     def test_unread_only_signal_reblinks_on_refresh_window(self) -> None:
         clock = FakeClock()
         machine = WeChatLightStateMachine(blink_seconds=10, refresh_seconds=30, clock=clock)

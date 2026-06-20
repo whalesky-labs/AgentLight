@@ -60,6 +60,7 @@ def _replace_event(event: WeChatEvent, event_type: WeChatEventType, matched_rule
         event=event_type,
         platform=event.platform,
         source=event.source,
+        identifier=event.identifier,
         conversation=event.conversation,
         sender=event.sender,
         summary=event.summary,

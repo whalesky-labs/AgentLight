@@ -125,7 +125,9 @@ scripts/agentlight-wechat once --config /tmp/wechat-agentlight-test.json
 
 ## 平台能力
 
-macOS 使用 Swift helper 和 Accessibility API 观察微信进程、未读状态、窗口标题和可见摘要。微信版本或权限限制导致内容不可读时，会降级为普通未读提醒。
+macOS helper 优先读取系统通知中心里的 `com.tencent.xinwechat` 最近通知元数据，用通知里的 `identifier`、`chatname`、`body` 驱动重要联系人、重要群、关键词和免打扰规则；Accessibility API 只负责确认微信进程和当前未读状态。微信通知隐藏内容或通知中心没有可用记录时，会降级为 `unread-only` 普通未读提醒，此时只能输出黄色灯效。
+
+配置重要 / 免打扰规则时，可以使用通知中心暴露出来的 `wxid_...`、`...@chatroom` 或可见摘要关键词。普通日志不会输出联系人、会话名或消息摘要；日志中的 `confidence=notification-center` 表示本次事件可以参与规则分类，`confidence=unread-only` 表示已经降级为只能判断未读。
 
 Windows 使用 helper 通过 UI Automation 观察微信窗口的可见未读状态和可见摘要；权限或 UI 结构不可用时会输出诊断。
 
