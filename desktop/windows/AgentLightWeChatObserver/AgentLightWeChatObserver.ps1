@@ -76,7 +76,8 @@ try {
         }
     }
     $signal = $texts | Where-Object {
-        $_ -match "未读|条新消息|有人@我|@我|new message|unread"
+        ($_ -notmatch "^\\s*(显示下一个未读会话|显示上一条未读会话|show next unread conversation|show previous unread conversation)\\s*$") -and
+            ($_ -match "未读|条新消息|有人@我|@我|new message|unread")
     } | Select-Object -First 1
 
     if ($signal) {

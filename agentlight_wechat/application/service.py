@@ -58,7 +58,10 @@ class WeChatService:
         self._helper_runner = helper_runner or HelperRunner(self._helper_command())
         self._hardware_runner = hardware_runner or HardwareCommandRunner(repo_root / "scripts" / "agentlight", config.hardware)
         self._result_sink = result_sink or print
-        self._state_machine = state_machine or WeChatLightStateMachine(blink_seconds=config.light.blink_seconds)
+        self._state_machine = state_machine or WeChatLightStateMachine(
+            blink_seconds=config.light.blink_seconds,
+            refresh_seconds=config.light.refresh_seconds,
+        )
 
     def runtime_info(self) -> dict[str, object]:
         log_file = resolve_path(self._config.log_file or str(default_log_file()), self._config_path.parent)
@@ -70,6 +73,7 @@ class WeChatService:
             "sendToHardware": self._config.send_to_hardware,
             "pollIntervalSeconds": self._config.poll_interval_seconds,
             "blinkSeconds": self._config.light.blink_seconds,
+            "refreshSeconds": self._config.light.refresh_seconds,
             "helperCommand": list(self._helper_command()),
             "logFile": str(log_file),
             "system": platform.system(),

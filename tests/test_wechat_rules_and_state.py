@@ -76,7 +76,7 @@ class WeChatRulesAndStateTest(unittest.TestCase):
 
     def test_normal_message_blinks_then_breathes(self) -> None:
         clock = FakeClock()
-        machine = WeChatLightStateMachine(blink_seconds=10, clock=clock)
+        machine = WeChatLightStateMachine(blink_seconds=10, refresh_seconds=30, clock=clock)
         event = WeChatEvent(event=WeChatEventType.MESSAGE, platform="macos", conversation="微信", summary="新消息")
 
         first = machine.apply(event)
@@ -89,6 +89,11 @@ class WeChatRulesAndStateTest(unittest.TestCase):
         self.assertEqual(repeated.command, "")
         self.assertEqual(sustained.command, "yellow-breathe")
         self.assertEqual(duplicate_sustained.command, "")
+
+        clock.advance(30)
+        refreshed = machine.apply(event)
+
+        self.assertEqual(refreshed.command, "yellow-breathe")
 
     def test_cleared_turns_light_off(self) -> None:
         machine = WeChatLightStateMachine()

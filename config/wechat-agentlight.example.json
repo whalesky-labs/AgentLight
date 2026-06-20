@@ -14,7 +14,8 @@
     "timeoutSeconds": 300
   },
   "light": {
-    "blinkSeconds": 10
+    "blinkSeconds": 10,
+    "refreshSeconds": 30
   },
   "rules": {
     "importantContacts": [],

@@ -91,12 +91,26 @@ func collectVisibleText(_ element: AXUIElement, limit: Int = 200) -> [String] {
 func unreadSignal(from texts: [String]) -> String {
     let patterns = ["未读", "条新消息", "[有人@我]", "@我", "new message", "unread"]
     for text in texts {
+        if isNavigationUnreadHint(text) {
+            continue
+        }
         let lower = text.lowercased()
         if patterns.contains(where: { lower.contains($0.lowercased()) }) {
             return text
         }
     }
     return ""
+}
+
+func isNavigationUnreadHint(_ text: String) -> Bool {
+    let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let ignored = [
+        "显示下一个未读会话",
+        "显示上一条未读会话",
+        "show next unread conversation",
+        "show previous unread conversation",
+    ]
+    return ignored.contains(normalized)
 }
 
 func main() -> Int32 {

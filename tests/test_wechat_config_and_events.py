@@ -27,6 +27,8 @@ class WeChatConfigAndEventTest(unittest.TestCase):
 
         self.assertEqual(config.source, "wechat")
         self.assertEqual(config.clear_policy.mode, ClearMode.TIMEOUT_OR_UNREAD_CLEARED)
+        self.assertEqual(config.light.blink_seconds, 10)
+        self.assertEqual(config.light.refresh_seconds, 30)
         self.assertTrue(config.collection.macos_accessibility)
         self.assertEqual(config.hardware["AGENTLIGHT_TRANSPORT"], "auto")
 
@@ -75,6 +77,23 @@ class WeChatConfigAndEventTest(unittest.TestCase):
         self.assertNotIn("秘密群", " ".join(safe_log_fields(event).values()))
         self.assertNotIn("张三", " ".join(safe_log_fields(event).values()))
         self.assertNotIn("银行卡密码", " ".join(safe_log_fields(event).values()))
+
+    def test_navigation_unread_hint_is_not_treated_as_message(self) -> None:
+        event = parse_helper_line(
+            json.dumps(
+                {
+                    "source": "wechat",
+                    "event": "wechat-message",
+                    "platform": "macos",
+                    "conversation": "微信",
+                    "summary": "显示下一个未读会话",
+                    "confidence": "visible-summary",
+                },
+                ensure_ascii=False,
+            )
+        )
+
+        self.assertEqual(event.event, WeChatEventType.CLEARED)
 
 
 if __name__ == "__main__":

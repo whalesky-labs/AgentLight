@@ -51,7 +51,7 @@ Default light mapping:
 | WeChat offline | `OFF` | All lights off |
 | Listener or permission error | `RED` | Solid red means service error |
 
-Blinking lasts `10` seconds by default. If the message is still unread after that, the light switches to the matching breathe state. Clearing unread messages turns the light `OFF` immediately.
+Blinking lasts `10` seconds by default. If the message is still unread after that, the light switches to the matching breathe state. Clearing unread messages turns the light `OFF` immediately. While breathing, AgentLight refreshes the current command every `30` seconds so a manual hardware command cannot leave the device stuck in the wrong state.
 
 The macOS helper uses Accessibility observations. The Windows helper uses UI Automation observations of visible WeChat window state. AgentLight does not inject into WeChat, decrypt WeChat databases, read full chat history, or automate replies.
 

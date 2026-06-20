@@ -34,6 +34,7 @@ class ClearPolicy:
 @dataclass(frozen=True)
 class LightConfig:
     blink_seconds: float = 10.0
+    refresh_seconds: float = 30.0
 
 
 @dataclass(frozen=True)

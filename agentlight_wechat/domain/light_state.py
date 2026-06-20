@@ -50,13 +50,21 @@ _UNREAD_LEVELS = {
 
 
 class WeChatLightStateMachine:
-    def __init__(self, *, blink_seconds: float = 10.0, clock: Callable[[], float] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        blink_seconds: float = 10.0,
+        refresh_seconds: float = 30.0,
+        clock: Callable[[], float] | None = None,
+    ) -> None:
         self._state = LightState.IDLE
         self._blink_seconds = blink_seconds
+        self._refresh_seconds = refresh_seconds
         self._clock = clock or time.monotonic
         self._active_level: _UnreadLevel | None = None
         self._active_fingerprint = ""
         self._blink_started_at = 0.0
+        self._last_command_at = 0.0
         self._breathing = False
 
     @property
@@ -102,6 +110,7 @@ class WeChatLightStateMachine:
             self._active_level = incoming_level
             self._active_fingerprint = fingerprint
             self._blink_started_at = now
+            self._last_command_at = now
             self._breathing = False
             self._state = incoming_level.state
             return incoming_level.blink_command
@@ -113,10 +122,14 @@ class WeChatLightStateMachine:
         if self._active_level is None:
             return ""
         if self._breathing:
+            if now - self._last_command_at >= self._refresh_seconds:
+                self._last_command_at = now
+                return self._active_level.breathe_command
             return ""
         if now - self._blink_started_at < self._blink_seconds:
             return ""
         self._breathing = True
+        self._last_command_at = now
         self._state = self._active_level.state
         return self._active_level.breathe_command
 
@@ -124,6 +137,7 @@ class WeChatLightStateMachine:
         self._active_level = None
         self._active_fingerprint = ""
         self._blink_started_at = 0.0
+        self._last_command_at = 0.0
         self._breathing = False
 
 

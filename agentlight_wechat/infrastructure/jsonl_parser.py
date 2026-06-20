@@ -32,7 +32,7 @@ def parse_helper_line(line: str) -> WeChatEvent:
     except ValueError as exc:
         raise ValueError(f"Unsupported WeChat event: {raw.get('event')}") from exc
 
-    return WeChatEvent(
+    event = WeChatEvent(
         event=event_type,
         platform=_string(raw, "platform", ""),
         conversation=_string(raw, "conversation", ""),
@@ -44,6 +44,17 @@ def parse_helper_line(line: str) -> WeChatEvent:
         diagnostic=_string(raw, "diagnostic", ""),
         capabilities=_capabilities(raw.get("capabilities", ())),
     )
+    if event.event == WeChatEventType.MESSAGE and _is_navigation_unread_hint(event.summary):
+        return WeChatEvent(
+            event=WeChatEventType.CLEARED,
+            platform=event.platform,
+            source=event.source,
+            conversation=event.conversation,
+            confidence=Confidence.CONVERSATION_TITLE.value,
+            timestamp=event.timestamp,
+            capabilities=event.capabilities,
+        )
+    return event
 
 
 def safe_log_fields(event: WeChatEvent) -> dict[str, str]:
@@ -72,3 +83,14 @@ def _capabilities(raw: Any) -> tuple[str, ...]:
     if not isinstance(raw, list):
         return ()
     return tuple(str(item) for item in raw if str(item))
+
+
+def _is_navigation_unread_hint(value: str) -> bool:
+    normalized = value.strip().casefold()
+    ignored = {
+        "显示下一个未读会话",
+        "显示上一条未读会话",
+        "show next unread conversation",
+        "show previous unread conversation",
+    }
+    return normalized in ignored

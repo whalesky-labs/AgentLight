@@ -73,7 +73,10 @@ def _clear_policy(raw: Any) -> ClearPolicy:
 
 def _light(raw: Any) -> LightConfig:
     raw = _object(raw, "light")
-    return LightConfig(blink_seconds=_positive_float(raw, "blinkSeconds", 10.0))
+    return LightConfig(
+        blink_seconds=_positive_float(raw, "blinkSeconds", 10.0),
+        refresh_seconds=_positive_float(raw, "refreshSeconds", 30.0),
+    )
 
 
 def _rules(raw: Any) -> RuleConfig:
