@@ -91,9 +91,6 @@ func collectVisibleText(_ element: AXUIElement, limit: Int = 200) -> [String] {
 func unreadSignal(from texts: [String]) -> String {
     let patterns = ["未读", "条新消息", "[有人@我]", "@我", "new message", "unread"]
     for text in texts {
-        if isNavigationUnreadHint(text) {
-            continue
-        }
         let lower = text.lowercased()
         if patterns.contains(where: { lower.contains($0.lowercased()) }) {
             return text
@@ -174,10 +171,12 @@ func main() -> Int32 {
         platform: "macos",
         conversation: title,
         sender: "",
-        summary: signal,
-        confidence: "visible-summary",
+        summary: isNavigationUnreadHint(signal) ? "" : signal,
+        confidence: isNavigationUnreadHint(signal) ? "unread-only" : "visible-summary",
         diagnostic: "",
-        capabilities: ["process-running", "accessibility", "visible-summary"],
+        capabilities: isNavigationUnreadHint(signal)
+            ? ["process-running", "accessibility", "unread-navigation"]
+            : ["process-running", "accessibility", "visible-summary"],
         timestamp: timestamp()
     ))
     return 0

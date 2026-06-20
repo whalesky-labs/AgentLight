@@ -76,12 +76,15 @@ try {
         }
     }
     $signal = $texts | Where-Object {
-        ($_ -notmatch "^\\s*(显示下一个未读会话|显示上一条未读会话|show next unread conversation|show previous unread conversation)\\s*$") -and
-            ($_ -match "未读|条新消息|有人@我|@我|new message|unread")
+        $_ -match "未读|条新消息|有人@我|@我|new message|unread"
     } | Select-Object -First 1
 
     if ($signal) {
-        New-WeChatPayload -Event "wechat-message" -Conversation $title -Summary $signal -Confidence "visible-summary" -Capabilities @("process-running", "ui-automation", "visible-summary")
+        if ($signal -match "^\\s*(显示下一个未读会话|显示上一条未读会话|show next unread conversation|show previous unread conversation)\\s*$") {
+            New-WeChatPayload -Event "wechat-message" -Conversation $title -Summary "" -Confidence "unread-only" -Capabilities @("process-running", "ui-automation", "unread-navigation")
+        } else {
+            New-WeChatPayload -Event "wechat-message" -Conversation $title -Summary $signal -Confidence "visible-summary" -Capabilities @("process-running", "ui-automation", "visible-summary")
+        }
     } else {
         New-WeChatPayload -Event "wechat-cleared" -Conversation $title -Confidence "conversation-title" -Capabilities @("process-running", "ui-automation", "conversation-title")
     }

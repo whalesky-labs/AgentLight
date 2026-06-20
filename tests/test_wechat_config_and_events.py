@@ -78,7 +78,7 @@ class WeChatConfigAndEventTest(unittest.TestCase):
         self.assertNotIn("张三", " ".join(safe_log_fields(event).values()))
         self.assertNotIn("银行卡密码", " ".join(safe_log_fields(event).values()))
 
-    def test_navigation_unread_hint_is_not_treated_as_message(self) -> None:
+    def test_navigation_unread_hint_remains_unread_signal(self) -> None:
         event = parse_helper_line(
             json.dumps(
                 {
@@ -93,7 +93,8 @@ class WeChatConfigAndEventTest(unittest.TestCase):
             )
         )
 
-        self.assertEqual(event.event, WeChatEventType.CLEARED)
+        self.assertEqual(event.event, WeChatEventType.MESSAGE)
+        self.assertEqual(event.summary, "显示下一个未读会话")
 
 
 if __name__ == "__main__":
