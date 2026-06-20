@@ -95,6 +95,29 @@ class WeChatRulesAndStateTest(unittest.TestCase):
 
         self.assertEqual(refreshed.command, "yellow-breathe")
 
+    def test_unread_only_signal_reblinks_on_refresh_window(self) -> None:
+        clock = FakeClock()
+        machine = WeChatLightStateMachine(blink_seconds=10, refresh_seconds=30, clock=clock)
+        event = WeChatEvent(
+            event=WeChatEventType.MESSAGE,
+            platform="macos",
+            conversation="微信",
+            confidence="unread-only",
+        )
+
+        first = machine.apply(event)
+        clock.advance(10)
+        sustained = machine.apply(event)
+        clock.advance(30)
+        refreshed = machine.apply(event)
+        clock.advance(10)
+        sustained_again = machine.apply(event)
+
+        self.assertEqual(first.command, "yellow-blink")
+        self.assertEqual(sustained.command, "yellow-breathe")
+        self.assertEqual(refreshed.command, "yellow-blink")
+        self.assertEqual(sustained_again.command, "yellow-breathe")
+
     def test_cleared_turns_light_off(self) -> None:
         machine = WeChatLightStateMachine()
         machine.apply(WeChatEvent(event=WeChatEventType.MESSAGE, platform="windows"))

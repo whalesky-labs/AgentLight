@@ -65,6 +65,7 @@ class WeChatLightStateMachine:
         self._active_fingerprint = ""
         self._blink_started_at = 0.0
         self._last_command_at = 0.0
+        self._last_weak_blink_at = 0.0
         self._breathing = False
 
     @property
@@ -101,6 +102,18 @@ class WeChatLightStateMachine:
         if self._active_level is not None and self._active_level.rank > incoming_level.rank:
             return self._maybe_breathe(now)
 
+        if (
+            self._breathing
+            and _is_weak_unread_signal(event)
+            and now - self._last_weak_blink_at >= self._refresh_seconds
+        ):
+            self._blink_started_at = now
+            self._last_command_at = now
+            self._last_weak_blink_at = now
+            self._breathing = False
+            self._state = incoming_level.state
+            return incoming_level.blink_command
+
         is_new_signal = (
             self._active_level is None
             or incoming_level.rank > self._active_level.rank
@@ -111,6 +124,7 @@ class WeChatLightStateMachine:
             self._active_fingerprint = fingerprint
             self._blink_started_at = now
             self._last_command_at = now
+            self._last_weak_blink_at = now
             self._breathing = False
             self._state = incoming_level.state
             return incoming_level.blink_command
@@ -138,9 +152,14 @@ class WeChatLightStateMachine:
         self._active_fingerprint = ""
         self._blink_started_at = 0.0
         self._last_command_at = 0.0
+        self._last_weak_blink_at = 0.0
         self._breathing = False
 
 
 def _fingerprint(event: WeChatEvent) -> str:
     parts = (event.event.value, event.conversation, event.sender, event.summary, event.confidence)
     return "\x1f".join(parts)
+
+
+def _is_weak_unread_signal(event: WeChatEvent) -> bool:
+    return event.confidence == "unread-only" and not event.summary
