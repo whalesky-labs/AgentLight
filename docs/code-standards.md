@@ -69,7 +69,7 @@ scripts/                          薄入口
 
 - `scripts/agentlight-wechat`、`scripts/agentlight-wechat-event` 和 `scripts/agentlight-wechat-gate` 必须保持薄入口。
 - macOS / Windows helper 只输出 JSONL 微信事件，不直接调用硬件。
-- 规则引擎只负责把微信事件分类为普通、重要或免打扰，不处理硬件 IO。
+- 规则引擎只负责把微信事件分类为群消息、好友消息或其他消息，不处理硬件 IO。
 - 灯效状态机负责状态转移和命令选择。
 - 硬件下发必须继续通过 `scripts/agentlight`。
 - 普通日志不得保存消息正文、发送人或会话名。
@@ -96,7 +96,7 @@ scripts/                          薄入口
 
 - 配置解析和类型校验
 - 微信事件解析
-- 规则匹配和优先级
+- 微信消息类别分类
 - 灯效状态机
 - CLI 入口
 - fake helper 到 fake hardware 的集成链路

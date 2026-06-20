@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 
 from agentlight_wechat.application.service import WeChatService
-from agentlight_wechat.domain.config import RuleConfig, WeChatConfig
+from agentlight_wechat.domain.config import WeChatConfig
 from agentlight_wechat.domain.light_state import WeChatLightStateMachine
 from agentlight_wechat.infrastructure.helper_runner import HelperRunner
 
@@ -49,10 +49,17 @@ class FakeClock:
 
 
 class WeChatServiceTest(unittest.TestCase):
-    def test_once_consumes_helper_event_and_sends_hardware_command(self) -> None:
+    def test_once_consumes_group_event_and_sends_yellow_lane_command(self) -> None:
         hardware = FakeHardware()
         sink: list[str] = []
-        line = json.dumps({"source": "wechat", "event": "wechat-message", "platform": "macos"})
+        line = json.dumps(
+            {
+                "source": "wechat",
+                "event": "wechat-message",
+                "platform": "macos",
+                "conversation": "48293083178@chatroom",
+            }
+        )
         service = WeChatService(
             Path.cwd(),
             Path("config/wechat-agentlight.example.json"),
@@ -64,36 +71,12 @@ class WeChatServiceTest(unittest.TestCase):
 
         self.assertEqual(service.run_once(), 0)
 
-        self.assertEqual(hardware.commands, ["yellow-blink"])
+        self.assertEqual(hardware.commands, ["LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF"])
         self.assertIn("event=wechat-message", sink[0])
-        self.assertIn("command=YELLOW_BLINK", sink[0])
+        self.assertIn("category=group", sink[0])
+        self.assertIn("command=LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF", sink[0])
 
-    def test_rules_are_applied_before_light_state(self) -> None:
-        hardware = FakeHardware()
-        line = json.dumps(
-            {
-                "source": "wechat",
-                "event": "wechat-message",
-                "platform": "windows",
-                "sender": "老板",
-                "summary": "马上处理",
-            },
-            ensure_ascii=False,
-        )
-        service = WeChatService(
-            Path.cwd(),
-            Path("config/wechat-agentlight.example.json"),
-            WeChatConfig(rules=RuleConfig(important_contacts=("老板",))),
-            helper_runner=StaticHelper([line]),
-            hardware_runner=hardware,  # type: ignore[arg-type]
-            result_sink=lambda _: None,
-        )
-
-        self.assertEqual(service.run_once(), 0)
-
-        self.assertEqual(hardware.commands, ["red-blink"])
-
-    def test_notification_center_fields_can_drive_important_rules(self) -> None:
+    def test_notification_center_friend_fields_drive_green_lane(self) -> None:
         hardware = FakeHardware()
         line = json.dumps(
             {
@@ -112,7 +95,7 @@ class WeChatServiceTest(unittest.TestCase):
         service = WeChatService(
             Path.cwd(),
             Path("config/wechat-agentlight.example.json"),
-            WeChatConfig(rules=RuleConfig(important_contacts=("wxid_boss",), keywords=("报警",))),
+            WeChatConfig(),
             helper_runner=StaticHelper([line]),
             hardware_runner=hardware,  # type: ignore[arg-type]
             result_sink=lambda _: None,
@@ -120,16 +103,16 @@ class WeChatServiceTest(unittest.TestCase):
 
         self.assertEqual(service.run_once(), 0)
 
-        self.assertEqual(hardware.commands, ["red-blink"])
+        self.assertEqual(hardware.commands, ["LANES:RED=OFF,YELLOW=OFF,GREEN=BLINK"])
 
-    def test_notification_center_fields_can_drive_muted_rules(self) -> None:
+    def test_notification_center_group_fields_drive_yellow_lane(self) -> None:
         hardware = FakeHardware()
         line = json.dumps(
             {
                 "source": "wechat",
                 "event": "wechat-message",
                 "platform": "macos",
-                "identifier": "chatroom_1781938426_1639",
+                "identifier": "48293083178@chatroom_1781938426_1639",
                 "conversation": "48293083178@chatroom",
                 "sender": "48293083178@chatroom",
                 "summary": "你收到了一条消息",
@@ -141,7 +124,7 @@ class WeChatServiceTest(unittest.TestCase):
         service = WeChatService(
             Path.cwd(),
             Path("config/wechat-agentlight.example.json"),
-            WeChatConfig(rules=RuleConfig(muted_conversations=("48293083178@chatroom",))),
+            WeChatConfig(),
             helper_runner=StaticHelper([line]),
             hardware_runner=hardware,  # type: ignore[arg-type]
             result_sink=lambda _: None,
@@ -149,13 +132,70 @@ class WeChatServiceTest(unittest.TestCase):
 
         self.assertEqual(service.run_once(), 0)
 
-        self.assertEqual(hardware.commands, ["green-blink"])
+        self.assertEqual(hardware.commands, ["LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF"])
+
+    def test_once_consumes_multiple_category_events_from_one_helper_run(self) -> None:
+        hardware = FakeHardware()
+        lines = [
+            json.dumps(
+                {
+                    "source": "wechat",
+                    "event": "wechat-message",
+                    "platform": "macos",
+                    "identifier": "48293083178@chatroom_1781947261_1659",
+                    "conversation": "48293083178@chatroom",
+                    "messageCategory": "group",
+                    "confidence": "notification-history",
+                }
+            ),
+            json.dumps(
+                {
+                    "source": "wechat",
+                    "event": "wechat-message",
+                    "platform": "macos",
+                    "identifier": "wxid_friend_1781942964_21",
+                    "conversation": "wxid_friend",
+                    "messageCategory": "friend",
+                    "confidence": "notification-history",
+                }
+            ),
+            json.dumps(
+                {
+                    "source": "wechat",
+                    "event": "wechat-message",
+                    "platform": "macos",
+                    "identifier": "qqmail_1781936375_334",
+                    "conversation": "qqmail",
+                    "messageCategory": "other",
+                    "confidence": "notification-history",
+                }
+            ),
+        ]
+        service = WeChatService(
+            Path.cwd(),
+            Path("config/wechat-agentlight.example.json"),
+            WeChatConfig(),
+            helper_runner=StaticHelper(lines),
+            hardware_runner=hardware,  # type: ignore[arg-type]
+            result_sink=lambda _: None,
+        )
+
+        self.assertEqual(service.run_once(), 0)
+
+        self.assertEqual(
+            hardware.commands,
+            [
+                "LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF",
+                "LANES:RED=OFF,YELLOW=BLINK,GREEN=BLINK",
+                "LANES:RED=BLINK,YELLOW=BLINK,GREEN=BLINK",
+            ],
+        )
 
     def test_fake_helper_can_run_without_real_wechat_or_hardware(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             config = json.loads(Path("config/wechat-agentlight.example.json").read_text(encoding="utf-8"))
-            config["helperCommand"] = ["scripts/agentlight-wechat-fake-helper", "message"]
+            config["helperCommand"] = ["scripts/agentlight-wechat-fake-helper", "friend"]
             config["sendToHardware"] = False
             path = tmp_path / "wechat.json"
             path.write_text(json.dumps(config), encoding="utf-8")
@@ -163,16 +203,23 @@ class WeChatServiceTest(unittest.TestCase):
             service = WeChatService(
                 Path.cwd(),
                 path,
-                WeChatConfig(send_to_hardware=False, helper_command=("scripts/agentlight-wechat-fake-helper", "message")),
+                WeChatConfig(send_to_hardware=False, helper_command=("scripts/agentlight-wechat-fake-helper", "friend")),
                 result_sink=lambda _: None,
             )
 
             self.assertEqual(service.run_once(), 0)
 
-    def test_repeated_unread_event_breathes_after_blink_window(self) -> None:
+    def test_repeated_group_event_breathes_after_blink_window(self) -> None:
         hardware = FakeHardware()
         clock = FakeClock()
-        line = json.dumps({"source": "wechat", "event": "wechat-message", "platform": "macos", "summary": "新消息"})
+        line = json.dumps(
+            {
+                "source": "wechat",
+                "event": "wechat-message",
+                "platform": "macos",
+                "conversation": "48293083178@chatroom",
+            }
+        )
         service = WeChatService(
             Path.cwd(),
             Path("config/wechat-agentlight.example.json"),
@@ -188,7 +235,13 @@ class WeChatServiceTest(unittest.TestCase):
         clock.advance(10)
         self.assertEqual(service.run_once(), 0)
 
-        self.assertEqual(hardware.commands, ["yellow-blink", "yellow-breathe"])
+        self.assertEqual(
+            hardware.commands,
+            [
+                "LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF",
+                "LANES:RED=OFF,YELLOW=BREATHE,GREEN=OFF",
+            ],
+        )
 
 
 if __name__ == "__main__":

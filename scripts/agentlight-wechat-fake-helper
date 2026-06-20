@@ -17,6 +17,9 @@ from datetime import datetime
 
 EVENT_ALIASES = {
     "message": "wechat-message",
+    "group": "wechat-message",
+    "friend": "wechat-message",
+    "other": "wechat-message",
     "important": "wechat-important",
     "muted": "wechat-muted",
     "cleared": "wechat-cleared",
@@ -26,14 +29,31 @@ EVENT_ALIASES = {
 
 
 def emit(event: str) -> None:
+    category = {
+        "message": "other",
+        "group": "group",
+        "friend": "friend",
+        "other": "other",
+        "important": "friend",
+        "muted": "group",
+    }.get(event, "")
+    conversation = {
+        "group": "48293083178@chatroom",
+        "friend": "wxid_test_friend",
+        "other": "notifymessage",
+        "message": "notifymessage",
+        "important": "wxid_test_friend",
+        "muted": "48293083178@chatroom",
+    }.get(event, "")
     payload = {
         "source": "wechat",
         "event": EVENT_ALIASES.get(event, event),
         "platform": sys.platform,
-        "conversation": "测试会话" if event in {"message", "important"} else "",
-        "sender": "测试联系人" if event == "important" else "",
-        "summary": "这是一条本地测试微信事件" if event in {"message", "important"} else "",
-        "confidence": "visible-summary" if event in {"message", "important"} else "diagnostic",
+        "conversation": conversation,
+        "sender": conversation,
+        "summary": "这是一条本地测试微信事件" if category else "",
+        "messageCategory": category,
+        "confidence": "visible-summary" if category else "diagnostic",
         "timestamp": datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z"),
     }
     if payload["event"] == "wechat-listener-error":

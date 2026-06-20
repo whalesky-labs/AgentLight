@@ -13,10 +13,10 @@
 namespace agentlight {
 
 StatusLightService::StatusLightService(LightOutput& output)
-    : output_(output), currentPattern_({LightState::Off, LightEffect::Steady}) {}
+    : output_(output), currentChannels_({LightEffect::Off, LightEffect::Off, LightEffect::Off}) {}
 
 void StatusLightService::begin(const LightPattern& initialPattern) {
-  setPattern(initialPattern);
+  setChannels(channelsFromPattern(initialPattern));
 }
 
 void StatusLightService::tick(unsigned long nowMs) {
@@ -28,27 +28,27 @@ String StatusLightService::handleCommand(const String& line) {
 
   switch (command.type) {
     case CommandType::SetLight:
-      setPattern(command.pattern);
-      return String("OK ") + toText(currentPattern_);
+      setChannels(command.channels);
+      return String("OK ") + toText(currentChannels_);
     case CommandType::Ping:
       return "PONG";
     case CommandType::Status:
-      return String("STATUS ") + toText(currentPattern_);
+      return String("STATUS ") + toText(currentChannels_);
     case CommandType::Help:
-      return "COMMANDS GREEN GREEN_BREATHE GREEN_BLINK YELLOW YELLOW_BREATHE YELLOW_BLINK RED RED_BLINK RED_BREATHE ALL ALL_BLINK ALL_BREATHE OFF PING STATUS HELP";
+      return "COMMANDS GREEN GREEN_BREATHE GREEN_BLINK YELLOW YELLOW_BREATHE YELLOW_BLINK RED RED_BLINK RED_BREATHE ALL ALL_BLINK ALL_BREATHE LANES:RED=OFF,YELLOW=BLINK,GREEN=BREATHE OFF PING STATUS HELP";
     case CommandType::Unknown:
     default:
       return String("ERR UNKNOWN_COMMAND ") + command.raw;
   }
 }
 
-LightPattern StatusLightService::currentPattern() const {
-  return currentPattern_;
+LightChannels StatusLightService::currentChannels() const {
+  return currentChannels_;
 }
 
-void StatusLightService::setPattern(const LightPattern& pattern) {
-  currentPattern_ = pattern;
-  output_.setPattern(pattern);
+void StatusLightService::setChannels(const LightChannels& channels) {
+  currentChannels_ = channels;
+  output_.setChannels(channels);
 }
 
 }  // namespace agentlight

@@ -117,7 +117,7 @@ class WeChatService:
         return lines
 
     def run_once(self) -> int:
-        return self._run_lines(self._helper_runner.run_once(), limit=1)
+        return self._run_lines(self._helper_runner.run_once(), limit=0)
 
     def run_forever(self) -> int:
         try:
@@ -174,7 +174,7 @@ class WeChatService:
         fields = safe_log_fields(processed.event)
         fields["state"] = processed.state
         if processed.command:
-            fields["command"] = processed.command.upper().replace("-", "_")
+            fields["command"] = processed.command.upper() if ":" in processed.command else processed.command.upper().replace("-", "_")
         if processed.ignored:
             fields["ignored"] = "true"
         if processed.hardware_output:

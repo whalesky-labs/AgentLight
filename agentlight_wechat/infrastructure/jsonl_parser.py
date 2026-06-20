@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from agentlight_wechat.domain.events import Confidence, WeChatEvent, WeChatEventType
+from agentlight_wechat.domain.events import Confidence, WeChatEvent, WeChatEventType, WeChatMessageCategory
 
 
 def parse_helper_line(line: str) -> WeChatEvent:
@@ -39,6 +39,7 @@ def parse_helper_line(line: str) -> WeChatEvent:
         conversation=_string(raw, "conversation", ""),
         sender=_string(raw, "sender", ""),
         summary=_string(raw, "summary", ""),
+        message_category=_message_category(raw),
         matched_rule=_string(raw, "matchedRule", ""),
         confidence=_string(raw, "confidence", Confidence.UNREAD_ONLY.value),
         timestamp=_string(raw, "timestamp", _string(raw, "observedAt", "")),
@@ -54,6 +55,8 @@ def safe_log_fields(event: WeChatEvent) -> dict[str, str]:
         "platform": event.platform,
         "confidence": event.confidence,
     }
+    if event.message_category:
+        fields["category"] = event.message_category
     if event.matched_rule:
         fields["matchedRule"] = event.matched_rule
     if event.diagnostic:
@@ -74,3 +77,11 @@ def _capabilities(raw: Any) -> tuple[str, ...]:
     if not isinstance(raw, list):
         return ()
     return tuple(str(item) for item in raw if str(item))
+
+
+def _message_category(raw: dict[str, Any]) -> str:
+    value = _string(raw, "messageCategory", _string(raw, "message_category", _string(raw, "category", "")))
+    normalized = value.strip().casefold()
+    if normalized in {item.value for item in WeChatMessageCategory}:
+        return normalized
+    return ""

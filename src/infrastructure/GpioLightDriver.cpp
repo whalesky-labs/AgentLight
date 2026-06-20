@@ -16,82 +16,47 @@ GpioLightDriver::GpioLightDriver(uint8_t redPin, uint8_t yellowPin, uint8_t gree
       yellowPin_(yellowPin),
       greenPin_(greenPin),
       activeLow_(activeLow),
-      pattern_({LightState::Off, LightEffect::Steady}) {}
+      channels_({LightEffect::Off, LightEffect::Off, LightEffect::Off}) {}
 
 void GpioLightDriver::begin() {
   pinMode(redPin_, OUTPUT);
   pinMode(yellowPin_, OUTPUT);
   pinMode(greenPin_, OUTPUT);
-  setPattern({LightState::Off, LightEffect::Steady});
+  setChannels({LightEffect::Off, LightEffect::Off, LightEffect::Off});
 }
 
-void GpioLightDriver::setPattern(const LightPattern& pattern) {
-  pattern_ = pattern;
+void GpioLightDriver::setChannels(const LightChannels& channels) {
+  channels_ = channels;
   tick(millis());
 }
 
 void GpioLightDriver::tick(unsigned long nowMs) {
-  if (pattern_.state == LightState::All) {
-    switch (pattern_.effect) {
-      case LightEffect::Blink: {
-        const bool active = (nowMs % 800) < 400;
-        writeAll(active);
-        return;
-      }
-      case LightEffect::Breathe: {
-        const uint16_t phase = nowMs % 2000;
-        const uint16_t triangle = phase < 1000 ? phase : 2000 - phase;
-        const uint8_t brightness = static_cast<uint8_t>(20 + ((triangle * 235UL) / 1000));
-        writeAllPwm(brightness);
-        return;
-      }
-      case LightEffect::Steady:
-      default:
-        writeAll(true);
-        return;
-    }
-  }
+  writeChannel(redPin_, channels_.red, nowMs);
+  writeChannel(yellowPin_, channels_.yellow, nowMs);
+  writeChannel(greenPin_, channels_.green, nowMs);
+}
 
-  const uint8_t activePin = pinFor(pattern_.state);
-  if (activePin == 0) {
-    writeAllOff();
-    return;
-  }
-
-  writeInactiveOff(activePin);
-
-  switch (pattern_.effect) {
+void GpioLightDriver::writeChannel(uint8_t pin, LightEffect effect, unsigned long nowMs) {
+  switch (effect) {
+    case LightEffect::Off:
+      writeOne(pin, false);
+      return;
     case LightEffect::Blink: {
-      const unsigned long periodMs = pattern_.state == LightState::Yellow ? 400UL : 800UL;
-      writeOne(activePin, (nowMs % periodMs) < (periodMs / 2));
+      const unsigned long periodMs = pin == yellowPin_ ? 400UL : 800UL;
+      writeOne(pin, (nowMs % periodMs) < (periodMs / 2));
       return;
     }
     case LightEffect::Breathe: {
       const uint16_t phase = nowMs % 2000;
       const uint16_t triangle = phase < 1000 ? phase : 2000 - phase;
       const uint8_t brightness = static_cast<uint8_t>(20 + ((triangle * 235UL) / 1000));
-      writeOnePwm(activePin, brightness);
+      writeOnePwm(pin, brightness);
       return;
     }
     case LightEffect::Steady:
     default:
-      writeOne(activePin, true);
+      writeOne(pin, true);
       return;
-  }
-}
-
-uint8_t GpioLightDriver::pinFor(LightState state) const {
-  switch (state) {
-    case LightState::Red:
-      return redPin_;
-    case LightState::Yellow:
-      return yellowPin_;
-    case LightState::Green:
-      return greenPin_;
-    case LightState::All:
-    case LightState::Off:
-    default:
-      return 0;
   }
 }
 
@@ -103,24 +68,6 @@ void GpioLightDriver::writeAll(bool active) {
   writeOne(redPin_, active);
   writeOne(yellowPin_, active);
   writeOne(greenPin_, active);
-}
-
-void GpioLightDriver::writeAllPwm(uint8_t brightness) {
-  writeOnePwm(redPin_, brightness);
-  writeOnePwm(yellowPin_, brightness);
-  writeOnePwm(greenPin_, brightness);
-}
-
-void GpioLightDriver::writeInactiveOff(uint8_t activePin) {
-  if (redPin_ != activePin) {
-    writeOne(redPin_, false);
-  }
-  if (yellowPin_ != activePin) {
-    writeOne(yellowPin_, false);
-  }
-  if (greenPin_ != activePin) {
-    writeOne(greenPin_, false);
-  }
 }
 
 void GpioLightDriver::writeOne(uint8_t pin, bool active) {

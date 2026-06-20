@@ -22,7 +22,7 @@ namespace {
 
 constexpr uint8_t BLE_KEY_SIZE = 16;
 constexpr uint8_t HID_COMMAND_FEATURE_REPORT_ID = 1;
-constexpr uint8_t HID_COMMAND_FEATURE_REPORT_SIZE = 32;
+constexpr uint8_t HID_COMMAND_FEATURE_REPORT_SIZE = 64;
 constexpr uint8_t HID_COMMAND_MAX_TEXT_SIZE = HID_COMMAND_FEATURE_REPORT_SIZE - 1;
 
 uint8_t hidGenericReportMap[] = {

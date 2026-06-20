@@ -22,6 +22,12 @@ class WeChatEventType(str, Enum):
     LISTENER_ERROR = "wechat-listener-error"
 
 
+class WeChatMessageCategory(str, Enum):
+    GROUP = "group"
+    FRIEND = "friend"
+    OTHER = "other"
+
+
 class Confidence(str, Enum):
     UNREAD_ONLY = "unread-only"
     VISIBLE_SUMMARY = "visible-summary"
@@ -39,6 +45,7 @@ class WeChatEvent:
     conversation: str = ""
     sender: str = ""
     summary: str = ""
+    message_category: str = ""
     matched_rule: str = ""
     confidence: str = Confidence.UNREAD_ONLY.value
     timestamp: str = ""

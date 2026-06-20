@@ -19,6 +19,7 @@ function New-WeChatPayload {
         [string]$Conversation = "",
         [string]$Sender = "",
         [string]$Summary = "",
+        [string]$MessageCategory = "",
         [string]$Confidence = "unread-only",
         [string]$Diagnostic = "",
         [string[]]$Capabilities = @()
@@ -31,11 +32,29 @@ function New-WeChatPayload {
         conversation = $Conversation
         sender = $Sender
         summary = $Summary
+        messageCategory = $MessageCategory
         confidence = $Confidence
         diagnostic = $Diagnostic
         capabilities = $Capabilities
         timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:sszzz")
     } | ConvertTo-Json -Compress
+}
+
+function Get-WeChatMessageCategory {
+    param(
+        [string]$Identifier = "",
+        [string]$Conversation = "",
+        [string]$Sender = ""
+    )
+
+    $searchable = "$Identifier $Conversation $Sender".ToLowerInvariant()
+    if ($searchable.Contains("@chatroom")) {
+        return "group"
+    }
+    if ($searchable.Contains("wxid_")) {
+        return "friend"
+    }
+    return "other"
 }
 
 function Get-WeChatProcess {
@@ -80,10 +99,11 @@ try {
     } | Select-Object -First 1
 
     if ($signal) {
+        $category = Get-WeChatMessageCategory -Conversation $title
         if ($signal -match "^\\s*(显示下一个未读会话|显示上一条未读会话|show next unread conversation|show previous unread conversation)\\s*$") {
-            New-WeChatPayload -Event "wechat-message" -Conversation $title -Summary "" -Confidence "unread-only" -Capabilities @("process-running", "ui-automation", "unread-navigation")
+            New-WeChatPayload -Event "wechat-message" -Conversation $title -Summary "" -MessageCategory $category -Confidence "unread-only" -Capabilities @("process-running", "ui-automation", "unread-navigation")
         } else {
-            New-WeChatPayload -Event "wechat-message" -Conversation $title -Summary $signal -Confidence "visible-summary" -Capabilities @("process-running", "ui-automation", "visible-summary")
+            New-WeChatPayload -Event "wechat-message" -Conversation $title -Summary $signal -MessageCategory $category -Confidence "visible-summary" -Capabilities @("process-running", "ui-automation", "visible-summary")
         }
     } else {
         New-WeChatPayload -Event "wechat-cleared" -Conversation $title -Confidence "conversation-title" -Capabilities @("process-running", "ui-automation", "conversation-title")

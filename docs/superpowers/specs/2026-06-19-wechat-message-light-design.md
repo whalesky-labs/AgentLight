@@ -13,14 +13,14 @@
 - 不读取完整聊天历史。
 - 不做微信机器人自动回复。
 - 不绕过微信安全机制。
-- 不改 ESP32-C3 固件命令协议，除非后续出现明确的硬件层需求。
+- ESP32-C3 固件继续保留旧单灯命令，并新增 `LANES:` 三路并发命令，用于群 / 好友 / 其他消息同时点亮。
 - 不在默认日志中保存消息正文、发送人或会话名。
 
 ## 分支边界
 
 `ai-wechat` 是独立微信功能分支，不承接原工具接入功能，也不保留原业务层并存逻辑。该分支只保留与硬件相关的通用能力：
 
-- ESP32-C3 固件接收 `GREEN`、`YELLOW_BLINK`、`RED_BLINK`、`OFF`、`STATUS` 等纯灯光命令。
+- ESP32-C3 固件接收 `GREEN`、`YELLOW_BLINK`、`RED_BLINK`、`OFF`、`STATUS` 等兼容命令，以及 `LANES:RED=...,YELLOW=...,GREEN=...` 三路并发命令。
 - `scripts/agentlight` 负责通过 USB Serial、系统蓝牙或 Wi-Fi HTTP 发送命令。
 
 该分支应移除或停用原业务入口、原 hooks、原配置和原生命周期事件。微信业务层只包含微信监听、微信事件归一化、微信规则和微信灯效状态机。
@@ -84,7 +84,7 @@ USB / BLE / HTTP
 ESP32-C3 红黄绿灯
 ```
 
-平台监听 helper 只负责观察本机微信信号，不决定最终灯效。归一化器产出统一事件模型。规则引擎判断消息优先级。灯效状态机负责状态转移、重复抑制、超时回绿和最终硬件命令选择。
+平台监听 helper 只负责观察本机微信信号，不直接调用硬件。归一化器产出统一事件模型。规则引擎判断消息类别：群消息、好友消息或其他消息。灯效状态机负责三路 lane 状态、重复抑制、已读清空和最终硬件命令选择。
 
 ## GitHub 开源项目调研结论
 
@@ -106,7 +106,7 @@ ESP32-C3 红黄绿灯
 
 - Windows：把 UI Automation 从兜底提升为与通知监听并列的核心采集路径。通知监听适合新消息触发，UI Automation 适合读取当前未读状态和可见摘要。
 - macOS：保留 Swift helper，但必须先做能力探测。若当前微信版本无法通过 Accessibility 读取消息内容，则只提供未读角标 / 窗口状态 / 通知可见文本级提醒，不承诺联系人、群或关键词规则一定可用。
-- 跨平台：消息正文读取必须是可选能力。默认验收以“收到微信消息后变灯”为核心，重要联系人 / 群 / 关键词规则以平台实际可观察信息为前提。
+- 跨平台：消息正文读取必须是可选能力。默认验收以“收到微信消息后按群 / 好友 / 其他分类变灯”为核心，分类以平台实际可观察信息为前提。
 
 ## 平台采集策略
 
@@ -119,7 +119,7 @@ macOS 没有稳定的官方 API 用来读取其他 App 的全部系统通知。A
 - 使用 Swift helper 调用 macOS Accessibility API。
 - 观察微信进程是否运行。
 - 观察微信 Dock 角标、窗口标题、会话列表可访问元素、未读标识和可见摘要。
-- 在可访问信息足够时识别普通未读、重要联系人、重要群、关键词和疑似 @我。
+- 在可访问信息足够时识别群消息、好友消息和其他消息。
 - 启动时输出当前微信版本下的能力探测结果，例如 `unread-only`、`visible-summary`、`conversation-title`、`message-content-unavailable`。
 
 辅助信号：
@@ -131,7 +131,7 @@ macOS 没有稳定的官方 API 用来读取其他 App 的全部系统通知。A
 
 - 首次运行必须检查 Accessibility 权限。
 - 权限缺失时输出明确诊断，不静默失败。
-- 如果微信版本或 UI 结构导致联系人、群名、摘要不可见，监听器仍应降级产出普通 `wechat-message`，并标记能力降级。macOS 端不能把完整消息内容读取作为硬性验收条件。
+- 如果微信版本或 UI 结构导致会话类别不可见，监听器仍应降级产出 `wechat-message`，并标记能力降级。macOS 端不能把完整消息内容读取作为硬性验收条件。
 
 ### Windows
 
@@ -209,10 +209,10 @@ Windows helper 可以先用 UI Automation 实现可运行闭环，再补通知�
 
 | 事件 | 含义 |
 | --- | --- |
-| `wechat-message` | 观察到普通微信新消息或未读状态。 |
-| `wechat-important` | 消息命中重要联系人、重要群、关键词或可见 @我 规则。 |
-| `wechat-muted` | 消息命中免打扰或忽略规则，不改变灯效。 |
-| `wechat-cleared` | 未读或提醒状态已清除，或超时策略触发回绿。 |
+| `wechat-message` | 观察到微信新消息或未读状态，并携带 `messageCategory=group|friend|other`。 |
+| `wechat-important` | 兼容旧事件，进入规则引擎后按普通 `wechat-message` 处理。 |
+| `wechat-muted` | 兼容旧事件，进入规则引擎后按普通 `wechat-message` 处理。 |
+| `wechat-cleared` | 未读或提醒状态已清除，三路灯全部关闭。 |
 | `wechat-offline` | 微信未运行或当前不可观察。 |
 | `wechat-listener-error` | 监听器异常，需要用户处理。 |
 
@@ -226,58 +226,58 @@ Windows helper 可以先用 UI Automation 实现可运行闭环，再补通知�
   "conversation": "",
   "sender": "",
   "summary": "",
+  "messageCategory": "group",
   "matchedRule": "",
   "confidence": "unread-only",
   "timestamp": "2026-06-19T12:00:00+08:00"
 }
 ```
 
-`conversation`、`sender`、`summary` 是敏感可选字段。默认只在内存中用于即时规则匹配，不持久化。
+`conversation`、`sender`、`summary` 是敏感可选字段。默认只在内存中用于即时类别判断，不持久化。
 
 ## 规则引擎
 
-规则引擎把归一化微信事件分类为灯效优先级。
+规则引擎把归一化微信事件分类为灯效类别。
 
 规则类型：
 
-- 重要联系人。
-- 重要群。
-- 关键词。
-- 可见 @我 标记。
-- 免打扰会话。
+- 群消息：`identifier`、`conversation` 或 `sender` 包含 `@chatroom`。
+- 好友消息：`identifier`、`conversation` 或 `sender` 包含 `wxid_`。
+- 其他消息：无法归入群或好友的微信系统号、服务号、邮箱提醒等。
 - 全局静默时段。
-- 仅能确认未读、但无法读取摘要的未知消息。
+- 仅能确认未读、但无法读取会话类别的未知消息，默认归为其他消息。
 
 优先级：
 
 1. 监听器错误。
-2. 重要消息。
-3. 普通未读消息。
-4. 免打扰消息。
-5. 清除状态。
-6. 离线状态。
+2. 清除状态。
+3. 离线状态。
+4. 群消息 lane。
+5. 好友消息 lane。
+6. 其他消息 lane。
 
-重要消息不能被后续普通消息降级。免打扰消息不改变当前灯效。
+群、好友、其他三类未读互不覆盖，可以同时点亮。已读清空会关闭全部 lane。
 
 ## 灯效状态机
 
-灯效状态机拥有提醒状态和硬件命令选择权。
+灯效状态机拥有三路 lane 状态和硬件命令选择权。
 
 | 状态 | 触发 | 灯效 |
 | --- | --- | --- |
-| `idle` | 没有活跃未读提醒 | `GREEN` |
-| `unread` | `wechat-message` | `YELLOW_BLINK` |
-| `important` | `wechat-important` | `RED_BLINK` |
-| `offline` | `wechat-offline` | `OFF` |
-| `error` | `wechat-listener-error` | `RED` |
+| `idle` | 没有活跃未读提醒 | `LANES:RED=OFF,YELLOW=OFF,GREEN=OFF` |
+| `wechat-unread` | 群消息 | `YELLOW=BLINK`，10 秒后 `YELLOW=BREATHE` |
+| `wechat-unread` | 好友消息 | `GREEN=BLINK`，10 秒后 `GREEN=BREATHE` |
+| `wechat-unread` | 其他消息 | `RED=BLINK`，10 秒后 `RED=BREATHE` |
+| `offline` | `wechat-offline` | `LANES:RED=OFF,YELLOW=OFF,GREEN=OFF` |
+| `error` | `wechat-listener-error` | `LANES:RED=STEADY,YELLOW=OFF,GREEN=OFF` |
 
 状态转移：
 
-- `idle` -> `unread`：收到 `wechat-message`。
-- `idle` -> `important`：收到 `wechat-important`。
-- `unread` -> `important`：收到 `wechat-important`。
-- `important` 收到后续普通消息时保持 `important`。
-- `unread` 或 `important` -> `idle`：收到 `wechat-cleared` 或提醒超时。
+- `idle` -> `wechat-unread`：收到任一类别 `wechat-message`。
+- 任一类别 lane `OFF` -> `BLINK`：收到该类别新消息。
+- 任一类别 lane `BLINK` -> `BREATHE`：默认 10 秒后仍未读。
+- 多个类别可并发保持 `BLINK` 或 `BREATHE`，最终命令始终是 `LANES:RED=...,YELLOW=...,GREEN=...`。
+- `wechat-unread` -> `idle`：收到 `wechat-cleared`。
 - 任意状态 -> `error`：收到 `wechat-listener-error`。
 - 任意非错误状态 -> `offline`：收到 `wechat-offline`。
 - `error` 只在监听器恢复健康观察后退出。
@@ -286,22 +286,26 @@ Windows helper 可以先用 UI Automation 实现可运行闭环，再补通知�
 
 | 事件 | 命令 |
 | --- | --- |
-| `wechat-message` | `YELLOW_BLINK` |
-| `wechat-important` | `RED_BLINK` |
-| `wechat-muted` | 不下发命令 |
-| `wechat-cleared` | `GREEN` |
-| `wechat-offline` | `OFF` |
-| `wechat-listener-error` | `RED` |
+| 群消息刚到达 | `LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF` |
+| 群消息仍未读 | `LANES:RED=OFF,YELLOW=BREATHE,GREEN=OFF` |
+| 好友消息刚到达 | `LANES:RED=OFF,YELLOW=OFF,GREEN=BLINK` |
+| 好友消息仍未读 | `LANES:RED=OFF,YELLOW=OFF,GREEN=BREATHE` |
+| 其他消息刚到达 | `LANES:RED=BLINK,YELLOW=OFF,GREEN=OFF` |
+| 其他消息仍未读 | `LANES:RED=BREATHE,YELLOW=OFF,GREEN=OFF` |
+| 多类消息同时未读 | `LANES:RED=...,YELLOW=...,GREEN=...` |
+| `wechat-cleared` | `LANES:RED=OFF,YELLOW=OFF,GREEN=OFF` |
+| `wechat-offline` | `LANES:RED=OFF,YELLOW=OFF,GREEN=OFF` |
+| `wechat-listener-error` | `LANES:RED=STEADY,YELLOW=OFF,GREEN=OFF` |
 
 ## 清除策略
 
-系统必须有确定的回绿策略。
+系统必须有确定的清灯策略。
 
 支持模式：
 
-- `timeout`：超过配置秒数后回到 `GREEN`。
-- `unread-cleared`：监听器能观察到微信未读状态消失时回到 `GREEN`。
-- `timeout-or-unread-cleared`：两者谁先发生就回到 `GREEN`。
+- `timeout`：超过配置秒数后关闭三路灯。
+- `unread-cleared`：监听器能观察到微信未读状态消失时关闭三路灯。
+- `timeout-or-unread-cleared`：两者谁先发生就关闭三路灯。
 
 默认配置：
 
@@ -312,7 +316,7 @@ Windows helper 可以先用 UI Automation 实现可运行闭环，再补通知�
 }
 ```
 
-如果当前平台或权限状态无法可靠观察未读清除，监听器应报告能力降级，灯效状态机只依赖超时回绿。
+如果当前平台或权限状态无法可靠观察未读清除，监听器应报告能力降级，灯效状态机只依赖超时清灯。
 
 ## 配置
 
@@ -333,10 +337,6 @@ Windows helper 可以先用 UI Automation 实现可运行闭环，再补通知�
     "timeoutSeconds": 300
   },
   "rules": {
-    "importantContacts": [],
-    "importantGroups": [],
-    "keywords": [],
-    "mutedConversations": [],
     "quietHours": []
   },
   "privacy": {
@@ -423,9 +423,9 @@ config/
 日志示例：
 
 ```text
-event=wechat-message platform=macos confidence=unread-only state=unread command=YELLOW_BLINK
-event=wechat-important platform=windows matchedRule=importantContacts state=important command=RED_BLINK
-event=wechat-cleared platform=macos state=idle command=GREEN
+event=wechat-message platform=macos confidence=notification-center category=group state=wechat-unread command=LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF
+event=wechat-message platform=windows confidence=visible-summary category=friend state=wechat-unread command=LANES:RED=OFF,YELLOW=OFF,GREEN=BLINK
+event=wechat-cleared platform=macos state=idle command=LANES:RED=OFF,YELLOW=OFF,GREEN=OFF
 ```
 
 ## 诊断能力
@@ -459,32 +459,31 @@ scripts/agentlight-wechat once
 
 - JSONL helper 输出解析。
 - 微信事件归一化。
-- 规则匹配和优先级。
+- 消息类别分类。
 - 灯效状态机转移。
-- 清除策略和超时回绿。
+- 清除策略和超时清灯。
 - 隐私日志不包含 `conversation`、`sender`、`summary`。
 
 集成测试：
 
-- 使用 fake helper 输出 `wechat-message`、`wechat-important`、`wechat-muted`、`wechat-cleared`、`wechat-offline`、`wechat-listener-error`。
+- 使用 fake helper 输出群消息、好友消息、其他消息、`wechat-cleared`、`wechat-offline`、`wechat-listener-error`。
 - 使用 fake hardware command runner 验证下发命令，而不是要求真实 ESP32-C3。
-- 验证 `scripts/agentlight-wechat once` 能消费一条 helper 事件并产生预期状态。
+- 验证 `scripts/agentlight-wechat once` 能消费 helper 的多行类别事件并产生预期三路状态。
 - 验证 `doctor` 在权限缺失、微信未运行、helper 不可启动时输出明确诊断。
 
 手工验收：
 
-- macOS 真机打开微信，收到消息后灯变黄闪；权限撤销时 `doctor` 给出 Accessibility 诊断。
-- Windows 真机打开微信，收到消息后灯变黄闪；通知授权撤销或 UI Automation 不可用时 `doctor` 给出诊断。
-- 两个平台在不能读取联系人、群名或摘要时，普通未读提醒仍可工作。
+- macOS 真机打开微信，群消息黄灯闪，好友消息绿灯闪，其他消息红灯闪；权限撤销时 `doctor` 给出 Accessibility 诊断。
+- Windows 真机打开微信，群消息黄灯闪，好友消息绿灯闪，其他消息红灯闪；UI Automation 不可用时 `doctor` 给出诊断。
+- 两个平台在不能读取会话类别时，未读提醒仍按其他消息红灯工作。
 
 ## 验收标准
 
-- macOS 微信收到普通桌面消息时，灯变为黄灯闪烁。
-- Windows 微信收到普通桌面消息时，灯变为黄灯闪烁。
-- 平台可观察到联系人、群名、摘要或 @我 信息时，命中重要联系人、重要群、关键词或可见 @我 后，灯变为红灯闪烁。
-- 重要提醒不会被后续普通消息降级。
-- 免打扰会话不改变当前灯效。
-- 根据配置的清除策略回到绿灯。
+- macOS 微信收到群消息时黄灯闪烁，好友消息时绿灯闪烁，其他消息时红灯闪烁。
+- Windows 微信收到群消息时黄灯闪烁，好友消息时绿灯闪烁，其他消息时红灯闪烁。
+- 群、好友、其他三类状态可以同时点亮，互不覆盖。
+- 新消息先闪烁，默认 10 秒后仍未读则切换为对应呼吸灯。
+- 已读或未读清空后关闭三路灯。
 - 微信退出或不可观察时进入 `OFF`。
 - 监听器异常时红灯常亮，并输出明确诊断。
 - USB、BLE、HTTP 三种硬件通道继续通过 `scripts/agentlight` 工作。

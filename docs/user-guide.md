@@ -65,9 +65,10 @@ pio device monitor
 
 ```bash
 scripts/agentlight status
-scripts/agentlight green
-scripts/agentlight yellow-blink
-scripts/agentlight red-blink
+scripts/agentlight wechat-group-new
+scripts/agentlight wechat-friend-new
+scripts/agentlight wechat-other-new
+scripts/agentlight lanes:red=breathe,yellow=breathe,green=breathe
 scripts/agentlight all
 ```
 
@@ -79,7 +80,7 @@ scripts/agentlight all
 
 ```bash
 AGENTLIGHT_TRANSPORT=http AGENTLIGHT_BASE_URL=http://192.168.4.1 scripts/agentlight status
-AGENTLIGHT_TRANSPORT=http AGENTLIGHT_BASE_URL=http://192.168.4.1 scripts/agentlight yellow-blink
+AGENTLIGHT_TRANSPORT=http AGENTLIGHT_BASE_URL=http://192.168.4.1 scripts/agentlight wechat-group-new
 ```
 
 ### BLE
@@ -88,7 +89,7 @@ BLE 只使用系统已经连接的设备，不主动扫描、连接或重连。
 
 ```bash
 AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight status
-AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight yellow-blink
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight wechat-group-new
 ```
 
 如果系统蓝牙没有连接 `AGENTLIGHT`，命令会返回 `SKIP BLE_NOT_CONNECTED`。需要重新连接时，长按 ESP32-C3 板载 `BOOT` 键 2 秒打开 60 秒手动连接窗口，再从系统蓝牙里点击连接。
@@ -136,23 +137,24 @@ scripts/agentlight-wechat run
 
 ## 事件和灯效
 
-| 微信状态 / 事件 | 灯效 | 含义 |
+| 微信消息类别 / 状态 | 灯效 lane | 含义 |
 | --- | --- | --- |
-| 无未读消息 / 已读清空 | `OFF` | 全部熄灭 |
-| 普通新消息刚到达 | `YELLOW_BLINK` | 黄灯闪烁，提示有新消息 |
-| 普通消息仍未读 | `YELLOW_BREATHE` | 黄灯呼吸，表示还有未读消息 |
-| 重要新消息刚到达 | `RED_BLINK` | 红灯闪烁，提示重要消息 |
-| 重要消息仍未读 | `RED_BREATHE` | 红灯呼吸，表示重要消息还未处理 |
-| 免打扰新消息刚到达 | `GREEN_BLINK` | 绿灯闪烁，低优先级提示 |
-| 免打扰消息仍未读 | `GREEN_BREATHE` | 绿灯呼吸，表示只有免打扰未读 |
-| 微信未运行 / 离线 | `OFF` | 全部熄灭 |
-| 微信监听异常 / 权限异常 | `RED` | 红灯常亮，表示服务异常 |
+| 无未读消息 / 已读清空 | `LANES:RED=OFF,YELLOW=OFF,GREEN=OFF` | 全部熄灭 |
+| 群消息刚到达 | `LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF` | 黄灯闪烁 |
+| 群消息仍未读 | `LANES:RED=OFF,YELLOW=BREATHE,GREEN=OFF` | 黄灯呼吸 |
+| 好友消息刚到达 | `LANES:RED=OFF,YELLOW=OFF,GREEN=BLINK` | 绿灯闪烁 |
+| 好友消息仍未读 | `LANES:RED=OFF,YELLOW=OFF,GREEN=BREATHE` | 绿灯呼吸 |
+| 其他消息刚到达 | `LANES:RED=BLINK,YELLOW=OFF,GREEN=OFF` | 红灯闪烁 |
+| 其他消息仍未读 | `LANES:RED=BREATHE,YELLOW=OFF,GREEN=OFF` | 红灯呼吸 |
+| 多类消息同时未读 | `LANES:RED=...,YELLOW=...,GREEN=...` | 三路可同时点亮，互不覆盖 |
+| 微信未运行 / 离线 | `LANES:RED=OFF,YELLOW=OFF,GREEN=OFF` | 全部熄灭 |
+| 微信监听异常 / 权限异常 | `LANES:RED=STEADY,YELLOW=OFF,GREEN=OFF` | 红灯常亮，表示服务异常 |
 
-默认闪烁持续 `10` 秒；10 秒后仍未读，会切换到对应呼吸灯效。如果在闪烁或呼吸期间已读，会立即 `OFF`。呼吸状态会每 `30` 秒重发一次当前灯效，避免硬件被手动命令改乱后长期停在错误状态。macOS 只能读到 `unread-only` 弱信号时，会每 `30` 秒重新闪烁一次，再回到呼吸。默认清除策略是 `timeout-or-unread-cleared`，300 秒内如果监听器能观察到未读消失则熄灯，否则超时熄灯。
+默认闪烁持续 `10` 秒；10 秒后仍未读，会切换到对应呼吸灯效。如果在闪烁或呼吸期间已读，会立即关闭三路灯。呼吸状态会每 `30` 秒重发一次当前三路灯效，避免硬件被手动命令改乱后长期停在错误状态。macOS 只能读到 `unread-only` 弱信号时，无法确定具体会话，默认按其他消息走红灯。默认清除策略是 `timeout-or-unread-cleared`，300 秒内如果监听器能观察到未读消失则熄灯，否则超时熄灯。
 
 ## macOS 微信监听
 
-macOS helper 优先读取系统通知中心里的 `com.tencent.xinwechat` 最近通知元数据，用通知里的 `identifier`、`chatname`、`body` 驱动重要联系人、重要群、关键词和免打扰规则；Accessibility API 只负责确认微信进程和当前未读状态。
+macOS helper 优先读取系统通知中心里 60 秒内的新鲜 `com.tencent.xinwechat` 通知元数据；如果微信 UI 仍显示有未读，但新鲜通知已经被系统归档，会在最近 6 小时通知历史中按类别恢复当前未读灯效。分类规则是：包含 `@chatroom` 归为群消息，包含 `wxid_` 归为好友消息，其他来源归为其他消息。同一次轮询可输出群、好友、其他多条事件，服务会合成三路并发灯效。Accessibility API 负责确认微信进程和当前未读状态。
 
 需要在系统设置中给运行环境授予辅助功能权限。权限缺失时：
 
@@ -160,9 +162,9 @@ macOS helper 优先读取系统通知中心里的 `com.tencent.xinwechat` 最近
 scripts/agentlight-wechat doctor
 ```
 
-会输出 Accessibility 诊断。微信通知隐藏内容或通知中心没有可用记录时，服务会降级为 `unread-only` 普通未读提醒，此时只能输出黄色灯效。
+会输出 Accessibility 诊断。微信通知隐藏内容或通知中心没有可用记录时，服务会降级为 `unread-only` 未读提醒，并按其他消息走红灯。
 
-配置重要 / 免打扰规则时，可以使用通知中心暴露出来的 `wxid_...`、`...@chatroom` 或可见摘要关键词。普通日志不会输出联系人、会话名或消息摘要；日志中的 `confidence=notification-center` 表示本次事件可以参与规则分类，`confidence=unread-only` 表示已经降级为只能判断未读。
+普通日志不会输出联系人、会话名或消息摘要；日志中的 `category=group|friend|other` 表示本次事件的灯光分类，`confidence=notification-center` 表示来自新鲜通知中心记录，`confidence=unread-only` 表示已经降级为只能判断未读。
 
 ## Windows 微信监听
 
@@ -227,7 +229,7 @@ from pathlib import Path
 
 config = json.loads(Path("config/wechat-agentlight.example.json").read_text())
 config["sendToHardware"] = False
-config["helperCommand"] = ["scripts/agentlight-wechat-fake-helper", "message"]
+config["helperCommand"] = ["scripts/agentlight-wechat-fake-helper", "group"]
 Path("/tmp/wechat-agentlight-test.json").write_text(json.dumps(config))
 PY
 
@@ -238,8 +240,9 @@ scripts/agentlight-wechat once --config /tmp/wechat-agentlight-test.json
 
 ```text
 event=wechat-message
-state=unread
-command=YELLOW_BLINK
+state=wechat-unread
+category=group
+command=LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF
 ```
 
 ## 常见问题
@@ -249,11 +252,11 @@ command=YELLOW_BLINK
 - 检查 `3V3` 是否接到小板公共 `+`，`GND` 是否接到小板 `-`。
 - 检查 GPIO 到每一路灯珠控制脚之间是否串联了 220R。
 - 用 `scripts/agentlight all` 进行全亮自检。
-- 用 `scripts/agentlight green`、`yellow-blink`、`red-blink` 分别测试三路。
+- 用 `scripts/agentlight wechat-group-new`、`wechat-friend-new`、`wechat-other-new` 分别测试三类消息灯效。
 
 ### 微信收到消息但灯没有变化
 
-- 先运行 `scripts/agentlight yellow-blink`，确认硬件通道可用。
+- 先运行 `scripts/agentlight wechat-group-new`、`wechat-friend-new`、`wechat-other-new`，确认硬件三路通道可用。
 - 运行 `scripts/agentlight-wechat doctor`，查看微信进程、权限和 helper 状态。
 - 查看配置中的 `sendToHardware` 是否为 `true`。
 - macOS 检查 Accessibility 权限。
@@ -261,7 +264,7 @@ command=YELLOW_BLINK
 
 ### 日志里看不到消息内容
 
-这是默认隐私策略。普通日志只记录事件类型、平台、命中规则、状态和硬件命令，不保存消息正文、发送人或会话名。
+这是默认隐私策略。普通日志只记录事件类型、平台、消息类别、状态和硬件命令，不保存消息正文、发送人或会话名。
 
 ## 项目边界
 

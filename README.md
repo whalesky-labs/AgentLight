@@ -16,7 +16,7 @@
 
 # AgentLight
 
-AgentLight 是一个基于 ESP32-C3 的个人微信桌面消息指示灯项目。电脑端服务监听 macOS / Windows 桌面微信的可观察消息信号，将普通消息、重要消息、清除、离线和监听异常映射为红 / 黄 / 绿灯效，再通过 USB、系统蓝牙或 Wi-Fi HTTP 下发到硬件。
+AgentLight 是一个基于 ESP32-C3 的个人微信桌面消息指示灯项目。电脑端服务监听 macOS / Windows 桌面微信的可观察消息信号，将群消息、好友消息、其他消息、已读清空、离线和监听异常映射为红 / 黄 / 绿三路并发灯效，再通过 USB、系统蓝牙或 Wi-Fi HTTP 下发到硬件。
 
 当前仓库包含：
 
@@ -54,29 +54,31 @@ AgentLight 是一个基于 ESP32-C3 的个人微信桌面消息指示灯项目�
 | `GREEN` | 绿灯亮 |
 | `YELLOW_BLINK` | 黄灯闪烁 |
 | `RED_BLINK` | 红灯闪烁 |
+| `LANES:RED=OFF,YELLOW=BLINK,GREEN=BREATHE` | 红 / 黄 / 绿三路独立效果 |
 | `RED` | 红灯常亮 |
 | `OFF` | 全部熄灭 |
 | `ALL` | 红 / 黄 / 绿三路同时常亮 |
 | `PING` | 返回 `PONG` |
 | `STATUS` | 返回当前灯光状态 |
 
-完整命令还包括 `GREEN_BREATHE`、`GREEN_BLINK`、`YELLOW`、`YELLOW_BREATHE`、`RED_BREATHE`、`ALL_BLINK`、`ALL_BREATHE` 和 `HELP`。
+完整命令还包括 `GREEN_BREATHE`、`GREEN_BLINK`、`YELLOW`、`YELLOW_BREATHE`、`RED_BREATHE`、`ALL_BLINK`、`ALL_BREATHE`、`LANES:RED=OFF,YELLOW=BLINK,GREEN=BREATHE` 和 `HELP`。
 
 ## 硬件命令桥
 
 ```bash
 scripts/agentlight status
 scripts/agentlight green
-scripts/agentlight yellow-blink
-scripts/agentlight red-blink
+scripts/agentlight wechat-group-new
+scripts/agentlight wechat-friend-new
+scripts/agentlight wechat-other-new
 ```
 
 默认 `AGENTLIGHT_TRANSPORT=auto`：检测到 USB 串口时走 USB；没有 USB 串口时走系统蓝牙。也可以显式指定：
 
 ```bash
 AGENTLIGHT_TRANSPORT=usb scripts/agentlight status
-AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight yellow-blink
-AGENTLIGHT_TRANSPORT=http AGENTLIGHT_BASE_URL=http://192.168.4.1 scripts/agentlight red-blink
+AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight wechat-group-new
+AGENTLIGHT_TRANSPORT=http AGENTLIGHT_BASE_URL=http://192.168.4.1 scripts/agentlight wechat-friend-new
 ```
 
 ## 微信消息服务
@@ -100,7 +102,7 @@ from pathlib import Path
 
 config = json.loads(Path("config/wechat-agentlight.example.json").read_text())
 config["sendToHardware"] = False
-config["helperCommand"] = ["scripts/agentlight-wechat-fake-helper", "message"]
+config["helperCommand"] = ["scripts/agentlight-wechat-fake-helper", "group"]
 Path("/tmp/wechat-agentlight-test.json").write_text(json.dumps(config))
 PY
 
@@ -109,25 +111,26 @@ scripts/agentlight-wechat once --config /tmp/wechat-agentlight-test.json
 
 事件到灯效的默认映射：
 
-| 微信状态 / 事件 | 灯效 | 含义 |
+| 微信消息类别 / 状态 | 灯效 lane | 含义 |
 | --- | --- | --- |
-| 无未读消息 / 已读清空 | `OFF` | 全部熄灭 |
-| 普通新消息刚到达 | `YELLOW_BLINK` | 黄灯闪烁，提示有新消息 |
-| 普通消息仍未读 | `YELLOW_BREATHE` | 黄灯呼吸，表示还有未读消息 |
-| 重要新消息刚到达 | `RED_BLINK` | 红灯闪烁，提示重要消息 |
-| 重要消息仍未读 | `RED_BREATHE` | 红灯呼吸，表示重要消息还未处理 |
-| 免打扰新消息刚到达 | `GREEN_BLINK` | 绿灯闪烁，低优先级提示 |
-| 免打扰消息仍未读 | `GREEN_BREATHE` | 绿灯呼吸，表示只有免打扰未读 |
-| 微信未运行 / 离线 | `OFF` | 全部熄灭 |
-| 微信监听异常 / 权限异常 | `RED` | 红灯常亮，表示服务异常 |
+| 无未读消息 / 已读清空 | `LANES:RED=OFF,YELLOW=OFF,GREEN=OFF` | 全部熄灭 |
+| 群消息刚到达 | `LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF` | 黄灯闪烁 |
+| 群消息仍未读 | `LANES:RED=OFF,YELLOW=BREATHE,GREEN=OFF` | 黄灯呼吸 |
+| 好友消息刚到达 | `LANES:RED=OFF,YELLOW=OFF,GREEN=BLINK` | 绿灯闪烁 |
+| 好友消息仍未读 | `LANES:RED=OFF,YELLOW=OFF,GREEN=BREATHE` | 绿灯呼吸 |
+| 其他消息刚到达 | `LANES:RED=BLINK,YELLOW=OFF,GREEN=OFF` | 红灯闪烁 |
+| 其他消息仍未读 | `LANES:RED=BREATHE,YELLOW=OFF,GREEN=OFF` | 红灯呼吸 |
+| 多类消息同时未读 | `LANES:RED=...,YELLOW=...,GREEN=...` | 三路可同时点亮，互不覆盖 |
+| 微信未运行 / 离线 | `LANES:RED=OFF,YELLOW=OFF,GREEN=OFF` | 全部熄灭 |
+| 微信监听异常 / 权限异常 | `LANES:RED=STEADY,YELLOW=OFF,GREEN=OFF` | 红灯常亮，表示服务异常 |
 
-默认闪烁持续 `10` 秒；10 秒后仍未读，会切换到对应呼吸灯效。已读或未读清空会立即 `OFF`。呼吸状态会每 `30` 秒重发一次当前灯效，避免硬件被手动命令改乱后长期停在错误状态。macOS 只能读到 `unread-only` 弱信号时，会每 `30` 秒重新闪烁一次，再回到呼吸。
+默认闪烁持续 `10` 秒；10 秒后仍未读，会切换到对应呼吸灯效。已读或未读清空会立即关闭三路灯。呼吸状态会每 `30` 秒重发一次当前三路灯效，避免硬件被手动命令改乱后长期停在错误状态。macOS 只能读到 `unread-only` 弱信号时，无法确定具体会话，默认按“其他消息”走红灯。
 
 ## 平台能力
 
-macOS helper 优先读取系统通知中心里的 `com.tencent.xinwechat` 最近通知元数据，用通知里的 `identifier`、`chatname`、`body` 驱动重要联系人、重要群、关键词和免打扰规则；Accessibility API 只负责确认微信进程和当前未读状态。微信通知隐藏内容或通知中心没有可用记录时，会降级为 `unread-only` 普通未读提醒，此时只能输出黄色灯效。
+macOS helper 优先读取系统通知中心里 60 秒内的新鲜 `com.tencent.xinwechat` 通知元数据；如果微信 UI 仍显示有未读，但新鲜通知已经被系统归档，会在最近 6 小时通知历史中按类别恢复当前未读灯效。分类规则是：包含 `@chatroom` 归为群消息，包含 `wxid_` 归为好友消息，其他来源归为其他消息。同一次轮询可输出群、好友、其他多条事件，服务会合成三路并发灯效。通知元数据完全不可用时，会降级为 `confidence=unread-only`，默认按其他消息点亮红灯。
 
-配置重要 / 免打扰规则时，可以使用通知中心暴露出来的 `wxid_...`、`...@chatroom` 或可见摘要关键词。普通日志不会输出联系人、会话名或消息摘要；日志中的 `confidence=notification-center` 表示本次事件可以参与规则分类，`confidence=unread-only` 表示已经降级为只能判断未读。
+普通日志不会输出联系人、会话名或消息摘要；日志中的 `category=group|friend|other` 表示本次事件的灯光分类，`confidence=notification-center` 表示来自新鲜通知中心记录，`confidence=unread-only` 表示已经降级为只能判断未读。
 
 Windows 使用 helper 通过 UI Automation 观察微信窗口的可见未读状态和可见摘要；权限或 UI 结构不可用时会输出诊断。
 
@@ -145,8 +148,9 @@ pio device monitor
 
 ```bash
 scripts/agentlight status
-scripts/agentlight yellow-blink
-scripts/agentlight red-blink
+scripts/agentlight wechat-group-new
+scripts/agentlight wechat-friend-new
+scripts/agentlight wechat-other-new
 scripts/agentlight green
 ```
 

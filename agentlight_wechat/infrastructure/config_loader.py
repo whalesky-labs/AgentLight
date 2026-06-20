@@ -82,10 +82,6 @@ def _light(raw: Any) -> LightConfig:
 def _rules(raw: Any) -> RuleConfig:
     raw = _object(raw, "rules")
     return RuleConfig(
-        important_contacts=_string_tuple(raw.get("importantContacts", ()), "importantContacts"),
-        important_groups=_string_tuple(raw.get("importantGroups", ()), "importantGroups"),
-        keywords=_string_tuple(raw.get("keywords", ()), "keywords"),
-        muted_conversations=_string_tuple(raw.get("mutedConversations", ()), "mutedConversations"),
         quiet_hours=_string_tuple(raw.get("quietHours", ()), "quietHours"),
     )
 

@@ -34,6 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--conversation", default="")
     parser.add_argument("--sender", default="")
     parser.add_argument("--summary", default="")
+    parser.add_argument("--category", choices=["group", "friend", "other"], default="")
     parser.add_argument("--confidence", default="unread-only")
     parser.add_argument("--diagnostic", default="")
     return parser.parse_args()
@@ -49,6 +50,7 @@ def main() -> int:
         "conversation": args.conversation,
         "sender": args.sender,
         "summary": args.summary,
+        "messageCategory": args.category,
         "confidence": args.confidence,
         "diagnostic": args.diagnostic,
         "timestamp": datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z"),

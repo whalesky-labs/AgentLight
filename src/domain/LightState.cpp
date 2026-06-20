@@ -40,6 +40,8 @@ const char* toText(LightState state) {
 
 const char* toText(LightEffect effect) {
   switch (effect) {
+    case LightEffect::Off:
+      return "OFF";
     case LightEffect::Blink:
       return "BLINK";
     case LightEffect::Breathe:
@@ -48,6 +50,38 @@ const char* toText(LightEffect effect) {
     default:
       return "STEADY";
   }
+}
+
+String toText(const LightChannels& channels) {
+  return String("LANES:RED=") + toText(channels.red) + ",YELLOW=" + toText(channels.yellow) + ",GREEN=" +
+         toText(channels.green);
+}
+
+LightChannels channelsFromPattern(const LightPattern& pattern) {
+  const LightEffect effect = pattern.state == LightState::Off ? LightEffect::Off : pattern.effect;
+  LightChannels channels = {LightEffect::Off, LightEffect::Off, LightEffect::Off};
+
+  switch (pattern.state) {
+    case LightState::Red:
+      channels.red = effect;
+      break;
+    case LightState::Yellow:
+      channels.yellow = effect;
+      break;
+    case LightState::Green:
+      channels.green = effect;
+      break;
+    case LightState::All:
+      channels.red = effect;
+      channels.yellow = effect;
+      channels.green = effect;
+      break;
+    case LightState::Off:
+    default:
+      break;
+  }
+
+  return channels;
 }
 
 String toText(const LightPattern& pattern) {
@@ -60,6 +94,73 @@ String toText(const LightPattern& pattern) {
   }
 
   return String(toText(pattern.state)) + "_" + toText(pattern.effect);
+}
+
+bool tryParseLightEffect(const String& value, LightEffect& effect) {
+  const String normalized = normalize(value);
+
+  if (normalized == "OFF") {
+    effect = LightEffect::Off;
+    return true;
+  }
+  if (normalized == "STEADY" || normalized == "ON") {
+    effect = LightEffect::Steady;
+    return true;
+  }
+  if (normalized == "BLINK") {
+    effect = LightEffect::Blink;
+    return true;
+  }
+  if (normalized == "BREATHE") {
+    effect = LightEffect::Breathe;
+    return true;
+  }
+
+  return false;
+}
+
+bool tryParseLightChannels(const String& value, LightChannels& channels) {
+  const String normalized = normalize(value);
+  String payload;
+  if (normalized.startsWith("LANES:")) {
+    payload = normalized.substring(6);
+  } else if (normalized.startsWith("CHANNELS:")) {
+    payload = normalized.substring(9);
+  } else {
+    return false;
+  }
+
+  LightChannels next = {LightEffect::Off, LightEffect::Off, LightEffect::Off};
+  while (payload.length() > 0) {
+    const int comma = payload.indexOf(',');
+    const String part = comma >= 0 ? payload.substring(0, comma) : payload;
+    payload = comma >= 0 ? payload.substring(comma + 1) : "";
+
+    const int equals = part.indexOf('=');
+    if (equals <= 0) {
+      return false;
+    }
+
+    const String key = part.substring(0, equals);
+    const String effectValue = part.substring(equals + 1);
+    LightEffect effect = LightEffect::Off;
+    if (!tryParseLightEffect(effectValue, effect)) {
+      return false;
+    }
+
+    if (key == "RED") {
+      next.red = effect;
+    } else if (key == "YELLOW" || key == "AMBER") {
+      next.yellow = effect;
+    } else if (key == "GREEN") {
+      next.green = effect;
+    } else {
+      return false;
+    }
+  }
+
+  channels = next;
+  return true;
 }
 
 bool tryParseLightPattern(const String& value, LightPattern& pattern) {

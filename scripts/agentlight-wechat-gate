@@ -18,23 +18,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from agentlight_wechat.domain.events import WeChatEvent, WeChatEventType
+from agentlight_wechat.domain.events import WeChatEvent, WeChatEventType, WeChatMessageCategory
 from agentlight_wechat.domain.light_state import WeChatLightStateMachine
-
-
-COMMANDS = {
-    WeChatEventType.MESSAGE: "yellow-blink",
-    WeChatEventType.IMPORTANT: "red-blink",
-    WeChatEventType.MUTED: "green-blink",
-    WeChatEventType.CLEARED: "off",
-    WeChatEventType.OFFLINE: "off",
-    WeChatEventType.LISTENER_ERROR: "red",
-}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Map one WeChat event to an AgentLight command.")
     parser.add_argument("event", choices=[event.value for event in WeChatEventType])
+    parser.add_argument("--category", choices=[item.value for item in WeChatMessageCategory], default="other")
     parser.add_argument("--send", action="store_true")
     return parser.parse_args()
 
@@ -43,8 +34,8 @@ def main() -> int:
     args = parse_args()
     event_type = WeChatEventType(args.event)
     machine = WeChatLightStateMachine()
-    transition = machine.apply(WeChatEvent(event=event_type, platform=sys.platform))
-    command = transition.command or COMMANDS.get(event_type, "")
+    transition = machine.apply(WeChatEvent(event=event_type, platform=sys.platform, message_category=args.category))
+    command = transition.command
     if not command:
         print(f"SKIP event={event_type.value}")
         return 0

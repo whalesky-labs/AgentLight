@@ -10,60 +10,49 @@
 from __future__ import annotations
 
 from agentlight_wechat.domain.config import RuleConfig
-from agentlight_wechat.domain.events import WeChatEvent, WeChatEventType
+from agentlight_wechat.domain.events import WeChatEvent, WeChatEventType, WeChatMessageCategory
 
 
 def classify_event(event: WeChatEvent, rules: RuleConfig) -> WeChatEvent:
-    if event.event != WeChatEventType.MESSAGE:
+    del rules
+    if event.event not in (WeChatEventType.MESSAGE, WeChatEventType.IMPORTANT, WeChatEventType.MUTED):
         return event
 
-    muted_rule = _match_any(event.conversation, rules.muted_conversations)
-    if muted_rule:
-        return _replace_event(event, WeChatEventType.MUTED, f"muted:{muted_rule}")
-
-    contact_rule = _match_any(event.sender, rules.important_contacts)
-    if contact_rule:
-        return _replace_event(event, WeChatEventType.IMPORTANT, f"importantContacts:{contact_rule}")
-
-    group_rule = _match_any(event.conversation, rules.important_groups)
-    if group_rule:
-        return _replace_event(event, WeChatEventType.IMPORTANT, f"importantGroups:{group_rule}")
-
-    keyword_rule = _match_any(event.summary, rules.keywords)
-    if keyword_rule:
-        return _replace_event(event, WeChatEventType.IMPORTANT, f"keywords:{keyword_rule}")
-
-    if _looks_like_mention(event.summary):
-        return _replace_event(event, WeChatEventType.IMPORTANT, "mention")
-
-    return event
+    category = _classify_message_category(event)
+    return _replace_event(event, category, f"category:{category}")
 
 
-def _match_any(value: str, candidates: tuple[str, ...]) -> str:
-    normalized = value.casefold()
-    if not normalized:
-        return ""
-    for candidate in candidates:
-        candidate = candidate.strip()
-        if candidate and candidate.casefold() in normalized:
-            return candidate
-    return ""
+def _classify_message_category(event: WeChatEvent) -> str:
+    if event.message_category in {item.value for item in WeChatMessageCategory}:
+        return event.message_category
+
+    searchable = " ".join(
+        item
+        for item in (
+            event.identifier,
+            event.conversation,
+            event.sender,
+        )
+        if item
+    ).casefold()
+
+    if "@chatroom" in searchable:
+        return WeChatMessageCategory.GROUP.value
+    if "wxid_" in searchable:
+        return WeChatMessageCategory.FRIEND.value
+    return WeChatMessageCategory.OTHER.value
 
 
-def _looks_like_mention(value: str) -> bool:
-    normalized = value.casefold()
-    return "@我" in value or "[有人@我]" in value or "mentioned you" in normalized
-
-
-def _replace_event(event: WeChatEvent, event_type: WeChatEventType, matched_rule: str) -> WeChatEvent:
+def _replace_event(event: WeChatEvent, category: str, matched_rule: str) -> WeChatEvent:
     return WeChatEvent(
-        event=event_type,
+        event=WeChatEventType.MESSAGE,
         platform=event.platform,
         source=event.source,
         identifier=event.identifier,
         conversation=event.conversation,
         sender=event.sender,
         summary=event.summary,
+        message_category=category,
         matched_rule=matched_rule,
         confidence=event.confidence,
         timestamp=event.timestamp,

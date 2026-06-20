@@ -19,15 +19,13 @@ class GpioLightDriver : public LightOutput {
   GpioLightDriver(uint8_t redPin, uint8_t yellowPin, uint8_t greenPin, bool activeLow);
 
   void begin();
-  void setPattern(const LightPattern& pattern) override;
+  void setChannels(const LightChannels& channels) override;
   void tick(unsigned long nowMs) override;
 
  private:
-  uint8_t pinFor(LightState state) const;
+  void writeChannel(uint8_t pin, LightEffect effect, unsigned long nowMs);
   void writeAllOff();
   void writeAll(bool active);
-  void writeAllPwm(uint8_t brightness);
-  void writeInactiveOff(uint8_t activePin);
   void releasePwm(uint8_t pin);
   void writeOne(uint8_t pin, bool active);
   void writeOnePwm(uint8_t pin, uint8_t brightness);
@@ -36,7 +34,7 @@ class GpioLightDriver : public LightOutput {
   uint8_t yellowPin_;
   uint8_t greenPin_;
   bool activeLow_;
-  LightPattern pattern_;
+  LightChannels channels_;
 };
 
 }  // namespace agentlight

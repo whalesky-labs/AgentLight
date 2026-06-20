@@ -44,6 +44,10 @@ States:
   all
   all-blink
   all-breathe
+  lanes:red=off,yellow=blink,green=breathe
+  wechat-group-new
+  wechat-friend-new
+  wechat-other-new
 
 Environment:
   AGENTLIGHT_TRANSPORT  auto, usb, ble-system, or http; defaults to auto
@@ -65,6 +69,30 @@ normalize_state() {
   value="$(printf '%s' "$value" | tr '[:lower:]' '[:upper:]')"
 
   case "$value" in
+    LANES:*|CHANNELS:*)
+      printf '%s\n' "$value"
+      ;;
+    WECHAT_GROUP_NEW|GROUP_NEW)
+      printf 'LANES:RED=OFF,YELLOW=BLINK,GREEN=OFF\n'
+      ;;
+    WECHAT_GROUP_UNREAD|GROUP_UNREAD)
+      printf 'LANES:RED=OFF,YELLOW=BREATHE,GREEN=OFF\n'
+      ;;
+    WECHAT_FRIEND_NEW|FRIEND_NEW)
+      printf 'LANES:RED=OFF,YELLOW=OFF,GREEN=BLINK\n'
+      ;;
+    WECHAT_FRIEND_UNREAD|FRIEND_UNREAD)
+      printf 'LANES:RED=OFF,YELLOW=OFF,GREEN=BREATHE\n'
+      ;;
+    WECHAT_OTHER_NEW|OTHER_NEW)
+      printf 'LANES:RED=BLINK,YELLOW=OFF,GREEN=OFF\n'
+      ;;
+    WECHAT_OTHER_UNREAD|OTHER_UNREAD)
+      printf 'LANES:RED=BREATHE,YELLOW=OFF,GREEN=OFF\n'
+      ;;
+    WECHAT_ALL_UNREAD|ALL_UNREAD)
+      printf 'LANES:RED=BREATHE,YELLOW=BREATHE,GREEN=BREATHE\n'
+      ;;
     OFF|GREEN|GREEN_BREATHE|GREEN_BLINK|YELLOW|YELLOW_BREATHE|YELLOW_BLINK|RED|RED_BLINK|RED_BREATHE|ALL|ALL_BLINK|ALL_BREATHE|PING|STATUS|HELP)
       printf '%s\n' "$value"
       ;;

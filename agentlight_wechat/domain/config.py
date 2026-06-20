@@ -39,10 +39,6 @@ class LightConfig:
 
 @dataclass(frozen=True)
 class RuleConfig:
-    important_contacts: tuple[str, ...] = ()
-    important_groups: tuple[str, ...] = ()
-    keywords: tuple[str, ...] = ()
-    muted_conversations: tuple[str, ...] = ()
     quiet_hours: tuple[str, ...] = ()
 
 

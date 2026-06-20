@@ -240,7 +240,7 @@ let config = HidCommandConfig(
     usagePage: environmentInt("AGENTLIGHT_HID_USAGE_PAGE", default: 0xFF00),
     usage: environmentInt("AGENTLIGHT_HID_USAGE", default: 0x0001),
     reportId: environmentInt("AGENTLIGHT_HID_REPORT_ID", default: 1),
-    reportSize: environmentInt("AGENTLIGHT_HID_REPORT_SIZE", default: 32)
+    reportSize: environmentInt("AGENTLIGHT_HID_REPORT_SIZE", default: 64)
 )
 
 do {

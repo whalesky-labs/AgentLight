@@ -22,13 +22,13 @@ class StatusLightService {
   void begin(const LightPattern& initialPattern);
   void tick(unsigned long nowMs);
   String handleCommand(const String& line);
-  LightPattern currentPattern() const;
+  LightChannels currentChannels() const;
 
  private:
-  void setPattern(const LightPattern& pattern);
+  void setChannels(const LightChannels& channels);
 
   LightOutput& output_;
-  LightPattern currentPattern_;
+  LightChannels currentChannels_;
 };
 
 }  // namespace agentlight

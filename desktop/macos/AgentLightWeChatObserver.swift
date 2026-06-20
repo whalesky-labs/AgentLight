@@ -21,6 +21,7 @@ struct Payload: Encodable {
     let conversation: String
     let sender: String
     let summary: String
+    let messageCategory: String
     let confidence: String
     let diagnostic: String
     let capabilities: [String]
@@ -47,6 +48,11 @@ struct NotificationSignal {
     let summary: String
     let deliveredAt: Date
 }
+
+let notificationFreshnessSeconds: TimeInterval = 60
+let notificationRecoverySeconds: TimeInterval = 6 * 60 * 60
+let notificationReadLimit = 50
+let messageCategoryOrder = ["group", "friend", "other"]
 
 func runningWeChatApps() -> [NSRunningApplication] {
     NSWorkspace.shared.runningApplications.filter { app in
@@ -124,7 +130,7 @@ func userNotificationDatabasePath() -> String {
     return "\(home)/Library/Group Containers/group.com.apple.usernoted/db2/db"
 }
 
-func latestWeChatNotification() -> NotificationSignal? {
+func recentWeChatNotifications(limit: Int = notificationReadLimit) -> [NotificationSignal] {
     var db: OpaquePointer?
     let path = userNotificationDatabasePath()
     let openResult = sqlite3_open_v2(
@@ -134,7 +140,7 @@ func latestWeChatNotification() -> NotificationSignal? {
         nil
     )
     guard openResult == SQLITE_OK, let database = db else {
-        return nil
+        return []
     }
     defer { sqlite3_close(database) }
 
@@ -144,24 +150,36 @@ func latestWeChatNotification() -> NotificationSignal? {
         JOIN app a ON a.app_id = r.app_id
         WHERE a.identifier = 'com.tencent.xinwechat'
         ORDER BY r.delivered_date DESC, r.rec_id DESC
-        LIMIT 1
+        LIMIT ?
         """
     var statement: OpaquePointer?
     guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK, let query = statement else {
-        return nil
+        return []
     }
     defer { sqlite3_finalize(query) }
+    sqlite3_bind_int(query, 1, Int32(limit))
 
-    guard sqlite3_step(query) == SQLITE_ROW else {
-        return nil
-    }
-    guard let blob = sqlite3_column_blob(query, 0) else {
-        return nil
-    }
+    var notifications: [NotificationSignal] = []
+    while sqlite3_step(query) == SQLITE_ROW {
+        guard let blob = sqlite3_column_blob(query, 0) else {
+            continue
+        }
 
-    let byteCount = Int(sqlite3_column_bytes(query, 0))
-    let notificationDate = Date(timeIntervalSinceReferenceDate: sqlite3_column_double(query, 1))
-    let data = Data(bytes: blob, count: byteCount)
+        let byteCount = Int(sqlite3_column_bytes(query, 0))
+        let notificationDate = Date(timeIntervalSinceReferenceDate: sqlite3_column_double(query, 1))
+        let data = Data(bytes: blob, count: byteCount)
+        if let notification = decodeNotificationSignal(data: data, deliveredAt: notificationDate) {
+            notifications.append(notification)
+        }
+    }
+    return notifications
+}
+
+func latestWeChatNotification() -> NotificationSignal? {
+    return recentWeChatNotifications(limit: 1).first
+}
+
+func decodeNotificationSignal(data: Data, deliveredAt notificationDate: Date) -> NotificationSignal? {
     guard
         let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
         let root = plist as? [String: Any],
@@ -237,6 +255,68 @@ func stripNotificationSuffix(_ identifier: String) -> String {
     return trimmed
 }
 
+func isFresh(_ notification: NotificationSignal) -> Bool {
+    let age = Date().timeIntervalSince(notification.deliveredAt)
+    return age >= -5 && age <= notificationFreshnessSeconds
+}
+
+func isRecoverable(_ notification: NotificationSignal) -> Bool {
+    let age = Date().timeIntervalSince(notification.deliveredAt)
+    return age >= -5 && age <= notificationRecoverySeconds
+}
+
+func messageCategory(identifier: String, conversation: String, sender: String) -> String {
+    let searchable = "\(identifier) \(conversation) \(sender)".lowercased()
+    if searchable.contains("@chatroom") {
+        return "group"
+    }
+    if searchable.contains("wxid_") {
+        return "friend"
+    }
+    return "other"
+}
+
+func notificationsByCategory(_ notifications: [NotificationSignal]) -> [NotificationSignal] {
+    var byCategory: [String: NotificationSignal] = [:]
+    for notification in notifications {
+        let category = messageCategory(
+            identifier: notification.identifier,
+            conversation: notification.conversation,
+            sender: notification.conversation
+        )
+        if byCategory[category] == nil {
+            byCategory[category] = notification
+        }
+    }
+    return messageCategoryOrder.compactMap { byCategory[$0] }
+}
+
+func emitNotificationMessage(
+    _ notification: NotificationSignal,
+    confidence: String,
+    capabilities: [String]
+) {
+    let category = messageCategory(
+        identifier: notification.identifier,
+        conversation: notification.conversation,
+        sender: notification.conversation
+    )
+    emit(Payload(
+        source: "wechat",
+        event: "wechat-message",
+        platform: "macos",
+        identifier: notification.identifier,
+        conversation: notification.conversation,
+        sender: notification.conversation,
+        summary: notification.summary,
+        messageCategory: category,
+        confidence: confidence,
+        diagnostic: "",
+        capabilities: capabilities,
+        timestamp: timestamp()
+    ))
+}
+
 func main() -> Int32 {
     let apps = runningWeChatApps()
     guard let app = apps.first else {
@@ -248,6 +328,7 @@ func main() -> Int32 {
             conversation: "",
             sender: "",
             summary: "",
+            messageCategory: "",
             confidence: "diagnostic",
             diagnostic: "WeChat process is not running",
             capabilities: [],
@@ -265,6 +346,7 @@ func main() -> Int32 {
             conversation: "",
             sender: "",
             summary: "",
+            messageCategory: "",
             confidence: "diagnostic",
             diagnostic: "Accessibility permission is not granted",
             capabilities: ["process-running"],
@@ -287,6 +369,7 @@ func main() -> Int32 {
             conversation: title,
             sender: "",
             summary: "",
+            messageCategory: "",
             confidence: title.isEmpty ? "unread-only" : "conversation-title",
             diagnostic: "",
             capabilities: ["process-running", "accessibility", "conversation-title"],
@@ -295,23 +378,33 @@ func main() -> Int32 {
         return 0
     }
 
-    if let notification = latestWeChatNotification() {
-        emit(Payload(
-            source: "wechat",
-            event: "wechat-message",
-            platform: "macos",
-            identifier: notification.identifier,
-            conversation: notification.conversation,
-            sender: notification.conversation,
-            summary: notification.summary,
-            confidence: "notification-center",
-            diagnostic: "",
-            capabilities: ["process-running", "accessibility", "unread-navigation", "notification-center", "notification-user-info"],
-            timestamp: timestamp()
-        ))
+    let notifications = recentWeChatNotifications()
+    let freshNotifications = notificationsByCategory(notifications.filter(isFresh))
+    if !freshNotifications.isEmpty {
+        for notification in freshNotifications {
+            emitNotificationMessage(
+                notification,
+                confidence: "notification-center",
+                capabilities: ["process-running", "accessibility", "unread-navigation", "notification-center", "notification-user-info"]
+            )
+        }
         return 0
     }
 
+    let recoverableNotifications = notificationsByCategory(notifications.filter(isRecoverable))
+    if !recoverableNotifications.isEmpty {
+        for notification in recoverableNotifications {
+            emitNotificationMessage(
+                notification,
+                confidence: "notification-history",
+                capabilities: ["process-running", "accessibility", "unread-navigation", "notification-history", "notification-user-info"]
+            )
+        }
+        return 0
+    }
+
+    let category = messageCategory(identifier: "", conversation: title, sender: "")
+    let notificationCapabilities = notifications.isEmpty ? [] : ["notification-stale"]
     emit(Payload(
         source: "wechat",
         event: "wechat-message",
@@ -320,11 +413,12 @@ func main() -> Int32 {
         conversation: title,
         sender: "",
         summary: isNavigationUnreadHint(signal) ? "" : signal,
+        messageCategory: category,
         confidence: isNavigationUnreadHint(signal) ? "unread-only" : "visible-summary",
         diagnostic: "",
-        capabilities: isNavigationUnreadHint(signal)
+        capabilities: (isNavigationUnreadHint(signal)
             ? ["process-running", "accessibility", "unread-navigation"]
-            : ["process-running", "accessibility", "visible-summary"],
+            : ["process-running", "accessibility", "visible-summary"]) + notificationCapabilities,
         timestamp: timestamp()
     ))
     return 0

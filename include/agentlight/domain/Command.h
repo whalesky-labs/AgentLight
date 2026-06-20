@@ -25,6 +25,7 @@ enum class CommandType {
 struct Command {
   CommandType type;
   LightPattern pattern;
+  LightChannels channels;
   String raw;
 };
 
