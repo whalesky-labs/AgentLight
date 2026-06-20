@@ -25,6 +25,7 @@ from agentlight_wechat.domain.light_state import WeChatLightStateMachine
 COMMANDS = {
     WeChatEventType.MESSAGE: "yellow-blink",
     WeChatEventType.IMPORTANT: "red-blink",
+    WeChatEventType.MUTED: "green-blink",
     WeChatEventType.CLEARED: "off",
     WeChatEventType.OFFLINE: "off",
     WeChatEventType.LISTENER_ERROR: "red",

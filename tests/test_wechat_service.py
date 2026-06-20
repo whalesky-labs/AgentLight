@@ -16,6 +16,7 @@ from pathlib import Path
 
 from agentlight_wechat.application.service import WeChatService
 from agentlight_wechat.domain.config import RuleConfig, WeChatConfig
+from agentlight_wechat.domain.light_state import WeChatLightStateMachine
 from agentlight_wechat.infrastructure.helper_runner import HelperRunner
 
 
@@ -34,6 +35,17 @@ class StaticHelper(HelperRunner):
 
     def run_once(self):
         yield from self._lines
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
 
 
 class WeChatServiceTest(unittest.TestCase):
@@ -98,6 +110,27 @@ class WeChatServiceTest(unittest.TestCase):
             )
 
             self.assertEqual(service.run_once(), 0)
+
+    def test_repeated_unread_event_breathes_after_blink_window(self) -> None:
+        hardware = FakeHardware()
+        clock = FakeClock()
+        line = json.dumps({"source": "wechat", "event": "wechat-message", "platform": "macos", "summary": "新消息"})
+        service = WeChatService(
+            Path.cwd(),
+            Path("config/wechat-agentlight.example.json"),
+            WeChatConfig(),
+            helper_runner=StaticHelper([line]),
+            hardware_runner=hardware,  # type: ignore[arg-type]
+            state_machine=WeChatLightStateMachine(blink_seconds=10, clock=clock),
+            result_sink=lambda _: None,
+        )
+
+        self.assertEqual(service.run_once(), 0)
+        self.assertEqual(service.run_once(), 0)
+        clock.advance(10)
+        self.assertEqual(service.run_once(), 0)
+
+        self.assertEqual(hardware.commands, ["yellow-blink", "yellow-breathe"])
 
 
 if __name__ == "__main__":

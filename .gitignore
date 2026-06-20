@@ -10,6 +10,7 @@ dist/
 .vscode/
 .idea/
 .venv-agent/
+.venv-wechat/
 __pycache__/
 *.pyc
 *.swp

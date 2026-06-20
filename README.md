@@ -109,14 +109,19 @@ scripts/agentlight-wechat once --config /tmp/wechat-agentlight-test.json
 
 事件到灯效的默认映射：
 
-| 微信事件 | 灯效 |
-| --- | --- |
-| `wechat-message` | `YELLOW_BLINK` |
-| `wechat-important` | `RED_BLINK` |
-| `wechat-muted` | 不改变灯效 |
-| `wechat-cleared` | `OFF` |
-| `wechat-offline` | `OFF` |
-| `wechat-listener-error` | `RED` |
+| 微信状态 / 事件 | 灯效 | 含义 |
+| --- | --- | --- |
+| 无未读消息 / 已读清空 | `OFF` | 全部熄灭 |
+| 普通新消息刚到达 | `YELLOW_BLINK` | 黄灯闪烁，提示有新消息 |
+| 普通消息仍未读 | `YELLOW_BREATHE` | 黄灯呼吸，表示还有未读消息 |
+| 重要新消息刚到达 | `RED_BLINK` | 红灯闪烁，提示重要消息 |
+| 重要消息仍未读 | `RED_BREATHE` | 红灯呼吸，表示重要消息还未处理 |
+| 免打扰新消息刚到达 | `GREEN_BLINK` | 绿灯闪烁，低优先级提示 |
+| 免打扰消息仍未读 | `GREEN_BREATHE` | 绿灯呼吸，表示只有免打扰未读 |
+| 微信未运行 / 离线 | `OFF` | 全部熄灭 |
+| 微信监听异常 / 权限异常 | `RED` | 红灯常亮，表示服务异常 |
+
+默认闪烁持续 `10` 秒；10 秒后仍未读，会切换到对应呼吸灯效。已读或未读清空会立即 `OFF`。
 
 ## 平台能力
 

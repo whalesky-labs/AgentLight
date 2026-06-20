@@ -37,16 +37,21 @@ scripts/agentlight-wechat once
 
 Example config: [config/wechat-agentlight.example.json](./config/wechat-agentlight.example.json).
 
-Default event mapping:
+Default light mapping:
 
-| Event | Light |
-| --- | --- |
-| `wechat-message` | `YELLOW_BLINK` |
-| `wechat-important` | `RED_BLINK` |
-| `wechat-muted` | unchanged |
-| `wechat-cleared` | `OFF` |
-| `wechat-offline` | `OFF` |
-| `wechat-listener-error` | `RED` |
+| WeChat state / event | Light | Meaning |
+| --- | --- | --- |
+| No unread messages / unread cleared | `OFF` | All lights off |
+| New normal message | `YELLOW_BLINK` | Yellow blink for a fresh message |
+| Normal message still unread | `YELLOW_BREATHE` | Yellow breathe while unread remains |
+| New important message | `RED_BLINK` | Red blink for an important message |
+| Important message still unread | `RED_BREATHE` | Red breathe while important unread remains |
+| New muted message | `GREEN_BLINK` | Green blink for a low-priority muted message |
+| Muted message still unread | `GREEN_BREATHE` | Green breathe when only muted unread remains |
+| WeChat offline | `OFF` | All lights off |
+| Listener or permission error | `RED` | Solid red means service error |
+
+Blinking lasts `10` seconds by default. If the message is still unread after that, the light switches to the matching breathe state. Clearing unread messages turns the light `OFF` immediately.
 
 The macOS helper uses Accessibility observations. The Windows helper uses UI Automation observations of visible WeChat window state. AgentLight does not inject into WeChat, decrypt WeChat databases, read full chat history, or automate replies.
 

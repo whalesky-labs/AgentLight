@@ -17,6 +17,7 @@ from agentlight_wechat.domain.config import (
     ClearMode,
     ClearPolicy,
     CollectionConfig,
+    LightConfig,
     PrivacyConfig,
     RuleConfig,
     WeChatConfig,
@@ -40,6 +41,7 @@ def load_wechat_config(path: Path) -> WeChatConfig:
         send_to_hardware=_bool(raw, "sendToHardware", True),
         collection=_collection(raw.get("collection", {})),
         clear_policy=_clear_policy(raw.get("clearPolicy", {})),
+        light=_light(raw.get("light", {})),
         rules=_rules(raw.get("rules", {})),
         privacy=_privacy(raw.get("privacy", {})),
         hardware=_string_dict(raw.get("hardware", {}), "hardware"),
@@ -67,6 +69,11 @@ def _clear_policy(raw: Any) -> ClearPolicy:
     if timeout_seconds <= 0:
         raise ValueError("clearPolicy.timeoutSeconds must be greater than 0")
     return ClearPolicy(mode=mode, timeout_seconds=timeout_seconds)
+
+
+def _light(raw: Any) -> LightConfig:
+    raw = _object(raw, "light")
+    return LightConfig(blink_seconds=_positive_float(raw, "blinkSeconds", 10.0))
 
 
 def _rules(raw: Any) -> RuleConfig:

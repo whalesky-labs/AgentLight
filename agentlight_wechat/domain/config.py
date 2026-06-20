@@ -32,6 +32,11 @@ class ClearPolicy:
 
 
 @dataclass(frozen=True)
+class LightConfig:
+    blink_seconds: float = 10.0
+
+
+@dataclass(frozen=True)
 class RuleConfig:
     important_contacts: tuple[str, ...] = ()
     important_groups: tuple[str, ...] = ()
@@ -53,6 +58,7 @@ class WeChatConfig:
     send_to_hardware: bool = True
     collection: CollectionConfig = field(default_factory=CollectionConfig)
     clear_policy: ClearPolicy = field(default_factory=ClearPolicy)
+    light: LightConfig = field(default_factory=LightConfig)
     rules: RuleConfig = field(default_factory=RuleConfig)
     privacy: PrivacyConfig = field(default_factory=PrivacyConfig)
     hardware: dict[str, str] = field(default_factory=dict)

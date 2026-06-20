@@ -13,6 +13,9 @@
     "mode": "timeout-or-unread-cleared",
     "timeoutSeconds": 300
   },
+  "light": {
+    "blinkSeconds": 10
+  },
   "rules": {
     "importantContacts": [],
     "importantGroups": [],
