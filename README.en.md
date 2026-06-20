@@ -54,7 +54,7 @@ Default light mapping:
 
 Blinking lasts `10` seconds by default. If the message is still unread after that, the lane switches to breathe. Clearing unread messages turns all lanes off immediately. While breathing, AgentLight refreshes the current lane command every `30` seconds. When macOS only exposes an `unread-only` signal, AgentLight treats it as an other message and uses the red lane.
 
-The macOS helper reads fresh `com.tencent.xinwechat` Notification Center metadata when available. If the WeChat UI still shows unread messages after macOS has archived the fresh notification, the helper recovers unread categories from the recent 6-hour notification history. `@chatroom` is classified as group, `wxid_` as friend, and everything else as other. One helper poll can emit group, friend, and other events together, and the service merges them into concurrent light lanes. The Windows helper uses UI Automation observations of visible WeChat window state. AgentLight does not inject into WeChat, decrypt WeChat databases, read full chat history, or automate replies.
+The macOS helper uses only fresh `com.tencent.xinwechat` Notification Center metadata from the last 60 seconds for category detection, so old notifications cannot light a category that no longer has unread messages. `@chatroom` is classified as group, `wxid_` as friend, and everything else as other. One helper poll can emit fresh group, friend, and other events together, and the service merges them into concurrent light lanes. The Windows helper uses UI Automation observations of visible WeChat window state. AgentLight does not inject into WeChat, decrypt WeChat databases, read full chat history, or automate replies.
 
 ## Firmware
 

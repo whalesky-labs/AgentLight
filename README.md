@@ -128,7 +128,7 @@ scripts/agentlight-wechat once --config /tmp/wechat-agentlight-test.json
 
 ## 平台能力
 
-macOS helper 优先读取系统通知中心里 60 秒内的新鲜 `com.tencent.xinwechat` 通知元数据；如果微信 UI 仍显示有未读，但新鲜通知已经被系统归档，会在最近 6 小时通知历史中按类别恢复当前未读灯效。分类规则是：包含 `@chatroom` 归为群消息，包含 `wxid_` 归为好友消息，其他来源归为其他消息。同一次轮询可输出群、好友、其他多条事件，服务会合成三路并发灯效。通知元数据完全不可用时，会降级为 `confidence=unread-only`，默认按其他消息点亮红灯。
+macOS helper 只使用系统通知中心里 60 秒内的新鲜 `com.tencent.xinwechat` 通知元数据做类别判断，避免旧通知误点亮已经没有未读的类别。分类规则是：包含 `@chatroom` 归为群消息，包含 `wxid_` 归为好友消息，其他来源归为其他消息。同一次轮询可输出群、好友、其他多条新鲜事件，服务会合成三路并发灯效。通知元数据不可用或过旧时，会降级为 `confidence=unread-only`，默认按其他消息点亮红灯。
 
 普通日志不会输出联系人、会话名或消息摘要；日志中的 `category=group|friend|other` 表示本次事件的灯光分类，`confidence=notification-center` 表示来自新鲜通知中心记录，`confidence=unread-only` 表示已经降级为只能判断未读。
 

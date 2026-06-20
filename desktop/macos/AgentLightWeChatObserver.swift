@@ -50,7 +50,6 @@ struct NotificationSignal {
 }
 
 let notificationFreshnessSeconds: TimeInterval = 60
-let notificationRecoverySeconds: TimeInterval = 6 * 60 * 60
 let notificationReadLimit = 50
 let messageCategoryOrder = ["group", "friend", "other"]
 
@@ -260,11 +259,6 @@ func isFresh(_ notification: NotificationSignal) -> Bool {
     return age >= -5 && age <= notificationFreshnessSeconds
 }
 
-func isRecoverable(_ notification: NotificationSignal) -> Bool {
-    let age = Date().timeIntervalSince(notification.deliveredAt)
-    return age >= -5 && age <= notificationRecoverySeconds
-}
-
 func messageCategory(identifier: String, conversation: String, sender: String) -> String {
     let searchable = "\(identifier) \(conversation) \(sender)".lowercased()
     if searchable.contains("@chatroom") {
@@ -386,18 +380,6 @@ func main() -> Int32 {
                 notification,
                 confidence: "notification-center",
                 capabilities: ["process-running", "accessibility", "unread-navigation", "notification-center", "notification-user-info"]
-            )
-        }
-        return 0
-    }
-
-    let recoverableNotifications = notificationsByCategory(notifications.filter(isRecoverable))
-    if !recoverableNotifications.isEmpty {
-        for notification in recoverableNotifications {
-            emitNotificationMessage(
-                notification,
-                confidence: "notification-history",
-                capabilities: ["process-running", "accessibility", "unread-navigation", "notification-history", "notification-user-info"]
             )
         }
         return 0

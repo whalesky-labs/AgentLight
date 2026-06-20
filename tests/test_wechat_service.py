@@ -145,7 +145,7 @@ class WeChatServiceTest(unittest.TestCase):
                     "identifier": "48293083178@chatroom_1781947261_1659",
                     "conversation": "48293083178@chatroom",
                     "messageCategory": "group",
-                    "confidence": "notification-history",
+                    "confidence": "notification-center",
                 }
             ),
             json.dumps(
@@ -156,7 +156,7 @@ class WeChatServiceTest(unittest.TestCase):
                     "identifier": "wxid_friend_1781942964_21",
                     "conversation": "wxid_friend",
                     "messageCategory": "friend",
-                    "confidence": "notification-history",
+                    "confidence": "notification-center",
                 }
             ),
             json.dumps(
@@ -167,7 +167,7 @@ class WeChatServiceTest(unittest.TestCase):
                     "identifier": "qqmail_1781936375_334",
                     "conversation": "qqmail",
                     "messageCategory": "other",
-                    "confidence": "notification-history",
+                    "confidence": "notification-center",
                 }
             ),
         ]
