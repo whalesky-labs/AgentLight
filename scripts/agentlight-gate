@@ -48,7 +48,8 @@ now_ms() {
   python3 - <<'PY'
 import time
 
-print(time.monotonic_ns() // 1_000_000)
+# State is shared across processes and survives agent restarts.
+print(time.time_ns() // 1_000_000)
 PY
 }
 
@@ -91,7 +92,7 @@ map_event_to_state() {
       printf 'green\n'
       ;;
     waiting|confirm|confirmation|blocked)
-      printf 'red-blink\n'
+      printf 'red-strobe\n'
       ;;
     health-waiting)
       printf 'red-blink\n'
@@ -204,7 +205,7 @@ if [[ -f "$STATE_FILE" ]]; then
 fi
 
 elapsed_ms=$((current_ms - ${last_ms:-0}))
-if [[ "$event" == "$last_event" && "$state" == "$last_state" && "$elapsed_ms" -lt "$cooldown_ms" ]]; then
+if [[ "$event" == "$last_event" && "$state" == "$last_state" && "$elapsed_ms" -ge 0 && "$elapsed_ms" -lt "$cooldown_ms" ]]; then
   printf 'SKIP duplicate event=%s state=%s elapsed_ms=%s window_ms=%s\n' "$event" "$state" "$elapsed_ms" "$cooldown_ms"
   exit 0
 fi
@@ -213,8 +214,8 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 sent_state="$state"
 
 if [[ "$event" == "health-waiting" ]]; then
-  printf 'health-waiting|%s\n' "$current_ms" > "$HEALTH_OVERRIDE_FILE"
   send_state "$state"
+  printf 'health-waiting|%s\n' "$current_ms" > "$HEALTH_OVERRIDE_FILE"
 elif [[ "$event" == "health-recovered" ]]; then
   rm -f "$HEALTH_OVERRIDE_FILE"
   read_session_state

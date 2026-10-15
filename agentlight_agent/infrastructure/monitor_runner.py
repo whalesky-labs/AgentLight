@@ -17,7 +17,8 @@ import time
 from pathlib import Path
 
 from agentlight_agent.domain.matching import match_event
-from agentlight_agent.domain.models import Monitor, MonitorType
+from agentlight_agent.domain.codex_input import CodexInputTracker
+from agentlight_agent.domain.models import Monitor, MonitorFormat, MonitorType
 from agentlight_agent.infrastructure.event_dispatcher import DispatchEvent, DispatchResult, LatestEventDispatcher
 
 
@@ -71,6 +72,13 @@ def _inline_event(agent: str, event: str, source: str, send: bool) -> DispatchEv
 class MonitorRunner:
     def __init__(self, emitter: EventEmitter) -> None:
         self._emitter = emitter
+        self._codex_inputs = CodexInputTracker()
+
+    def _match_line(self, line: str, monitor: Monitor, path: Path) -> str:
+        event = match_event(line, monitor)
+        if monitor.agent == "codex" and monitor.format == MonitorFormat.JSONL:
+            return self._codex_inputs.match(line, str(path), event)
+        return event
 
     def process_existing(self, monitors: list[Monitor], *, send: bool, limit: int) -> int:
         count = 0
@@ -112,7 +120,7 @@ class MonitorRunner:
                 continue
             with path.open("r", encoding="utf-8", errors="replace") as file:
                 for line in file:
-                    event = match_event(line.strip(), monitor)
+                    event = self._match_line(line.strip(), monitor, path)
                     if not event:
                         continue
                     self._emitter.emit(monitor.agent, event, monitor.name, send=send)
@@ -137,7 +145,7 @@ class MonitorRunner:
                         with path.open("r", encoding="utf-8", errors="replace") as file:
                             file.seek(offsets[path])
                             for line in file:
-                                event = match_event(line.strip(), monitor)
+                                event = self._match_line(line.strip(), monitor, path)
                                 if not event:
                                     continue
                                 self._emitter.emit_latest(monitor.agent, event, monitor.name, send=send)

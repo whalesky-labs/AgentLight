@@ -61,6 +61,9 @@ void GpioLightDriver::tick(unsigned long nowMs) {
   writeInactiveOff(activePin);
 
   switch (pattern_.effect) {
+    case LightEffect::Strobe:
+      writeOne(activePin, (nowMs % 100UL) < 50UL);
+      return;
     case LightEffect::Blink: {
       const unsigned long periodMs = pattern_.state == LightState::Yellow ? 400UL : 800UL;
       writeOne(activePin, (nowMs % periodMs) < (periodMs / 2));

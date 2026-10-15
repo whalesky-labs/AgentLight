@@ -23,6 +23,7 @@ events=(
   agent-message
   task-complete
   permission-request
+  user-input
   turn-aborted
   idle
 )

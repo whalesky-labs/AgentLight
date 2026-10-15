@@ -42,6 +42,7 @@ Events:
   typing
   done
   waiting
+  user-input
   error
   idle
   health-waiting
@@ -137,7 +138,7 @@ normalize_event() {
     task-complete|turn-completed|turn-complete|complete|completed|done|success|stop)
       printf 'done\n'
       ;;
-    permission|permission-request|approval|confirm|confirmation|waiting|blocked|need-input)
+    permission|permission-request|approval|confirm|confirmation|waiting|blocked|need-input|user-input|input-required|needs-input|needs-user-input|request-user-input)
       printf 'waiting\n'
       ;;
     reconnect|reconnecting|connection-lost|connection-retry|health-waiting)

@@ -29,6 +29,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from agentlight_agent.domain.codex_input import CodexInputTracker
+
 
 DEFAULT_SESSION_GLOB = "~/.codex/sessions/**/*.jsonl"
 THREAD_ID_PATTERN = re.compile(r"(019[a-z0-9-]{32,})")
@@ -216,7 +220,7 @@ def dispatch_event(event: MonitorEvent, event_command: str) -> None:
     )
 
 
-def consume_line(line: str, path: Path) -> MonitorEvent | None:
+def consume_line(line: str, path: Path, tracker: CodexInputTracker | None = None) -> MonitorEvent | None:
     line = line.strip()
     if not line:
         return None
@@ -224,14 +228,23 @@ def consume_line(line: str, path: Path) -> MonitorEvent | None:
         obj = json.loads(line)
     except json.JSONDecodeError:
         return None
-    return normalize_event(obj, path)
+    event = normalize_event(obj, path)
+    status = (tracker or CodexInputTracker()).match(line, str(path), event.status if event else "")
+    if not status:
+        return None
+    if event is not None:
+        event.status = status
+        return event
+    return MonitorEvent(status, (obj.get("payload") or {}).get("type", ""), status,
+                        obj.get("timestamp") or now_text(), extract_thread_id(obj, path), path)
 
 
 def run_once(paths: list[Path], limit: int, event_command: str) -> int:
     count = 0
+    tracker = CodexInputTracker()
     for path in paths:
         for line in iter_existing_lines(path):
-            event = consume_line(line, path)
+            event = consume_line(line, path, tracker)
             if event is None:
                 continue
             print_event(event)
@@ -245,6 +258,7 @@ def run_once(paths: list[Path], limit: int, event_command: str) -> int:
 def run_tail(args: argparse.Namespace) -> int:
     offsets: dict[Path, int] = {}
     count = 0
+    tracker = CodexInputTracker()
 
     print("Codex session monitor started", flush=True)
     if args.thread_id:
@@ -264,7 +278,7 @@ def run_tail(args: argparse.Namespace) -> int:
                 with path.open("r", encoding="utf-8", errors="replace") as file:
                     file.seek(offsets[path])
                     for line in file:
-                        event = consume_line(line, path)
+                        event = consume_line(line, path, tracker)
                         if event is not None:
                             print_event(event)
                             dispatch_event(event, args.event_command)

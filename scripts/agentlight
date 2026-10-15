@@ -40,6 +40,7 @@ States:
   yellow-blink
   red
   red-blink
+  red-strobe
   red-breathe
   all
   all-blink
@@ -64,7 +65,7 @@ normalize_state() {
   value="$(printf '%s' "$value" | tr '[:lower:]' '[:upper:]')"
 
   case "$value" in
-    OFF|GREEN|GREEN_BREATHE|GREEN_BLINK|YELLOW|YELLOW_BREATHE|YELLOW_BLINK|RED|RED_BLINK|RED_BREATHE|ALL|ALL_BLINK|ALL_BREATHE|PING|STATUS|HELP)
+    OFF|GREEN|GREEN_BREATHE|GREEN_BLINK|YELLOW|YELLOW_BREATHE|YELLOW_BLINK|RED|RED_BLINK|RED_STROBE|RED_BREATHE|ALL|ALL_BLINK|ALL_BREATHE|PING|STATUS|HELP)
       printf '%s\n' "$value"
       ;;
     BUSY|RUNNING|TOOL)
@@ -76,8 +77,8 @@ normalize_state() {
     IDLE|READY|DONE|SUCCESS)
       printf 'GREEN\n'
       ;;
-    WAITING|CONFIRM|CONFIRMATION|BLOCKED)
-      printf 'RED_BLINK\n'
+    WAITING|CONFIRM|CONFIRMATION|BLOCKED|USER_INPUT|NEEDS_USER_INPUT|INPUT_REQUIRED)
+      printf 'RED_STROBE\n'
       ;;
     ERROR|FAILED|FAILURE)
       printf 'RED\n'

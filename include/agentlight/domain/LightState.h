@@ -25,6 +25,7 @@ enum class LightEffect {
   Steady,
   Blink,
   Breathe,
+  Strobe,
 };
 
 struct LightPattern {

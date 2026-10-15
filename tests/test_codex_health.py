@@ -51,6 +51,35 @@ class CodexHealthTest(unittest.TestCase):
 
         self.assertIsNone(parse_codex_health_line(line, was_reconnecting=False))
 
+    def test_ignores_cloud_and_remote_connection_failures(self) -> None:
+        for host_id in ("durable", "remote-machine"):
+            with self.subTest(host_id=host_id):
+                line = (
+                    "info [AppServerConnection] app_server_connection.state_changed "
+                    f"hostId={host_id} cause=start_process connectionError=SignInRequired "
+                    "next=connecting previous=error reconnectAttempt=4241"
+                )
+                self.assertIsNone(parse_codex_health_line(line, was_reconnecting=False))
+
+    def test_local_connection_failure_still_triggers_waiting(self) -> None:
+        line = (
+            "info [AppServerConnection] app_server_connection.state_changed "
+            "hostId=local cause=transport_close connectionError=NetworkError "
+            "next=connecting previous=connected reconnectAttempt=1"
+        )
+        event = parse_codex_health_line(line, was_reconnecting=False)
+        self.assertIsNotNone(event)
+        assert event is not None
+        self.assertEqual(event.status, "reconnecting")
+
+    def test_cloud_recovery_does_not_clear_local_failure(self) -> None:
+        line = (
+            "info [AppServerConnection] app_server_connection.state_changed "
+            "hostId=durable cause=post_initialize_connection_state connectionError=null "
+            "next=connected previous=connecting reconnectAttempt=1"
+        )
+        self.assertIsNone(parse_codex_health_line(line, was_reconnecting=True))
+
 
 if __name__ == "__main__":
     unittest.main()

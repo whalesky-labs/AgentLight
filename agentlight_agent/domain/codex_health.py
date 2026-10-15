@@ -30,6 +30,10 @@ def parse_codex_health_line(line: str, *, was_reconnecting: bool) -> CodexHealth
         return None
 
     fields = _parse_fields(line)
+    # Cloud and remote connections must not override the local task light.
+    if fields.get("hostId", "local") != "local":
+        return None
+
     next_state = fields.get("next", "")
     previous_state = fields.get("previous", "")
     reconnect_attempt = _parse_int(fields.get("reconnectAttempt", "0"))

@@ -74,6 +74,7 @@ The protocol is plain text, one command at a time:
 | `YELLOW_BLINK` | Yellow blinking |
 | `RED` | Red steady, yellow/green off |
 | `RED_BLINK` | Red blinking |
+| `RED_STROBE` | Emergency red strobe, 100ms period |
 | `RED_BREATHE` | Red breathing |
 | `ALL` | Red/yellow/green steady on for hardware self-test |
 | `ALL_BLINK` | Red/yellow/green blinking together |
@@ -191,7 +192,7 @@ Supported aliases:
 | `busy` / `running` / `tool` | `YELLOW_BLINK` |
 | `thinking` / `generating` | `YELLOW_BREATHE` |
 | `idle` / `ready` / `done` / `success` | `GREEN` |
-| `waiting` / `confirm` / `blocked` | `RED_BLINK` |
+| `waiting` / `confirm` / `blocked` | `RED_STROBE` |
 | `error` / `failed` | `RED` |
 
 Environment variables:
@@ -246,7 +247,7 @@ scripts/agentlight-gate error
 | `tool` | `YELLOW_BLINK` |
 | `thinking` | `YELLOW_BREATHE` |
 | `done` | `GREEN_BLINK` -> `GREEN` |
-| `waiting` | `RED_BLINK` |
+| `waiting` / `user-input` | `RED_STROBE` |
 | `error` | `RED` |
 
 ## AI Hook Integration
@@ -309,6 +310,7 @@ The monitor normalizes Codex session JSONL records into:
 | Output status | Source examples |
 | --- | --- |
 | `prompt` | `user_message` |
+| `waiting` (emergency red strobe) | `request_user_input` / `request_user_input_async`, until answered |
 | `thinking` | `task_started` / `reasoning` |
 | `working` | `function_call` / `web_search_call` |
 | `typing` | `agent_message` / `message` |
@@ -340,7 +342,7 @@ The config supports:
 | `YELLOW_BREATHE` | Yellow breathing | AI is thinking or generating for longer |
 | `YELLOW_BLINK` | Yellow blinking | Tool call or command execution in progress |
 | `RED` | Red steady | Error |
-| `RED_BLINK` | Red blinking | Human confirmation needed / blocked |
+| `RED_STROBE` | Emergency red strobe | User input / human confirmation needed / blocked |
 | `RED_BREATHE` | Red breathing | Low-priority reminder / waiting for review |
 
 ## Effect Timing

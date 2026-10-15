@@ -351,7 +351,7 @@ scripts/agentlight-event --agent <agent> --event <event> --send
 | `tool` | `YELLOW_BLINK` |
 | `thinking` | `YELLOW_BREATHE` |
 | `done` | `GREEN_BLINK` -> `GREEN` |
-| `waiting` | `RED_BLINK` |
+| `waiting` / `user-input` | `RED_STROBE`（红灯紧急爆闪） |
 | `error` | `RED` |
 | `idle` | `GREEN` |
 
@@ -372,6 +372,8 @@ scripts/codex-health-monitor --once --limit 1
 
 后台服务默认通过 `config/agent-monitors.example.json` 同时监听 Codex session 和 Codex Desktop 连接健康日志。
 
+Codex 调用 `request_user_input` 或 `request_user_input_async` 等待用户回答时，红灯持续紧急爆闪。异步提问的受理回执和其他会话的工具活动不会解除提醒；用户在对应会话回答后恢复任务灯效。用户主动发送新消息仍表示开始处理任务，显示黄灯呼吸。
+
 灯效时序：
 
 | 灯效 | 固件行为 |
@@ -380,6 +382,7 @@ scripts/codex-health-monitor --once --limit 1
 | 常亮 | 目标颜色持续点亮，其他颜色熄灭 |
 | 闪烁 | 默认 800ms 周期，亮 400ms / 灭 400ms |
 | `YELLOW_BLINK` | 400ms 周期，亮 200ms / 灭 200ms |
+| `RED_STROBE` | 100ms 周期，亮 50ms / 灭 50ms，用于等待用户输入或确认 |
 | 呼吸 | 2000ms 周期，亮度从低到高再回落 |
 
 Codex 推荐先使用本地 session 监听：

@@ -67,6 +67,7 @@ AgentLight 是一个基于 ESP32-C3 的桌面 AI 状态灯项目。它通过 USB
 | `YELLOW_BLINK` | 黄灯闪烁 |
 | `RED` | 红灯常亮，黄灯 / 绿灯灭 |
 | `RED_BLINK` | 红灯闪烁 |
+| `RED_STROBE` | 红灯紧急爆闪，100ms 周期 |
 | `RED_BREATHE` | 红灯呼吸 |
 | `ALL` | 红 / 黄 / 绿三路同时常亮，用于硬件自检 |
 | `ALL_BLINK` | 红 / 黄 / 绿三路同时闪烁 |
@@ -172,7 +173,7 @@ AGENTLIGHT_TRANSPORT=ble-system scripts/agentlight yellow-blink
 | `busy` / `running` / `tool` | `YELLOW_BLINK` |
 | `thinking` / `generating` | `YELLOW_BREATHE` |
 | `idle` / `ready` / `done` / `success` | `GREEN` |
-| `waiting` / `confirm` / `blocked` | `RED_BLINK` |
+| `waiting` / `confirm` / `blocked` | `RED_STROBE` |
 | `error` / `failed` | `RED` |
 
 可配置环境变量：
@@ -220,7 +221,7 @@ scripts/agentlight-gate error
 | `tool` | `YELLOW_BLINK` |
 | `thinking` | `YELLOW_BREATHE` |
 | `done` | `GREEN_BLINK` -> `GREEN` |
-| `waiting` | `RED_BLINK` |
+| `waiting` / `user-input` | `RED_STROBE` |
 | `error` | `RED` |
 | `health-waiting` | `RED_BLINK` |
 | `health-recovered` | 回到最近一次会话状态 |
@@ -274,6 +275,7 @@ scripts/codex-health-monitor --once --limit 1
 | 输出状态 | 来源示例 |
 | --- | --- |
 | `prompt` | `user_message` |
+| `waiting`（红灯紧急爆闪） | `request_user_input` / `request_user_input_async`，直到用户回答 |
 | `thinking` | `task_started` / `reasoning` |
 | `working` | `function_call` / `web_search_call` |
 | `typing` | `agent_message` / `message` |
@@ -305,7 +307,7 @@ scripts/multi-agent-monitor --config config/agent-monitors.example.json --send
 | `YELLOW_BREATHE` | 黄灯呼吸 | AI 正在长时间思考 / 生成 |
 | `YELLOW_BLINK` | 黄灯闪烁 | 工具调用 / 命令执行中 |
 | `RED` | 红灯常亮 | 错误 |
-| `RED_BLINK` | 红灯闪烁 | 需要人工确认 / 阻塞 |
+| `RED_STROBE` | 红灯紧急爆闪 | 需要用户输入 / 人工确认 / 阻塞 |
 | `RED_BREATHE` | 红灯呼吸 | 低优先级提醒 / 等待查看 |
 
 ## 灯效时序

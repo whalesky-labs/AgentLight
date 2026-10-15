@@ -44,6 +44,8 @@ const char* toText(LightEffect effect) {
       return "BLINK";
     case LightEffect::Breathe:
       return "BREATHE";
+    case LightEffect::Strobe:
+      return "STROBE";
     case LightEffect::Steady:
     default:
       return "STEADY";
@@ -95,6 +97,10 @@ bool tryParseLightPattern(const String& value, LightPattern& pattern) {
   }
   if (normalized == "RED_BLINK") {
     pattern = {LightState::Red, LightEffect::Blink};
+    return true;
+  }
+  if (normalized == "RED_STROBE") {
+    pattern = {LightState::Red, LightEffect::Strobe};
     return true;
   }
   if (normalized == "RED_BREATHE") {
