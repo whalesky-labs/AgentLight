@@ -118,13 +118,22 @@ detect_serial_port() {
     fi
   done
 
-  return 1
+  "${AGENTLIGHT_PYTHON:-python3}" - <<'PY'
+import sys
+from serial.tools import list_ports
+
+for port in list_ports.comports():
+    if port.vid in {0x303A, 0x1A86, 0x10C4, 0x0403}:
+        print(port.device)
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
 }
 
 serial_port_available() {
   local port="$1"
 
-  [[ -n "$port" && -e "$port" ]]
+  [[ -n "$port" && ( -e "$port" || "$port" =~ ^COM[0-9]+$ ) ]]
 }
 
 resolve_auto_transport() {
@@ -217,7 +226,7 @@ if [[ "$transport" == "usb" ]]; then
     fi
   fi
 
-  python3 - "$serial_port" "$serial_baud" "$command" <<'PY'
+  "${AGENTLIGHT_PYTHON:-python3}" - "$serial_port" "$serial_baud" "$command" <<'PY'
 import sys
 import time
 

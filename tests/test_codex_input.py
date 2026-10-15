@@ -37,6 +37,36 @@ class CodexInputTest(unittest.TestCase):
         self.assertEqual(self.tracker.match(record("reasoning"), "two", "thinking"), "waiting")
         self.assertEqual(self.tracker.match(record("task_complete"), "two", "done"), "waiting")
 
+    def test_failed_async_question_does_not_leave_a_reminder(self) -> None:
+        outputs = [
+            'failed to parse function arguments: unknown field `question`, expected `title` or `options`',
+            '{"accepted":false}',
+            '{"error":"question could not be shown"}',
+            '{"accepted":"true"}',
+            '',
+            None,
+        ]
+        for output in outputs:
+            with self.subTest(output=output):
+                self.ask()
+                failed = record("function_call_output", call_id="question", output=output)
+                self.assertEqual(self.tracker.match(failed, "one", "tool"), "tool")
+                self.assertEqual(self.tracker.match(record("reasoning"), "two", "thinking"), "thinking")
+
+    def test_failed_async_question_does_not_clear_another_question(self) -> None:
+        first = record("function_call", name="request_user_input_async", call_id="call_failed")
+        self.tracker.match(first, "one", "tool")
+        second = record("function_call", name="request_user_input_async", call_id="second")
+        self.tracker.match(second, "one", "tool")
+        accepted = record("function_call_output", call_id="second", output='{"accepted":true}')
+        self.tracker.match(accepted, "one", "tool")
+        failed = record("function_call_output", call_id="call_failed", output="failed to parse function arguments")
+        self.assertEqual(self.tracker.match(failed, "one", "tool"), "waiting")
+        reply = record("message", role="user", content=[{"text":
+            '<send_user_message_question_reply>[{"questionItemId":"second"}]</send_user_message_question_reply>'}])
+        self.assertEqual(self.tracker.match(reply, "one"), "prompt")
+        self.assertEqual(self.tracker.match(record("reasoning"), "two", "thinking"), "thinking")
+
     def test_user_answer_restores_running_state(self) -> None:
         self.ask()
         reply = record("message", role="user", content=[{"type": "input_text", "text": "answer"}])

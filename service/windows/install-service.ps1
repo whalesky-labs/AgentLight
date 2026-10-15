@@ -12,7 +12,9 @@ param(
     [string]$DisplayName = "WhaleSky Labs AgentLight",
     [string]$PythonPath = "python",
     [string]$RepoRoot = "",
-    [string]$ConfigPath = "$env:ProgramData\whalesky-labs-AgentLight\agentlight-agent.json"
+    [string]$ConfigPath = "$env:ProgramData\whalesky-labs-AgentLight\agentlight-agent.json",
+    [string]$BashPath = "$env:ProgramFiles\Git\bin\bash.exe",
+    [string]$UserProfilePath = "$env:USERPROFILE"
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,6 +28,7 @@ function Assert-Administrator {
 }
 
 Assert-Administrator
+$ConfigPath = [System.IO.Path]::GetFullPath($ConfigPath)
 
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
@@ -33,7 +36,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = Resolve-Path $RepoRoot
 }
 
-$agentScript = Join-Path $RepoRoot "scripts\agentlight-agent"
+$serviceScript = Join-Path $RepoRoot "service\windows\agentlight_service.py"
 $configTemplate = Join-Path $RepoRoot "config\agentlight-agent.example.json"
 $programData = Join-Path $env:ProgramData "whalesky-labs-AgentLight"
 $logDir = Join-Path $programData "logs"
@@ -43,6 +46,11 @@ $requirements = Join-Path $RepoRoot "requirements.txt"
 
 New-Item -ItemType Directory -Path $programData -Force | Out-Null
 New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+New-Item -ItemType Directory -Path (Split-Path -Parent $ConfigPath) -Force | Out-Null
+
+if (-not (Test-Path $BashPath)) {
+    throw "Git Bash is required. Install Git for Windows or supply -BashPath."
+}
 
 if (-not (Test-Path $ConfigPath)) {
     Copy-Item $configTemplate $ConfigPath
@@ -52,21 +60,36 @@ $pythonCommand = (Get-Command $PythonPath).Source
 
 if (-not (Test-Path $venvPython)) {
     & $pythonCommand -m venv $venvDir
+    if ($LASTEXITCODE -ne 0) { throw "Virtual environment creation failed." }
     & $venvPython -m pip install --upgrade pip
+    if ($LASTEXITCODE -ne 0) { throw "Pip upgrade failed." }
 }
 
 & $venvPython -m pip install -r $requirements
+if ($LASTEXITCODE -ne 0) { throw "Dependency installation failed." }
 
-$binaryPath = "`"$venvPython`" `"$agentScript`" run --config `"$ConfigPath`""
+$config = Get-Content -Raw -Encoding UTF8 $ConfigPath | ConvertFrom-Json
+$config.environment | Add-Member -NotePropertyName AGENTLIGHT_BASH -NotePropertyValue ($BashPath -replace '\\', '/') -Force
+if (-not $config.environment.AGENTLIGHT_STATE_DIR) {
+    $config.environment | Add-Member -NotePropertyName AGENTLIGHT_STATE_DIR -NotePropertyValue (Join-Path $programData "state") -Force
+}
+if ([string]::IsNullOrWhiteSpace($config.logFile)) {
+    $config | Add-Member -NotePropertyName logFile -NotePropertyValue (Join-Path $logDir "agentlight-agent.log") -Force
+}
+$json = $config | ConvertTo-Json -Depth 10
+[System.IO.File]::WriteAllText($ConfigPath, $json, (New-Object System.Text.UTF8Encoding($false)))
 
 if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
-    sc.exe stop $ServiceName | Out-Null
-    sc.exe delete $ServiceName | Out-Null
-    Start-Sleep -Seconds 2
+    Stop-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    (Get-Service -Name $ServiceName).WaitForStatus("Stopped", [TimeSpan]::FromSeconds(20))
+    $serviceAction = "update"
+} else {
+    $serviceAction = "install"
 }
 
-sc.exe create $ServiceName binPath= $binaryPath start= auto DisplayName= $DisplayName | Out-Null
-sc.exe description $ServiceName "WhaleSky Labs AgentLight background service for AI Agent status light synchronization." | Out-Null
+& $venvPython $serviceScript --service-name $ServiceName --display-name $DisplayName --startup auto `
+    --config $ConfigPath --repo "$RepoRoot" --python $venvPython --user-profile $UserProfilePath $serviceAction
+if ($LASTEXITCODE -ne 0) { throw "Windows service registration failed." }
 sc.exe failure $ServiceName reset= 60 actions= restart/5000/restart/5000/restart/5000 | Out-Null
 
 Start-Service -Name $ServiceName

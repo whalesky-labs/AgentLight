@@ -41,7 +41,8 @@ def parse_codex_health_line(line: str, *, was_reconnecting: bool) -> CodexHealth
     connection_error = fields.get("connectionError", "")
     cause = fields.get("cause", "")
 
-    if next_state == "connected" and was_reconnecting:
+    # Recovery must also clear an override left by a previous monitor process.
+    if next_state == "connected":
         return CodexHealthEvent("connected", _detail(fields))
 
     if next_state in {"connecting", "disconnected"} and (

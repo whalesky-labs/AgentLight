@@ -15,6 +15,14 @@ from agentlight_agent.domain.codex_health import parse_codex_health_line
 
 
 class CodexHealthTest(unittest.TestCase):
+    def test_recovery_clears_state_from_a_previous_monitor_process(self) -> None:
+        event = parse_codex_health_line(
+            "app_server_connection.state_changed hostId=local next=connected previous=connecting",
+            was_reconnecting=False,
+        )
+        self.assertIsNotNone(event)
+        self.assertEqual(event.status, "connected")
+
     def test_detects_reconnecting_from_retry_state(self) -> None:
         line = (
             "info [AppServerConnection] app_server_connection.state_changed "

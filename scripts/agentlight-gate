@@ -45,7 +45,7 @@ EOF
 }
 
 now_ms() {
-  python3 - <<'PY'
+  "${AGENTLIGHT_PYTHON:-python3}" - <<'PY'
 import time
 
 # State is shared across processes and survives agent restarts.
@@ -141,7 +141,7 @@ is_completion_event() {
 sleep_ms() {
   local delay_ms="$1"
 
-  python3 - "$delay_ms" <<'PY'
+  "${AGENTLIGHT_PYTHON:-python3}" - "$delay_ms" <<'PY'
 import sys
 import time
 
@@ -180,6 +180,11 @@ fi
 
 event="$1"
 state="$(map_event_to_state "$event")"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ "${AGENTLIGHT_GATE_LOCK_HELD:-0}" != "1" ]]; then
+  lock_helper="${AGENTLIGHT_GATE_LOCK_HELPER:-${script_dir}/../agentlight_agent/infrastructure/process_lock.py}"
+  exec "${AGENTLIGHT_PYTHON:-python3}" "$lock_helper" "$STATE_DIR" "${BASH_SOURCE[0]}" "$@"
+fi
 cooldown_ms="${AGENTLIGHT_COOLDOWN_MS:-$DEFAULT_COOLDOWN_MS}"
 assert_non_negative_integer "AGENTLIGHT_COOLDOWN_MS" "$cooldown_ms"
 done_cue_ms="${AGENTLIGHT_DONE_CUE_MS:-$DEFAULT_DONE_CUE_MS}"

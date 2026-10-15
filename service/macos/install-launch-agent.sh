@@ -62,6 +62,10 @@ cat > "$plist_path" <<PLIST
   <dict>
     <key>AGENTLIGHT_AGENT_CONFIG</key>
     <string>${config_path}</string>
+    <key>AGENTLIGHT_PYTHON</key>
+    <string>${python_path}</string>
+    <key>PATH</key>
+    <string>${python_path%/*}:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin</string>
   </dict>
 </dict>
 </plist>

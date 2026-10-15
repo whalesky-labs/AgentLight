@@ -17,6 +17,23 @@ from pathlib import Path
 
 
 class AgentLightAutoTransportTest(unittest.TestCase):
+    def test_explicit_com_port_uses_the_configured_python_without_ble_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            interpreter = root / "custom python"
+            interpreter.write_text(
+                '#!/bin/sh\nprintf "%s|%s\\n" "$2" "$4" > "$MOCK_ARGS"\nprintf "STATUS GREEN\\n"\n',
+                encoding="utf-8",
+            )
+            interpreter.chmod(0o755)
+            env = {**os.environ, "AGENTLIGHT_TRANSPORT": "auto", "AGENTLIGHT_SERIAL_PORT": "COM12",
+                   "AGENTLIGHT_PYTHON": str(interpreter), "MOCK_ARGS": str(root / "args")}
+            result = subprocess.run(["scripts/agentlight", "status"], env=env,
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), "STATUS GREEN")
+            self.assertEqual((root / "args").read_text().strip(), "COM12|STATUS")
+
     def test_auto_transport_uses_ble_when_usb_port_is_absent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

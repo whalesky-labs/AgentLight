@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import signal
 import sys
 from pathlib import Path
 
@@ -42,6 +43,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    def stop_agent(signum, frame):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, stop_agent)
     args = parse_args(argv)
     config_path = resolve_path(args.config, Path.cwd())
 
@@ -64,6 +69,8 @@ def main(argv: list[str] | None = None) -> int:
             return _handle_platform_command(service, args.platform_action, args.platform_value)
 
         return runtime.run_agent(config_path, config, once=args.once, platform_override=args.platform)
+    except KeyboardInterrupt:
+        return 0
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1

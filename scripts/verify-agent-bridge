@@ -238,6 +238,7 @@ python3 -m py_compile \
   scripts/multi-agent-monitor \
   scripts/agentlight-agent \
   scripts/codex-health-monitor \
+  service/windows/agentlight_service.py \
   scripts/ci/resolve-firmware-version \
   scripts/ci/prepare-firmware-release \
   scripts/ci/package-firmware
@@ -404,6 +405,7 @@ scripts/agentlight-event --agent codex --event reconnect >/dev/null
 scripts/agentlight-event --agent codex --event reconnected >/dev/null
 
 printf 'Checking event gate completion sequence...\n'
+export AGENTLIGHT_GATE_LOCK_HELPER="${repo_root}/agentlight_agent/infrastructure/process_lock.py"
 gate_tmp_dir="$(mktemp -d)"
 cp scripts/agentlight-gate "$gate_tmp_dir/agentlight-gate"
 cat > "$gate_tmp_dir/agentlight" <<'EOF'

@@ -37,8 +37,14 @@ def line_value(line: str, monitor_format: MonitorFormat, json_path: str) -> str:
 
 
 def match_event(line: str, monitor: Monitor) -> str:
+    obj = None
+    if monitor.format == MonitorFormat.JSONL and any(rule.json_path for rule in monitor.rules):
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            return ""
     for rule in monitor.rules:
-        value = line_value(line, monitor.format, rule.json_path)
+        value = get_json_path(obj, rule.json_path) if rule.json_path and monitor.format == MonitorFormat.JSONL else line
         if rule.equals and value == rule.equals:
             return rule.event
         if rule.contains and rule.contains.lower() in value.lower():

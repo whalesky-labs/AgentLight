@@ -278,6 +278,8 @@ service/macos/uninstall-launch-agent.sh
 
 ### Windows 后台服务
 
+先安装 Python 和 Git for Windows。服务通过原生服务入口响应启动、停止控制，事件脚本使用 Git Bash，依赖由安装脚本安装到独立虚拟环境。
+
 以管理员身份打开 PowerShell：
 
 ```powershell
@@ -285,6 +287,10 @@ Set-ExecutionPolicy -Scope Process Bypass
 python -m pip install -r requirements.txt
 .\service\windows\install-service.ps1
 ```
+
+如果 Git Bash 不在默认安装目录，可传入 `-BashPath`。服务默认读取安装用户的会话目录；需要监听其他用户时传入 `-UserProfilePath`。Windows 当前使用 USB 控制通道，可在配置中指定 `AGENTLIGHT_SERIAL_PORT`（例如 `COM5`）。系统蓝牙控制仅支持 macOS。
+
+如果 Codex 桌面日志不在默认目录，请在配置的 `environment` 中设置 `CODEX_DESKTOP_LOG_GLOB`。找不到日志时健康监控会持续等待；监控异常退出后会自动重试。
 
 默认服务名：
 

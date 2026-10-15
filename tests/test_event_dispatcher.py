@@ -74,7 +74,28 @@ class LatestEventDispatcherTest(unittest.TestCase):
         release_first_send.set()
         dispatcher.close(timeout=2)
 
-        self.assertEqual([call[4] for call in calls], ["tool", "health-waiting"])
+        self.assertEqual([call[4] for call in calls], ["tool", "health-waiting", "tool"])
+
+    def test_health_recovery_preserves_a_new_pending_question(self) -> None:
+        started = threading.Event()
+        release = threading.Event()
+        calls = []
+
+        def run(command):
+            calls.append(command[4])
+            if len(calls) == 1:
+                started.set()
+                self.assertTrue(release.wait(2))
+            return "OK"
+
+        dispatcher = LatestEventDispatcher("unused", result_sink=lambda result: None, command_runner=run)
+        dispatcher.submit("codex", "tool", "session", send=True)
+        self.assertTrue(started.wait(2))
+        dispatcher.submit("codex", "health-recovered", "health", send=True)
+        dispatcher.submit("codex", "waiting", "session", send=True)
+        release.set()
+        dispatcher.close(timeout=2)
+        self.assertEqual(calls, ["tool", "health-recovered", "waiting"])
 
 
 if __name__ == "__main__":

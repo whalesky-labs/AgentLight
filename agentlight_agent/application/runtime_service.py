@@ -83,6 +83,8 @@ class RuntimeService:
         env = os.environ.copy()
         env.update(config.environment)
         env["AGENTLIGHT_AGENT_CONFIG"] = str(config_path)
+        env["AGENTLIGHT_PYTHON"] = Path(sys.executable).as_posix()
+        env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
         env["PYTHONUNBUFFERED"] = "1"
 
         with log_file.open("a", encoding="utf-8", buffering=1) as log:
@@ -101,7 +103,16 @@ class RuntimeService:
                     stderr=subprocess.STDOUT,
                     text=True,
                 )
-                return_code = process.wait()
+                try:
+                    return_code = process.wait()
+                finally:
+                    if process.poll() is None:
+                        process.terminate()
+                        try:
+                            process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait()
                 self._log_line(log, f"AgentLight monitor exited code={return_code}")
                 if once:
                     return 0

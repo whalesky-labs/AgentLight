@@ -89,6 +89,29 @@ def run_tail(args: argparse.Namespace) -> int:
     state = {"reconnecting": False}
     count = 0
 
+    latest_event = None
+    for path in expand_paths(args.glob):
+        if not path.is_file():
+            continue
+        offsets[path] = 0
+        if args.from_start:
+            continue
+        with path.open("r", encoding="utf-8", errors="replace") as file:
+            while True:
+                position = file.tell()
+                line = file.readline()
+                if not line or not line.endswith("\n"):
+                    offsets[path] = position
+                    break
+                event = consume_line(line, state=state)
+                if event is not None:
+                    latest_event = event
+    if latest_event is not None:
+        emit(latest_event)
+        count += 1
+        if args.limit and count >= args.limit:
+            return count
+
     print("Codex health monitor started", flush=True)
     try:
         while True:
@@ -96,11 +119,18 @@ def run_tail(args: argparse.Namespace) -> int:
                 if not path.is_file():
                     continue
                 if path not in offsets:
-                    offsets[path] = 0 if args.from_start else path.stat().st_size
+                    offsets[path] = 0
                     print(f"Watching Codex health log: {path}", flush=True)
                 with path.open("r", encoding="utf-8", errors="replace") as file:
+                    if path.stat().st_size < offsets[path]:
+                        offsets[path] = 0
                     file.seek(offsets[path])
-                    for line in file:
+                    while True:
+                        position = file.tell()
+                        line = file.readline()
+                        if not line or not line.endswith("\n"):
+                            file.seek(position)
+                            break
                         event = consume_line(line, state=state)
                         if event is None:
                             continue
@@ -118,7 +148,7 @@ def run_tail(args: argparse.Namespace) -> int:
 def main() -> int:
     args = parse_args()
     paths = expand_paths(args.glob)
-    if not paths:
+    if not paths and args.once:
         print("No Codex Desktop log files found.", file=sys.stderr)
         return 1
     if args.once:

@@ -19,12 +19,18 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 agent="$1"
 shift
 
-"${repo_root}/scripts/agentlight-event" --agent "$agent" --event start --send
+emit_status() {
+  if ! "${repo_root}/scripts/agentlight-event" --agent "$agent" --event "$1" --send; then
+    printf 'AgentLight status update failed: %s\n' "$1" >&2
+  fi
+}
+
+emit_status start
 
 if "$@"; then
-  "${repo_root}/scripts/agentlight-event" --agent "$agent" --event done --send
+  emit_status done
 else
   status=$?
-  "${repo_root}/scripts/agentlight-event" --agent "$agent" --event error --send
+  emit_status error
   exit "$status"
 fi

@@ -18,7 +18,11 @@ class CodexInputTracker:
     def __init__(self) -> None:
         self._pending: dict[str, dict[str, bool]] = {}
 
-    def match(self, line: str, source: str, fallback: str = "") -> str:
+    @property
+    def has_pending(self) -> bool:
+        return bool(self._pending)
+
+    def match(self, line: str, source: str, fallback: str = "", *, respect_pending: bool = True) -> str:
         try:
             obj = json.loads(line)
         except (ValueError, TypeError):
@@ -39,8 +43,10 @@ class CodexInputTracker:
         elif kind in {"function_call_output", "custom_tool_call_output"}:
             pending = self._pending.get(source, {})
             call_id = str(payload.get("call_id", ""))
-            # Async acceptance only confirms the question was shown, not answered.
-            if call_id in pending and not pending[call_id]:
+            # Only accepted async questions can still need an answer after tool output.
+            if call_id in pending and (
+                not pending[call_id] or not _async_question_accepted(payload.get("output"))
+            ):
                 del pending[call_id]
                 transition = "tool"
         elif (
@@ -62,6 +68,15 @@ class CodexInputTracker:
             self._pending.pop(source, None)
         if source in self._pending and not self._pending[source]:
             del self._pending[source]
-        if self._pending and (transition or fallback):
+        if respect_pending and self._pending and (transition or fallback):
             return "waiting"
         return transition or fallback
+
+
+def _async_question_accepted(output: object) -> bool:
+    if isinstance(output, str):
+        try:
+            output = json.loads(output)
+        except ValueError:
+            return False
+    return isinstance(output, dict) and output.get("accepted") is True

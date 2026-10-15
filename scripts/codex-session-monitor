@@ -220,7 +220,8 @@ def dispatch_event(event: MonitorEvent, event_command: str) -> None:
     )
 
 
-def consume_line(line: str, path: Path, tracker: CodexInputTracker | None = None) -> MonitorEvent | None:
+def consume_line(line: str, path: Path, tracker: CodexInputTracker | None = None,
+                 *, respect_pending: bool = True) -> MonitorEvent | None:
     line = line.strip()
     if not line:
         return None
@@ -229,7 +230,8 @@ def consume_line(line: str, path: Path, tracker: CodexInputTracker | None = None
     except json.JSONDecodeError:
         return None
     event = normalize_event(obj, path)
-    status = (tracker or CodexInputTracker()).match(line, str(path), event.status if event else "")
+    status = (tracker or CodexInputTracker()).match(line, str(path), event.status if event else "",
+                                                 respect_pending=respect_pending)
     if not status:
         return None
     if event is not None:
@@ -259,6 +261,31 @@ def run_tail(args: argparse.Namespace) -> int:
     offsets: dict[Path, int] = {}
     count = 0
     tracker = CodexInputTracker()
+    latest_event = None
+    for path in find_session_paths(args):
+        if not path.is_file():
+            continue
+        offsets[path] = 0
+        if args.from_start:
+            continue
+        with path.open("r", encoding="utf-8", errors="replace") as file:
+            while True:
+                position = file.tell()
+                line = file.readline()
+                if not line or not line.endswith("\n"):
+                    offsets[path] = position
+                    break
+                event = consume_line(line, path, tracker, respect_pending=False)
+                if event is not None and (latest_event is None or event.timestamp >= latest_event.timestamp):
+                    latest_event = event
+    if latest_event is not None:
+        if tracker.has_pending:
+            latest_event.status = "waiting"
+        print_event(latest_event)
+        dispatch_event(latest_event, args.event_command)
+        count += 1
+        if args.limit and count >= args.limit:
+            return count
 
     print("Codex session monitor started", flush=True)
     if args.thread_id:
@@ -272,12 +299,19 @@ def run_tail(args: argparse.Namespace) -> int:
                     continue
 
                 if path not in offsets:
-                    offsets[path] = 0 if args.from_start else path.stat().st_size
+                    offsets[path] = 0
                     print(f"Watching {path}", flush=True)
 
                 with path.open("r", encoding="utf-8", errors="replace") as file:
+                    if path.stat().st_size < offsets[path]:
+                        offsets[path] = 0
                     file.seek(offsets[path])
-                    for line in file:
+                    while True:
+                        position = file.tell()
+                        line = file.readline()
+                        if not line or not line.endswith("\n"):
+                            file.seek(position)
+                            break
                         event = consume_line(line, path, tracker)
                         if event is not None:
                             print_event(event)
@@ -297,7 +331,7 @@ def main() -> int:
     args = parse_args()
     paths = find_session_paths(args)
 
-    if not paths:
+    if not paths and args.once:
         print("No Codex session files found.", file=sys.stderr)
         return 1
 

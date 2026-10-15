@@ -16,6 +16,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from agentlight_agent.infrastructure.commands import shell_command
+
 
 @dataclass(frozen=True)
 class DispatchEvent:
@@ -50,6 +52,7 @@ class LatestEventDispatcher:
         self._command_runner = command_runner or self._run_command
         self._condition = threading.Condition()
         self._pending: DispatchEvent | None = None
+        self._pending_health: DispatchEvent | None = None
         self._sequence = 0
         self._closed = False
         self._worker = threading.Thread(target=self._run, name="agentlight-event-dispatcher", daemon=True)
@@ -61,6 +64,8 @@ class LatestEventDispatcher:
 
     def submit(self, agent: str, event: str, source: str, *, send: bool) -> None:
         with self._condition:
+            if self._closed:
+                return
             self._sequence += 1
             pending = DispatchEvent(
                 agent=agent,
@@ -69,16 +74,17 @@ class LatestEventDispatcher:
                 send=send,
                 sequence=self._sequence,
             )
-            if self._pending is not None and _is_health_event(self._pending.event) and not _is_health_event(event):
-                return
-            self._pending = pending
+            if _is_health_event(event):
+                self._pending_health = pending
+            else:
+                self._pending = pending
             self._condition.notify()
 
     def close(self, *, drain: bool = True, timeout: float | None = None) -> None:
         if drain:
             deadline = None if timeout is None else time.monotonic() + timeout
             with self._condition:
-                while self._pending is not None:
+                while self._pending is not None or self._pending_health is not None:
                     remaining = None if deadline is None else deadline - time.monotonic()
                     if remaining is not None and remaining <= 0:
                         break
@@ -92,16 +98,23 @@ class LatestEventDispatcher:
     def _run(self) -> None:
         while True:
             with self._condition:
-                while self._pending is None and not self._closed:
+                while self._pending is None and self._pending_health is None and not self._closed:
                     self._condition.wait()
-                if self._pending is None and self._closed:
+                if self._pending is None and self._pending_health is None and self._closed:
                     return
-                event = self._pending
-                self._pending = None
+                if self._pending_health is not None:
+                    event = self._pending_health
+                    self._pending_health = None
+                else:
+                    event = self._pending
+                    self._pending = None
                 self._condition.notify_all()
 
             assert event is not None
-            output = self._dispatch(event)
+            try:
+                output = self._dispatch(event)
+            except OSError as exc:
+                output = f"ERROR DISPATCH_FAILED {exc}"
             timestamp = time.strftime("%Y-%m-%dT%H:%M:%S%z")
             self._result_sink(DispatchResult(event=event, timestamp=timestamp, output=output))
 
@@ -113,7 +126,7 @@ class LatestEventDispatcher:
 
     @staticmethod
     def _run_command(command: list[str]) -> str:
-        result = subprocess.run(command, check=False, capture_output=True, text=True)
+        result = subprocess.run(shell_command(command), check=False, capture_output=True, text=True)
         return result.stdout.strip() or result.stderr.strip()
 
 
